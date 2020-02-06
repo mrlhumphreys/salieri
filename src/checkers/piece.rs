@@ -27,10 +27,10 @@ impl Piece {
 
 pub fn parse(encoded: char) -> Result<Piece, &'static str> {
     let (player_number, king) = match encoded {
-        'w' => (1, false),
-        'W' => (1, true),
-        'b' => (2, false),
-        'B' => (2, true),
+        'w' => (2, false),
+        'W' => (2, true),
+        'b' => (1, false),
+        'B' => (1, true),
         _ => return Err("Invalid Piece"),
     };
     let piece = Piece { player_number, king };
@@ -45,7 +45,7 @@ mod tests {
     fn parsing_piece_white() {
         let encoded = 'w';
         let result = parse(encoded).unwrap();
-        assert_eq!(result.player_number, 1);
+        assert_eq!(result.player_number, 2);
         assert_eq!(result.king, false);
     }
 
@@ -53,7 +53,7 @@ mod tests {
     fn parsing_piece_white_king() {
         let encoded = 'W';
         let result = parse(encoded).unwrap();
-        assert_eq!(result.player_number, 1);
+        assert_eq!(result.player_number, 2);
         assert_eq!(result.king, true);
     }
 
@@ -61,7 +61,7 @@ mod tests {
     fn parsing_piece_black() {
         let encoded = 'b';
         let result = parse(encoded).unwrap();
-        assert_eq!(result.player_number, 2);
+        assert_eq!(result.player_number, 1);
         assert_eq!(result.king, false);
     }
 
@@ -69,7 +69,7 @@ mod tests {
     fn parsing_piece_black_king() {
         let encoded = 'B';
         let result = parse(encoded).unwrap();
-        assert_eq!(result.player_number, 2);
+        assert_eq!(result.player_number, 1);
         assert_eq!(result.king, true);
     }
 

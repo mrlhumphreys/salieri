@@ -80,8 +80,8 @@ pub fn parse(encoded: &String) -> Result<GameState, &'static str> {
     let player_component = &encoded[32..33];
     
     let current_player_number = match player_component {
-      "w" => 1,
-      "b" => 2,
+      "b" => 1,
+      "w" => 2,
       _ => return Err("Invalid State"),
     };
 
@@ -101,15 +101,25 @@ mod tests {
 
     #[test]
     fn parsing() {
-        let encoded = String::from("wwwwwwwwwwww--------bbbbbbbbbbbbw");
+        let encoded = String::from("bbbbbbbbbbbb--------wwwwwwwwwwwwb");
         let result = parse(&encoded).unwrap();
         assert_eq!(result.current_player_number, 1);
         assert_eq!(result.squares.len(), 32);
     }
 
     #[test]
+    fn parsing_example_b() {
+        let encoded = String::from("bbbbbbbbb-bb--b-----wwwwwwwwwwwww");
+        let result = parse(&encoded);
+        match result {
+            Err(e) => assert!(false, e),
+            Ok(_) => assert!(true, "success"),
+        }
+    }
+
+    #[test]
     fn parsing_invalid() {
-        let encoded = String::from("wwwwwwwwwwww--------bbbbbbbbbbbb");
+        let encoded = String::from("bbbbbbbbbbbb--------wwwwwwwwwwww");
         let result = parse(&encoded);
         match result {
             Ok(_) => assert!(false, "Expected Error"),
@@ -119,7 +129,7 @@ mod tests {
 
     #[test]
     fn possible_moves() {
-        let encoded = String::from("wwwwwwwwwwww--------bbbbbbbbbbbbw");
+        let encoded = String::from("bbbbbbbbbbbb--------wwwwwwwwwwwwb");
         let game_state = parse(&encoded).unwrap();
         let result = game_state.possible_moves();
         assert_eq!(result.len(), 7);
@@ -184,7 +194,7 @@ mod tests {
 
     #[test]
     fn perform_move_with_promote() {
-        let encoded = String::from("wwwwwwwwwww---------------bw----w");
+        let encoded = String::from("bbbbbbbbbbb---------------wb----b");
         let game_state = parse(&encoded).unwrap();
         let mov = Move {
             kind: MoveKind::Mov,

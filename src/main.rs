@@ -1,4 +1,6 @@
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
+use actix_cors::Cors;
+
 use std::env;
 
 mod checkers;
@@ -27,10 +29,24 @@ async fn main() -> std::io::Result<()> {
         .parse()
         .expect("PORT must be a number");
 
+
     HttpServer::new(|| {
+        let allowed_origin = env::var("ALLOWED_ORIGIN")
+            .unwrap_or_else(|_| "http://127.0.0.1:3000".to_string());
         App::new()
+            .wrap(
+                Cors::new()
+                    .allowed_origin(&allowed_origin)
+                    .allowed_methods(vec!["GET"])
+                    .max_age(3600)
+                    .finish()
+            )
+            .service(
+                web::resource("/api/v0/checkers/{state}")
+                    .route(web::get().to(checkers_move))
+                    .route(web::head().to(|| HttpResponse::MethodNotAllowed()))
+            ) 
             .route("/", web::get().to(index))
-            .route("/api/v0/checkers/{state}", web::get().to(checkers_move))
     })
     .bind(("0.0.0.0", port))?
     .run()

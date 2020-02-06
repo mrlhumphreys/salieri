@@ -133,7 +133,7 @@ mod tests {
 
     #[test]
     fn evaluate_test() {
-        let encoded = String::from("wwwwwwwwww-w--w-----bbbbbbbbbbbbb");
+        let encoded = String::from("bbbbbbbbbb-b--b-----wwwwwwwwwwwww");
         let game_state = checkers::game_state::parse(&encoded).unwrap();
 
         match evaluate(&game_state, 3, false) {
@@ -144,7 +144,7 @@ mod tests {
 
     #[test]
     fn recommended_move_test() {
-        let encoded = String::from("wwwwwwwwww-w--w-----bbbbbbbbbbbbb");
+        let encoded = String::from("bbbbbbbbbb-b--b-----wwwwwwwwwwwww");
         let game_state = checkers::game_state::parse(&encoded).unwrap();
         let mov = recommended_move(game_state); 
 

@@ -268,7 +268,7 @@ mod tests {
 
     #[test]
     fn parsing_square_set() {
-        let encoded = "wwwwwwwwwwww--------bbbbbbbbbbbb";
+        let encoded = "bbbbbbbbbbbb--------wwwwwwwwwwww";
         let square_set = parse_square_set(encoded).unwrap();
         let squares = square_set.squares;
         assert_eq!(squares.len(), 32);
