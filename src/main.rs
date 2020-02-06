@@ -1,4 +1,5 @@
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
+use std::env;
 
 mod checkers;
 mod minimax;
@@ -21,12 +22,17 @@ async fn checkers_move(info: web::Path<String>) -> impl Responder {
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
+    let port = env::var("PORT")
+        .unwrap_or_else(|_| "7878".to_string())
+        .parse()
+        .expect("PORT must be a number");
+
     HttpServer::new(|| {
         App::new()
             .route("/", web::get().to(index))
             .route("/checkers_move/{state}", web::get().to(checkers_move))
     })
-    .bind("127.0.0.1:7878")?
+    .bind(("0.0.0.0", port))?
     .run()
     .await
 }
