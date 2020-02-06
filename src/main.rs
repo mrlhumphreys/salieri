@@ -30,7 +30,7 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
         App::new()
             .route("/", web::get().to(index))
-            .route("/checkers_move/{state}", web::get().to(checkers_move))
+            .route("/api/v0/checkers/{state}", web::get().to(checkers_move))
     })
     .bind(("0.0.0.0", port))?
     .run()
