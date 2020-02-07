@@ -117,23 +117,8 @@ impl SquareSet {
         list
     }
 
-    pub fn can_jump(&self, board: &SquareSet) -> SquareSet {
-        SquareSet {
-            squares: self.squares.clone().into_iter().filter(|s| {
-                match &s.piece {
-                    Some(p) => s.can_jump(p, &board),
-                    None => false,
-                }
-            }).collect(),
-        }
-    }
-
     pub fn len(&self) -> usize {
         self.squares.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.squares.is_empty()
     }
 
     pub fn first(&self) -> Option<&Square> {
@@ -177,46 +162,6 @@ impl SquareSet {
                 s.occupied_by_player(player_number) 
             }).collect(),        
         }
-    }
-
-    pub fn unoccupied(&self) -> SquareSet {
-        let squares = self.squares.clone().into_iter().filter(|s| {
-            s.unoccupied()
-        }).collect();
-        SquareSet { squares }
-    }
-
-    pub fn between_occupied_by_opponent(&self, from: &Square, piece: &Piece, board: &SquareSet) -> SquareSet {
-        let squares = self.squares.clone().into_iter().filter(|to| {
-           match board.between(&from, &to).first() {
-                Some(b) => b.occupied_by_opponent(piece.player_number),
-                None => false
-           }
-        }).collect();
-        SquareSet { squares }
-    }
-
-    pub fn diagonal(&self, from: &Square) -> SquareSet {
-        let squares = self.squares.clone().into_iter().filter(|to| {
-            let vector = Vector { from: from.point(), to: to.point() }; 
-            vector.diagonal()
-        }).collect();
-        SquareSet { squares }
-    }
-
-    pub fn in_direction(&self, from: &Square, piece: &Piece) -> SquareSet {
-        let squares = self.squares.clone().into_iter().filter(|s| {
-            s.in_direction(&from, &piece)
-        }).collect();
-        SquareSet { squares }
-    }
-
-    pub fn at_range(&self, from: &Square, distance: i8) -> SquareSet {
-        let squares = self.squares.clone().into_iter().filter(|to| {
-            let vector = Vector { from: from.point(), to: to.point() }; 
-            vector.magnitude() == distance
-        }).collect();
-        SquareSet { squares }
     }
 
     pub fn between(&self, from: &Square, to: &Square) -> SquareSet {
@@ -297,38 +242,6 @@ mod tests {
     }
 
     #[test]
-    fn fetching_between_occupied_by_opponent() {
-        let piece = Piece { player_number: 1, king: false };
-        let from = Square { id: 1, x: 4, y: 4, piece: None };
-        let occupied = Square { id: 2, x: 5, y: 5, piece: Some(Piece { player_number: 2, king: false }) };
-        let jump_to = Square { id: 3, x: 6, y: 6, piece: None };
-        let unoccupied = Square { id: 4, x: 5, y: 3, piece: None };
-        let cant_jump_to = Square { id: 5, x: 6, y: 2, piece: None };
-        
-        let square_set = SquareSet { squares: vec![jump_to, cant_jump_to] };
-        let board = SquareSet { squares: vec![from, occupied, jump_to, unoccupied, cant_jump_to] };
-        let result = square_set.between_occupied_by_opponent(&from, &piece, &board);
-        assert_eq!(result.squares.len(), 1);
-        let square = &result.squares[0];
-        assert_eq!(square.x, 6);
-        assert_eq!(square.y, 6);
-    }
-
-    #[test]
-    fn testing_is_empty() {
-        let square_set = SquareSet { squares: vec![] };        
-        assert_eq!(square_set.is_empty(), true);
-    }
-
-    #[test]
-    fn testing_is_not_empty() {
-        let first = Square { id: 1, x: 1, y: 1, piece: None };
-        let second = Square { id: 2, x: 2, y: 2, piece: None };
-        let square_set = SquareSet { squares: vec![first, second] };        
-        assert_eq!(square_set.is_empty(), false);
-    }
-
-    #[test]
     fn fetching_first() {
         let first = Square { id: 1, x: 1, y: 1, piece: None };
         let second = Square { id: 2, x: 2, y: 2, piece: None };
@@ -375,48 +288,6 @@ mod tests {
     }
 
     #[test]
-    fn fetching_squares_in_direction() {
-        let from = Square { id: 1, x: 1, y: 4, piece: None };
-        let piece = Piece { player_number: 1, king: false }; 
-        let square_in_direction = Square { id: 2, x: 1, y: 5, piece: None };
-        let square_in_same_row = Square { id: 3, x: 1, y: 4, piece: None };
-        let square_in_not_direction = Square { id: 4, x: 1, y: 3, piece: None };
-        let square_set = SquareSet { squares: vec![from, square_in_direction, square_in_same_row, square_in_not_direction] };
-        let result = square_set.in_direction(&from, &piece);
-        assert_eq!(result.squares.len(), 1);
-        let square = &result.squares[0];
-        assert_eq!(square.x, 1);
-        assert_eq!(square.y, 5);
-    }
-
-    #[test]
-    fn fetching_squares_at_range() {
-        let distance = 2;
-        let from = Square { id: 1, x: 1, y: 4, piece: None };
-        let at_range = Square { id: 2, x: 3, y: 2, piece: None };
-        let not_at_range = Square { id: 3, x: 4, y: 1, piece: None };
-        let square_set = SquareSet { squares: vec![from, at_range, not_at_range] };
-        let result = square_set.at_range(&from, distance);
-        assert_eq!(result.squares.len(), 1);
-        let square = &result.squares[0];
-        assert_eq!(square.x, 3);
-        assert_eq!(square.y, 2);
-    }
-
-    #[test]
-    fn fetching_squares_diagonal() {
-        let from = Square { id: 1, x: 1, y: 4, piece: None };    
-        let diagonal = Square { id: 2, x: 2, y: 3, piece: None };    
-        let orthogonal = Square { id: 3, x: 1, y: 3, piece: None };    
-        let square_set = SquareSet { squares: vec![from, diagonal, orthogonal] };
-        let result = square_set.diagonal(&from);
-        assert_eq!(result.squares.len(), 1);
-        let square = &result.squares[0];
-        assert_eq!(square.x, 2);
-        assert_eq!(square.y, 3);
-    }
-
-    #[test]
     fn fetching_between_diagonal() {
         let from = Square { id: 1, x: 4, y: 4, piece: None };    
         let between = Square { id: 2, x: 5, y: 3, piece: None };    
@@ -437,35 +308,6 @@ mod tests {
         let square_set = SquareSet { squares: vec![from, between, to] };
         let result = square_set.between(&from, &to);
         assert_eq!(result.squares.len(), 0);
-    }
-
-    #[test]
-    fn fetching_unoccupied_squares() {
-        let occupied = Square { id: 1, x: 1, y: 4, piece: Some(Piece { player_number: 1, king: false }) };    
-        let unoccupied = Square { id: 2, x: 2, y: 4, piece: None };    
-        let square_set = SquareSet { squares: vec![occupied, unoccupied] };
-        let result = square_set.unoccupied();
-        assert_eq!(result.squares.len(), 1);
-        let square = &result.squares[0];
-        assert_eq!(square.x, 2);
-        assert_eq!(square.y, 4);
-    }
-
-    #[test]
-    fn fetch_squares_can_jump() {
-        let no_jump_from = Square { id: 1, x: 1, y: 1, piece: Some(Piece { player_number: 1, king: false }) };
-        let no_jump_over = Square { id: 2, x: 2, y: 2, piece: None };
-        let no_jump_to = Square { id: 3, x: 3, y: 3, piece: None };
-        let jump_from = Square { id: 4, x: 4, y: 4, piece: Some(Piece { player_number: 1, king: false }) };
-        let jump_over = Square { id: 5, x: 5, y: 5, piece: Some(Piece { player_number: 2, king: false }) };
-        let jump_to = Square { id: 6, x: 6, y: 6, piece: None };
-        let square_set = SquareSet { squares: vec![jump_from, no_jump_from] }; 
-        let board = SquareSet { squares: vec![jump_from, jump_over, jump_to, no_jump_from, no_jump_over, no_jump_to] }; 
-        let result = square_set.can_jump(&board);
-        assert_eq!(result.squares.len(), 1);
-        let square = &result.squares[0];
-        assert_eq!(square.x, 4);
-        assert_eq!(square.y, 4);
     }
 
     #[test]

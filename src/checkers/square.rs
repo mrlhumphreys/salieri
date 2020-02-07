@@ -1,3 +1,4 @@
+use std::cmp;
 use std::convert::TryFrom;
 use crate::checkers::point::Point;
 use crate::checkers::square_set::SquareSet;
@@ -68,26 +69,64 @@ impl Square {
         }
     }
 
+    pub fn diagonal(&self, to: &Square) -> bool {
+        let abs_dx = (to.x - self.x).abs();
+        let abs_dy = (to.y - self.y).abs();
+        abs_dx == abs_dy && abs_dx != 0 && abs_dy != 0
+    }
+
+    pub fn magnitude(&self, to: &Square) -> i8 {
+        let abs_dx = (to.x - self.x).abs();
+        let abs_dy = (to.y - self.y).abs();
+        cmp::max(abs_dx, abs_dy) 
+    }
+
     pub fn can_jump(&self, piece: &Piece, board: &SquareSet) -> bool {
-        let possible_destinations = board.diagonal(&self).in_direction(&self, &piece).at_range(&self, 2).unoccupied().between_occupied_by_opponent(&self, &piece, &board);
-        !possible_destinations.is_empty()
+        board.squares.iter().any(|s| {
+            self.magnitude(&s) == 2 && 
+                self.diagonal(&s) && 
+                s.in_direction(&self, &piece) && 
+                s.unoccupied() && 
+                match board.between(&self, &s).first() {
+                    Some(b) => b.occupied_by_opponent(piece.player_number),
+                    None => false,
+                }
+        })
     }
 
     pub fn can_move(&self, piece: &Piece, board: &SquareSet) -> bool {
-        let possible_destinations = board.diagonal(&self).in_direction(&self, &piece).at_range(&self, 1).unoccupied();
-        !possible_destinations.is_empty() 
+        board.squares.iter().any(|s| {
+            self.magnitude(&s) == 1 && 
+                self.diagonal(&s) && 
+                s.in_direction(&self, &piece) && 
+                s.unoccupied()   
+        })
     }
 
-    pub fn jump_destinations(&self, piece: &Piece, board: &SquareSet) -> SquareSet {
-        board.diagonal(&self).in_direction(&self, &piece).at_range(&self, 2).unoccupied().between_occupied_by_opponent(&self, &piece, &board)
+    pub fn jump_destinations(&self, piece: &Piece, board: &SquareSet) -> Vec<Square> {
+        board.squares.clone().into_iter().filter(|s| {
+            self.magnitude(&s) == 2 && 
+                self.diagonal(&s) && 
+                s.in_direction(&self, &piece) && 
+                s.unoccupied() && 
+                match board.between(&self, &s).first() {
+                    Some(b) => b.occupied_by_opponent(piece.player_number),
+                    None => false,
+                }
+        }).collect()
     }
 
-    pub fn move_destinations(&self, piece: &Piece, board: &SquareSet) -> SquareSet {
-        board.diagonal(&self).in_direction(&self, &piece).at_range(&self, 1).unoccupied()
+    pub fn move_destinations(&self, piece: &Piece, board: &SquareSet) -> Vec<Square> {
+        board.squares.clone().into_iter().filter(|s| {
+            self.magnitude(&s) == 1 && 
+                self.diagonal(&s) && 
+                s.in_direction(&self, &piece) && 
+                s.unoccupied()   
+        }).collect()
     }
 
     pub fn jump_legs<'a>(&self, piece: &Piece, board: &SquareSet, mut accumulator: &'a mut Vec<Vec<i8>>, mut current_leg: &mut Vec<i8>) -> &'a mut Vec<Vec<i8>> {
-        let destinations = self.jump_destinations(&piece, board).squares;
+        let destinations = self.jump_destinations(&piece, board);
 
         if destinations.len() > 0 {
             for destination in destinations.into_iter() {
@@ -124,7 +163,7 @@ impl Square {
 
     pub fn moves(&self, piece: &Piece, board: &SquareSet) -> Vec<Move> {
         let destinations = self.move_destinations(&piece, &board);
-        destinations.squares.into_iter().map(|d| {
+        destinations.into_iter().map(|d| {
             Move { kind: MoveKind::Mov, from: self.id, to: vec![d.id] }
         }).collect()
     }
@@ -327,9 +366,9 @@ mod tests {
         assert_eq!(result, true);
 
         let destinations = from.jump_destinations(&piece, &board);
-        assert_eq!(destinations.squares.len(), 1);
+        assert_eq!(destinations.len(), 1);
 
-        let square = &destinations.squares[0];
+        let square = &destinations[0];
         assert_eq!(square.x, 2);
         assert_eq!(square.y, 6);
     }
@@ -346,9 +385,9 @@ mod tests {
         assert_eq!(result, true);
 
         let destinations = from.move_destinations(&piece, &board);
-        assert_eq!(destinations.squares.len(), 1);
+        assert_eq!(destinations.len(), 1);
 
-        let square = &destinations.squares[0];
+        let square = &destinations[0];
         assert_eq!(square.x, 5);
         assert_eq!(square.y, 5);
     }
@@ -365,7 +404,7 @@ mod tests {
         assert_eq!(result, false);
 
         let destinations = from.jump_destinations(&piece, &board);
-        assert_eq!(destinations.squares.len(), 0);
+        assert_eq!(destinations.len(), 0);
     }
 
     #[test]
@@ -380,7 +419,7 @@ mod tests {
         assert_eq!(result, false);
 
         let destinations = from.jump_destinations(&piece, &board);
-        assert_eq!(destinations.squares.len(), 0);
+        assert_eq!(destinations.len(), 0);
     }
 
     #[test]
@@ -395,7 +434,7 @@ mod tests {
         assert_eq!(result, false);
 
         let destinations = from.jump_destinations(&piece, &board);
-        assert_eq!(destinations.squares.len(), 0);
+        assert_eq!(destinations.len(), 0);
     }
 
     #[test]

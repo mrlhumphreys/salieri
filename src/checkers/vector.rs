@@ -1,5 +1,4 @@
 use std::fmt;
-use std::cmp;
 use std::cmp::Ordering;
 use crate::checkers::point::Point;
 
@@ -27,12 +26,6 @@ impl fmt::Debug for Direction {
 }
 
 impl Vector {
-    pub fn magnitude(&self) -> i8 {
-        let abs_dx = (self.to.x - self.from.x).abs();
-        let abs_dy = (self.to.y - self.from.y).abs();
-        cmp::max(abs_dx, abs_dy) 
-    }
-
     pub fn direction(&self) -> Direction {
         if self.diagonal() {
             Direction::Diagonal
@@ -86,15 +79,6 @@ impl Vector {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn magnitude() {
-        let from = Point { x: 4, y: 4 };
-        let to = Point { x: 2, y: 6 };
-        let vector = Vector { from, to };
-        let result = vector.magnitude();
-        assert_eq!(result, 2);
-    }
 
     #[test]
     fn direction_diagonal() {

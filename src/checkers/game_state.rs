@@ -11,11 +11,11 @@ pub struct GameState {
 impl GameState {
     pub fn possible_moves(&self) -> Vec<Move> {
         let occupied_by_player = self.squares.occupied_by_player(self.current_player_number);
-        let jumps = occupied_by_player.can_jump(&self.squares);
-        if jumps.is_empty() {
+        let jumps = occupied_by_player.jumps(&self.squares);
+        if jumps.len() == 0 {
             occupied_by_player.moves(&self.squares)
         } else {
-            occupied_by_player.jumps(&self.squares)
+            jumps
         }
     }
 
