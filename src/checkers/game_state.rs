@@ -104,7 +104,7 @@ mod tests {
         let encoded = String::from("bbbbbbbbbbbb--------wwwwwwwwwwwwb");
         let result = parse(&encoded).unwrap();
         assert_eq!(result.current_player_number, 1);
-        assert_eq!(result.squares.len(), 32);
+        assert_eq!(result.squares.squares.len(), 32);
     }
 
     #[test]

@@ -117,43 +117,12 @@ impl SquareSet {
         list
     }
 
-    pub fn len(&self) -> usize {
-        self.squares.len()
-    }
-
     pub fn first(&self) -> Option<&Square> {
        self.squares.first() 
     }
 
     pub fn find_by_x_and_y(&self, x: i8, y: i8) -> Option<Square> {
         self.squares.clone().into_iter().find(|s| { s.x == x && s.y == y }) 
-    }
-
-    pub fn where_id(&self, ids: &Vec<i8>) -> SquareSet {
-        SquareSet {
-            squares: self.squares.clone().into_iter().filter(|s| { 
-                ids.contains(&s.id)
-            }).collect(),        
-        }
-    }
-
-    pub fn where_y(&self, y: i8) -> SquareSet {
-        SquareSet {
-            squares: self.squares.clone().into_iter().filter(|s| { 
-                s.y == y
-            }).collect(),        
-        }
-    }
-
-    pub fn kings(&self) -> SquareSet {
-        SquareSet {
-            squares: self.squares.clone().into_iter().filter(|s| {
-                match s.piece {
-                    Some(p) => p.king,
-                    None => false,
-                }
-            }).collect(),
-        }
     }
 
     pub fn occupied_by_player(&self, player_number: i8) -> SquareSet {
@@ -271,20 +240,6 @@ mod tests {
             },
             None => assert!(false, "Expected Square"),
         }
-    }
-
-    #[test]
-    fn fetching_where_id() {
-        let first = Square { id: 1, x: 1, y: 1, piece: None };
-        let second = Square { id: 2, x: 2, y: 2, piece: None };
-        let squares = vec![first, second];
-        let square_set = SquareSet { squares };        
-        let ids = vec![1];
-        let result = square_set.where_id(&ids);
-
-        assert_eq!(result.len(), 1);
-        let square = result.squares[0];
-        assert_eq!(square.id, 1);
     }
 
     #[test]

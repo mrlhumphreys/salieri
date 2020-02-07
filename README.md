@@ -39,8 +39,6 @@ Jumps are represented with crosses (x) between the numbers. There can be more th
 
 ## TODO
 
-* Improve performance of move calculation
-* Tweak Static Evaluation Function
 * Add Caching of Calculated Moves
 * Implement Monte Carlo Tree Search
 * Other Games

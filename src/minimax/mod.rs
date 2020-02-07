@@ -2,8 +2,7 @@ use std::cmp;
 use std::convert::TryFrom;
 use crate::checkers;
 
-const DEPTH: i8 = 5;
-const MIDDLE_IDS: [i8; 8] = [10, 11, 14, 15, 18, 19, 22, 23];
+const DEPTH: i8 = 6;
 const PLAYER_ONE_HOME_ROW: i8 = 0;
 const PLAYER_TWO_HOME_ROW: i8 = 7;
 
@@ -91,48 +90,105 @@ pub fn evaluate(game_state: &checkers::game_state::GameState, depth: i8, mut alp
 // positive -> w
 // negative -> b
 pub fn static_evaluation(game_state: &checkers::game_state::GameState) -> i32 {
-    let player_one_pieces_count = match i32::try_from(game_state.squares.occupied_by_player(1).len()) {
-        Ok(v) =>  v,
-        Err(_) => 0,
-    };
-    let player_two_pieces_count = match i32::try_from(game_state.squares.occupied_by_player(2).len()) {
-        Ok(v) =>  v,
-        Err(_) => 0,
-    };
-    let pieces_count_value = player_one_pieces_count - player_two_pieces_count;
+    let player_one_pieces_count = player_pieces_count(game_state, 1);
+    let player_two_pieces_count = player_pieces_count(game_state, 2);
+    let pieces_count_value = u_to_i32(player_one_pieces_count) - u_to_i32(player_two_pieces_count);
    
-    let player_one_kings_count = match i32::try_from(game_state.squares.occupied_by_player(1).kings().len()) {
+    let player_one_kings_count = player_kings_count(game_state, 1);
+    let player_two_kings_count = player_kings_count(game_state, 2);
+    let kings_count_value = u_to_i32(player_one_kings_count) - u_to_i32(player_two_kings_count);
+
+    let player_one_offense = player_offense(game_state, 1);
+    let player_two_offense = player_offense(game_state, 2);
+    let player_offense_value = i32::from(player_one_offense) - i32::from(player_two_offense);
+
+    let player_one_defense = player_defense(game_state, 1);
+    let player_two_defense = player_defense(game_state, 2);
+    let player_defense_value = i32::from(player_one_defense) - i32::from(player_two_defense);
+   
+    3*pieces_count_value + 10*kings_count_value + 5*player_offense_value + 7*player_defense_value
+}
+
+fn defense_score(game_state: &checkers::game_state::GameState, player_number: i8, x: i8, y: i8) -> i8 {
+    let square = game_state.squares.squares.iter().find(|s| {
+        s.x == x && s.y == y && match s.piece {
+            Some(p) => p.player_number == player_number,
+            None => false,
+        }
+    });
+    match square {
+        Some(_) => 1,
+        None => 0,
+    }
+}
+
+fn player_defense(game_state: &checkers::game_state::GameState, player_number: i8) -> i8 {
+    game_state.squares.squares.iter().filter(|s| {
+        match s.piece {
+            Some(p) => !p.king && p.player_number == player_number,
+            None => false,
+        }
+    }).map(|s| {
+        match player_number {
+            1 => {
+                let left_x = s.x - 1;
+                let right_x = s.x + 1;
+                let y = s.y - 1;
+                let left_score = defense_score(game_state, player_number, left_x, y);
+                let right_score = defense_score(game_state, player_number, right_x, y);
+                left_score + right_score 
+            },
+            2 => {
+                let left_x = s.x - 1;
+                let right_x = s.x + 1;
+                let y = s.y + 1;
+                let left_score = defense_score(game_state, player_number, left_x, y);
+                let right_score = defense_score(game_state, player_number, right_x, y);
+                left_score + right_score 
+            },
+            _ => 0,
+        }
+    }).sum()
+}
+
+fn player_offense(game_state: &checkers::game_state::GameState, player_number: i8) -> i8 {
+    game_state.squares.squares.iter().filter(|s| {
+        match s.piece {
+            Some(p) => !p.king && p.player_number == player_number,
+            None => false,
+        }
+    }).map(|s| {
+        match player_number {
+            1 => s.y - PLAYER_ONE_HOME_ROW, 
+            2 => PLAYER_TWO_HOME_ROW - s.y,
+            _ => 0
+        }
+    }).sum()
+}
+
+fn player_pieces_count(game_state: &checkers::game_state::GameState, player_number: i8) -> usize {
+    game_state.squares.squares.iter().filter(|s| {
+        match s.piece {
+            Some(p) => p.player_number == player_number,
+            None => false,
+        }
+    }).count()
+}
+
+fn player_kings_count(game_state: &checkers::game_state::GameState, player_number: i8) -> usize {
+    game_state.squares.squares.iter().filter(|s| {
+        match s.piece {
+            Some(p) => p.king && p.player_number == player_number,
+            None => false,
+        }
+    }).count()
+}
+
+fn u_to_i32(value: usize) -> i32 {
+    match i32::try_from(value) {
         Ok(v) =>  v,
         Err(_) => 0,
-    };
-    let player_two_kings_count = match i32::try_from(game_state.squares.occupied_by_player(2).kings().len()) {
-        Ok(v) =>  v,
-        Err(_) => 0,
-    };
-    let kings_count_value = player_one_kings_count - player_two_kings_count;
-    
-    let player_one_middle_count = match i32::try_from(game_state.squares.occupied_by_player(1).where_id(&MIDDLE_IDS.to_vec()).len()) {
-        Ok(v) => v,
-        Err(_) => 0,
-    };
-    let player_two_middle_count = match i32::try_from(game_state.squares.occupied_by_player(2).where_id(&MIDDLE_IDS.to_vec()).len()) {
-        Ok(v) => v,
-        Err(_) => 0,
-    };
-    let middle_count_value = player_one_middle_count - player_two_middle_count;
-   
-    // number of w pieces on home row - number of b pieces on home row
-    let player_one_home_count = match i32::try_from(game_state.squares.occupied_by_player(1).where_y(PLAYER_ONE_HOME_ROW).len()) {
-        Ok(v) => v,
-        Err(_) => 0,
-    };
-    let player_two_home_count = match i32::try_from(game_state.squares.occupied_by_player(2).where_y(PLAYER_TWO_HOME_ROW).len()) {
-        Ok(v) => v,
-        Err(_) => 0,
-    };
-    let player_home_value = player_one_home_count - player_two_home_count;
-   
-    3*pieces_count_value + 10*kings_count_value + 7*middle_count_value + 3*player_home_value 
+    }
 }
 
 #[cfg(test)]
@@ -144,8 +200,8 @@ mod tests {
         let encoded = String::from("bbbbbbbbbb-b--b-----wwwwwwwwwwwww");
         let game_state = checkers::game_state::parse(&encoded).unwrap();
 
-        match evaluate(&game_state, 3, std::i32::MIN, std::i32::MAX, false) {
-            Ok(result) => assert_eq!(result, -14),
+        match evaluate(&game_state, 4, std::i32::MIN, std::i32::MAX, false) {
+            Ok(result) => assert_eq!(result, -12),
             Err(e) => assert!(false, e),
         }
     }
@@ -158,7 +214,7 @@ mod tests {
 
         match mov {
             Some(m) => {
-                assert_eq!(m.from, 23);
+                assert_eq!(m.from, 22);
                 assert_eq!(m.to, vec![18]);
             },
             None => assert!(false, "expected move"), 
