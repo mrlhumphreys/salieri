@@ -5,20 +5,26 @@ use std::env;
 
 mod checkers;
 mod minimax;
+mod openings;
 
 async fn index() -> impl Responder {
     HttpResponse::Ok().body("200 OK\n")
 }
 
 async fn checkers_move(info: web::Path<String>) -> impl Responder {
-    let game_state = match checkers::game_state::parse(&info.into_inner()) {
-        Ok(gs) => gs,
-        Err(_) => return HttpResponse::NotFound().body("404 Not Found\n"),
-    };
-    let recommended_move = minimax::recommended_move(game_state);
-    match recommended_move {
-        Some(m) => HttpResponse::Ok().body(format!("{}\n", m.format())),
-        None => return HttpResponse::NotFound().body("404 Not Found\n"),
+    match openings::recommended_move(&info.clone()) {
+        Some(m) => HttpResponse::Ok().body(m),
+        None => {
+            let game_state = match checkers::game_state::parse(&info.into_inner()) {
+                Ok(gs) => gs,
+                Err(_) => return HttpResponse::NotFound().body("404 Not Found\n"),
+            };
+            let recommended_move = minimax::recommended_move(game_state);
+            match recommended_move {
+                Some(m) => HttpResponse::Ok().body(format!("{}\n", m.format())),
+                None => return HttpResponse::NotFound().body("404 Not Found\n"),
+            }
+        }
     }
 }
 
