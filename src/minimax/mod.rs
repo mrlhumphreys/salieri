@@ -106,7 +106,7 @@ pub fn static_evaluation(game_state: &checkers::game_state::GameState) -> i32 {
     let player_two_defense = player_defense(game_state, 2);
     let player_defense_value = i32::from(player_one_defense) - i32::from(player_two_defense);
    
-    3*pieces_count_value + 10*kings_count_value + 5*player_offense_value + 7*player_defense_value
+    7*pieces_count_value + 10*kings_count_value + 3*player_offense_value + 7*player_defense_value
 }
 
 fn defense_score(game_state: &checkers::game_state::GameState, player_number: i8, x: i8, y: i8) -> i8 {
@@ -201,7 +201,7 @@ mod tests {
         let game_state = checkers::game_state::parse(&encoded).unwrap();
 
         match evaluate(&game_state, 4, std::i32::MIN, std::i32::MAX, false) {
-            Ok(result) => assert_eq!(result, -12),
+            Ok(result) => assert_eq!(result, -10),
             Err(e) => assert!(false, e),
         }
     }
