@@ -2,9 +2,7 @@ use std::cmp;
 use std::convert::TryFrom;
 use crate::checkers;
 
-const DEPTH: i8 = 6;
-const PLAYER_ONE_HOME_ROW: i8 = 0;
-const PLAYER_TWO_HOME_ROW: i8 = 7;
+const DEPTH: i8 = 10;
 
 pub fn recommended_move(game_state: checkers::game_state::GameState) -> Option<checkers::mov::Move> {
     let moves = game_state.possible_moves();
@@ -97,73 +95,8 @@ pub fn static_evaluation(game_state: &checkers::game_state::GameState) -> i32 {
     let player_one_kings_count = player_kings_count(game_state, 1);
     let player_two_kings_count = player_kings_count(game_state, 2);
     let kings_count_value = u_to_i32(player_one_kings_count) - u_to_i32(player_two_kings_count);
-
-    let player_one_offense = player_offense(game_state, 1);
-    let player_two_offense = player_offense(game_state, 2);
-    let player_offense_value = i32::from(player_one_offense) - i32::from(player_two_offense);
-
-    let player_one_defense = player_defense(game_state, 1);
-    let player_two_defense = player_defense(game_state, 2);
-    let player_defense_value = i32::from(player_one_defense) - i32::from(player_two_defense);
    
-    7*pieces_count_value + 10*kings_count_value + 3*player_offense_value + 7*player_defense_value
-}
-
-fn defense_score(game_state: &checkers::game_state::GameState, player_number: i8, x: i8, y: i8) -> i8 {
-    let square = game_state.squares.squares.iter().find(|s| {
-        s.x == x && s.y == y && match s.piece {
-            Some(p) => p.player_number == player_number,
-            None => false,
-        }
-    });
-    match square {
-        Some(_) => 1,
-        None => 0,
-    }
-}
-
-fn player_defense(game_state: &checkers::game_state::GameState, player_number: i8) -> i8 {
-    game_state.squares.squares.iter().filter(|s| {
-        match s.piece {
-            Some(p) => !p.king && p.player_number == player_number,
-            None => false,
-        }
-    }).map(|s| {
-        match player_number {
-            1 => {
-                let left_x = s.x - 1;
-                let right_x = s.x + 1;
-                let y = s.y - 1;
-                let left_score = defense_score(game_state, player_number, left_x, y);
-                let right_score = defense_score(game_state, player_number, right_x, y);
-                left_score + right_score 
-            },
-            2 => {
-                let left_x = s.x - 1;
-                let right_x = s.x + 1;
-                let y = s.y + 1;
-                let left_score = defense_score(game_state, player_number, left_x, y);
-                let right_score = defense_score(game_state, player_number, right_x, y);
-                left_score + right_score 
-            },
-            _ => 0,
-        }
-    }).sum()
-}
-
-fn player_offense(game_state: &checkers::game_state::GameState, player_number: i8) -> i8 {
-    game_state.squares.squares.iter().filter(|s| {
-        match s.piece {
-            Some(p) => !p.king && p.player_number == player_number,
-            None => false,
-        }
-    }).map(|s| {
-        match player_number {
-            1 => s.y - PLAYER_ONE_HOME_ROW, 
-            2 => PLAYER_TWO_HOME_ROW - s.y,
-            _ => 0
-        }
-    }).sum()
+    10*pieces_count_value + 20*kings_count_value
 }
 
 fn player_pieces_count(game_state: &checkers::game_state::GameState, player_number: i8) -> usize {

@@ -39,6 +39,7 @@ Jumps are represented with crosses (x) between the numbers. There can be more th
 
 ## TODO
 
+* Extract checkers component
 * Add Caching of Calculated Moves
 * Implement Monte Carlo Tree Search
 * Other Games
