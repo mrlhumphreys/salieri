@@ -12,7 +12,7 @@ pub fn recommended_move(game_state: checkers::game_state::GameState) -> Option<c
             Err(_) => return (mov, 0),
         };
 
-        let maximizing_player = match game_state.current_player_number {
+        let maximizing_player = match new_game_state.current_player_number {
             1 => true,
             2 => false,
             _ => true,
@@ -134,7 +134,7 @@ mod tests {
         let game_state = checkers::game_state::parse(&encoded).unwrap();
 
         match evaluate(&game_state, 4, std::i32::MIN, std::i32::MAX, false) {
-            Ok(result) => assert_eq!(result, -10),
+            Ok(result) => assert_eq!(result, 0),
             Err(e) => assert!(false, e),
         }
     }
@@ -147,8 +147,8 @@ mod tests {
 
         match mov {
             Some(m) => {
-                assert_eq!(m.from, 22);
-                assert_eq!(m.to, vec![18]);
+                assert_eq!(m.from, 24);
+                assert_eq!(m.to, vec![20]);
             },
             None => assert!(false, "expected move"), 
         }
