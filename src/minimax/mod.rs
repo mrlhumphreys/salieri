@@ -3,6 +3,7 @@ use std::convert::TryFrom;
 use crate::checkers;
 
 const DEPTH: i8 = 10;
+const CENTER_SQUARE_IDS: [i8; 4] = [14, 15, 18, 19];
 
 pub fn recommended_move(game_state: checkers::game_state::GameState) -> Option<checkers::mov::Move> {
     let moves = game_state.possible_moves();
@@ -104,8 +105,23 @@ pub fn static_evaluation(game_state: &checkers::game_state::GameState) -> i32 {
     let player_one_kings_count = player_kings_count(game_state, 1);
     let player_two_kings_count = player_kings_count(game_state, 2);
     let kings_count_value = u_to_i32(player_one_kings_count) - u_to_i32(player_two_kings_count);
+
+    let player_one_center_squares_count = center_squares_count(game_state, 1);
+    let player_two_center_squares_count = center_squares_count(game_state, 2);
+    let center_squares_count_value = u_to_i32(player_one_center_squares_count) - u_to_i32(player_two_center_squares_count);
    
-    10*pieces_count_value + 40*kings_count_value
+    1*pieces_count_value + 4*kings_count_value + 2*center_squares_count_value
+}
+
+fn center_squares_count(game_state: &checkers::game_state::GameState, player_number: i8) -> usize {
+    game_state.squares.squares.iter().filter(|s| {
+        match s.piece {
+            Some(p) => {
+               p.player_number == player_number && CENTER_SQUARE_IDS.iter().any(|id| s.id == *id )
+            },
+            None => false,
+        }
+    }).count()
 }
 
 fn player_pieces_count(game_state: &checkers::game_state::GameState, player_number: i8) -> usize {
