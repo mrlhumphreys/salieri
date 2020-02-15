@@ -33,10 +33,19 @@ pub fn recommended_move(game_state: checkers::game_state::GameState) -> Option<c
 
                 (mov, value)
             });
+            
+            let maximizing_player = match game_state.current_player_number {
+               1 => true,
+               2 => false,
+               _ => true,
+            };
 
-            let highest_value_move = moves_with_value.max_by(|a,b| (a.1).cmp(&b.1) );
+            let best_move = match maximizing_player {
+                true => moves_with_value.max_by(|a,b| (a.1).cmp(&b.1) ),
+                false => moves_with_value.min_by(|a,b| (a.1).cmp(&b.1) ),
+            };
 
-            match highest_value_move {
+            match best_move {
                 Some(h) => Some((h.0).clone()),
                 None => None,
             }
@@ -172,8 +181,8 @@ mod tests {
 
         match mov {
             Some(m) => {
-                assert_eq!(m.from, 24);
-                assert_eq!(m.to, vec![20]);
+                assert_eq!(m.from, 21);
+                assert_eq!(m.to, vec![17]);
             },
             None => assert!(false, "expected move"), 
         }
