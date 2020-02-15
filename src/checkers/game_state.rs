@@ -10,10 +10,9 @@ pub struct GameState {
 
 impl GameState {
     pub fn possible_moves(&self) -> Vec<Move> {
-        let occupied_by_player = self.squares.occupied_by_player(self.current_player_number);
-        let jumps = occupied_by_player.jumps(&self.squares);
+        let jumps = self.squares.jumps_for_player(self.current_player_number, &self.squares);
         if jumps.len() == 0 {
-            occupied_by_player.moves(&self.squares)
+            self.squares.moves_for_player(self.current_player_number, &self.squares)
         } else {
             jumps
         }
@@ -33,9 +32,9 @@ impl GameState {
            }
         }
 
-        let other_player_number = match self.current_player_number {
-            1 => 2,
-            2 => 1,
+        let (other_player_number, promotion_row) = match self.current_player_number {
+            1 => (2, 7),
+            2 => (1, 0),
             _ => return Err("invalid player number"),
         };
         
@@ -43,11 +42,6 @@ impl GameState {
             Some(last_id) => {
                 match squares.squares.clone().into_iter().find(|s| s.id == *last_id) {
                     Some(s) => {
-                        let promotion_row = match self.current_player_number {
-                            1 => 7,
-                            2 => 0,
-                            _ => return Err("invalid player number"),
-                        };
                         if promotion_row == s.y {
                             match squares.promote(*last_id) {
                                 Ok(ss) => squares = ss,
@@ -68,7 +62,6 @@ impl GameState {
 
         Ok(game_state)
     }
-
 }
 
 pub fn parse(encoded: &String) -> Result<GameState, &'static str> {

@@ -103,8 +103,8 @@ impl Square {
         })
     }
 
-    pub fn jump_destinations(&self, piece: &Piece, board: &SquareSet) -> Vec<Square> {
-        board.squares.clone().into_iter().filter(|s| {
+    pub fn jump_destinations<'a>(&self, piece: &Piece, board: &'a SquareSet) -> Vec<&'a Square> {
+        board.squares.iter().filter(|s| {
             self.magnitude(&s) == 2 && 
                 self.diagonal(&s) && 
                 s.in_direction(&self, &piece) && 
@@ -116,8 +116,8 @@ impl Square {
         }).collect()
     }
 
-    pub fn move_destinations(&self, piece: &Piece, board: &SquareSet) -> Vec<Square> {
-        board.squares.clone().into_iter().filter(|s| {
+    pub fn move_destinations<'a>(&self, piece: &Piece, board: &'a SquareSet) -> Vec<&'a Square> {
+        board.squares.iter().filter(|s| {
             self.magnitude(&s) == 1 && 
                 self.diagonal(&s) && 
                 s.in_direction(&self, &piece) && 
@@ -129,7 +129,7 @@ impl Square {
         let destinations = self.jump_destinations(&piece, board);
 
         if destinations.len() > 0 {
-            for destination in destinations.into_iter() {
+            for destination in destinations.iter() {
                 if current_leg.len() == 0 {
                     current_leg.push(self.id);
                 }
@@ -154,7 +154,7 @@ impl Square {
         let mut accumulator = vec![];
         let mut current_leg = vec![];
         let all_legs = self.jump_legs(&piece, &board, &mut accumulator, &mut current_leg); 
-        all_legs.into_iter().map(|l| {
+        all_legs.iter().map(|l| {
             let from_id = l[0];
             let to_ids = l[1..].to_vec();
             Move { kind: MoveKind::Jump, from: from_id, to: to_ids } 
@@ -163,7 +163,7 @@ impl Square {
 
     pub fn moves(&self, piece: &Piece, board: &SquareSet) -> Vec<Move> {
         let destinations = self.move_destinations(&piece, &board);
-        destinations.into_iter().map(|d| {
+        destinations.iter().map(|d| {
             Move { kind: MoveKind::Mov, from: self.id, to: vec![d.id] }
         }).collect()
     }

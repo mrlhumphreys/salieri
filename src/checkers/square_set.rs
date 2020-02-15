@@ -47,8 +47,8 @@ impl SquareSet {
             None => return Err("Invalid To Square"),
         }
 
-        let from_square = squares.clone().into_iter().find(|s| s.id == from);
-        let to_square = squares.clone().into_iter().find(|s| s.id == to);
+        let from_square = squares.iter().find(|s| s.id == from);
+        let to_square = squares.iter().find(|s| s.id == to);
 
         match self.between(&from_square.unwrap(), &to_square.unwrap()).first() {
             Some(b) => {
@@ -78,13 +78,14 @@ impl SquareSet {
         Ok(SquareSet { squares }) 
     }
 
-    pub fn jumps(&self, board: &SquareSet) -> Vec<Move> {
-        let jump_froms: Vec<Square> = self.squares.clone().into_iter().filter(|s| {
+    pub fn jumps_for_player(&self, player_number: i8, board: &SquareSet) -> Vec<Move> {
+        let jump_froms: Vec<&Square> = self.squares.iter().filter(|s| {
             match &s.piece {
-                Some(p) => s.can_jump(p, &board),
+                Some(p) => s.occupied_by_player(player_number) && s.can_jump(p, &board),
                 None => false,
             }
         }).collect();
+
         let mut list = Vec::new(); 
         
         for from in jump_froms {
@@ -97,10 +98,10 @@ impl SquareSet {
         list 
     }
 
-    pub fn moves(&self, board: &SquareSet) -> Vec<Move> {
-        let move_froms: Vec<Square> = self.squares.clone().into_iter().filter(|s| {
+    pub fn moves_for_player(&self, player_number: i8, board: &SquareSet) -> Vec<Move> {
+        let move_froms: Vec<&Square> = self.squares.iter().filter(|s| {
             match &s.piece {
-                Some(p) => s.can_move(p, &board),
+                Some(p) => s.occupied_by_player(player_number) && s.can_move(p, &board),
                 None => false,
             }
         }).collect();
@@ -121,16 +122,8 @@ impl SquareSet {
        self.squares.first() 
     }
 
-    pub fn find_by_x_and_y(&self, x: i8, y: i8) -> Option<Square> {
-        self.squares.clone().into_iter().find(|s| { s.x == x && s.y == y }) 
-    }
-
-    pub fn occupied_by_player(&self, player_number: i8) -> SquareSet {
-        SquareSet {
-            squares: self.squares.clone().into_iter().filter(|s| { 
-                s.occupied_by_player(player_number) 
-            }).collect(),        
-        }
+    pub fn find_by_x_and_y(&self, x: i8, y: i8) -> Option<&Square> {
+        self.squares.iter().find(|s| { s.x == x && s.y == y }) 
     }
 
     pub fn between(&self, from: &Square, to: &Square) -> SquareSet {
@@ -148,7 +141,7 @@ impl SquareSet {
             while counter != end {
                 let square = self.find_by_x_and_y(counter.x, counter.y);
                 match square {
-                    Some(s) => acc.push(s),
+                    Some(s) => acc.push(*s),
                     None => {}, 
                 }
                 counter = counter + direction_unit;
@@ -172,7 +165,7 @@ pub fn parse_square_set(encoded: &str) -> Result<SquareSet, &'static str> {
         }
     }
 
-    let square_set = SquareSet { squares: squares };
+    let square_set = SquareSet { squares };
     Ok(square_set)
 }
 
@@ -187,23 +180,6 @@ mod tests {
         let squares = square_set.squares;
         assert_eq!(squares.len(), 32);
         let square = &squares[0];
-        match &square.piece {
-            Some(piece) => assert_eq!(piece.player_number, 1),
-            None => assert!(false, "Expected Piece"),
-        }
-    }
-
-    #[test]
-    fn occupied_by_player_returns_occupied_by_player() {
-        let square_occupied = Square { id: 1, x: 1, y: 1, piece: Some(Piece { player_number: 1, king: false }) };
-        let square_occupied_by_other = Square { id: 2, x: 1, y: 2, piece: Some(Piece { player_number: 2, king: false }) };
-        let square_unoccupied = Square { id: 3, x: 1, y: 3, piece: None };
-        let squares = vec![square_occupied, square_occupied_by_other, square_unoccupied];
-        let square_set = SquareSet { squares: squares };        
-
-        let result = square_set.occupied_by_player(1);
-        assert_eq!(result.squares.len(), 1);
-        let square = &result.squares[0];
         match &square.piece {
             Some(piece) => assert_eq!(piece.player_number, 1),
             None => assert!(false, "Expected Piece"),
@@ -364,7 +340,7 @@ mod tests {
         let square_set = SquareSet { squares: vec![from] };
         let board = SquareSet { squares: vec![from, cant_to, to] };
 
-        let result = square_set.moves(&board);
+        let result = square_set.moves_for_player(1, &board);
 
         assert_eq!(result.len(), 1);
 
@@ -388,7 +364,7 @@ mod tests {
         let square_set = SquareSet { squares: vec![from] };
         let board = SquareSet { squares: vec![from, over, to, cant_over, cant_to] };
 
-        let result = square_set.jumps(&board);
+        let result = square_set.jumps_for_player(1, &board);
 
         assert_eq!(result.len(), 1);
 
