@@ -119,7 +119,19 @@ pub fn static_evaluation(game_state: &checkers::game_state::GameState) -> i32 {
     let player_two_center_squares_count = center_squares_count(game_state, 2);
     let center_squares_count_value = u_to_i32(player_one_center_squares_count) - u_to_i32(player_two_center_squares_count);
    
-    1*pieces_count_value + 4*kings_count_value + 2*center_squares_count_value
+    1*pieces_count_value + 4*kings_count_value + 2*center_squares_count_value + 128*lose_value(game_state)
+}
+
+fn lose_value(game_state: &checkers::game_state::GameState) -> i32 {
+    if game_state.possible_moves().len() == 0 {
+        match game_state.current_player_number {
+            1 => -1,
+            2 => 1,
+            _ => 0,
+        }
+    } else {
+        0
+    }
 }
 
 fn center_squares_count(game_state: &checkers::game_state::GameState, player_number: i8) -> usize {
