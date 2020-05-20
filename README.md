@@ -4,6 +4,14 @@ Board Game Move Recommender written in Rust.
 
 Implements the Minimax algorithm with Alpha Beta Pruning.
 
+## Config
+
+Environment Variables:
+
+* `ALLOWED_ORIGIN` - CORS allowed origins, default: `http://127.0.0.1:3000`.
+* `PORT` - Port server runs on, default: `7878`.
+* `MINIMAX_DEPTH - How many layers the minimax algorithm will search, default: `10`
+
 ## Usage
 
 ```
@@ -14,16 +22,16 @@ Checkers State is represented with 33 characters.
 
 The first 32 characters represent the 32 squares on the board. Each character represents the state of the square:
 
-* w - White Piece
-* b - Black Piece
-* - - Empty Square
-* W - White King
-* B - Black King
+* `w` - White Piece
+* `b` - Black Piece
+* `-` - Empty Square
+* `W` - White King
+* `B` - Black King
 
 The last (33rd) character represents the player who's turn it is. The recommended move returned is for that player.
 
-* w
-* b
+* `w`
+* `b`
 
 The response is in standard checkers notation:
 
@@ -39,6 +47,9 @@ Jumps are represented with crosses (x) between the numbers. There can be more th
 
 ## TODO
 
+* Add tests for main.rs
+* Move checkers state into checkers/state folder
+* Move checkers algorithms into checkers folder
 * Extract checkers component
 * Add Caching of Calculated Moves
 * Implement Monte Carlo Tree Search

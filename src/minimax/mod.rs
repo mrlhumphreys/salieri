@@ -2,10 +2,9 @@ use std::cmp;
 use std::convert::TryFrom;
 use crate::checkers;
 
-const DEPTH: i8 = 10;
 const CENTER_SQUARE_IDS: [i8; 4] = [14, 15, 18, 19];
 
-pub fn recommended_move(game_state: checkers::game_state::GameState) -> Option<checkers::mov::Move> {
+pub fn recommended_move(game_state: checkers::game_state::GameState, depth: i8) -> Option<checkers::mov::Move> {
     let moves = game_state.possible_moves();
     match moves.len() {
         0 => None,
@@ -26,7 +25,7 @@ pub fn recommended_move(game_state: checkers::game_state::GameState) -> Option<c
                     _ => true,
                 };
 
-                let value = match evaluate(&new_game_state, DEPTH, std::i32::MIN, std::i32::MAX, maximizing_player) {
+                let value = match evaluate(&new_game_state, depth, std::i32::MIN, std::i32::MAX, maximizing_player) {
                     Ok(v) => v,
                     Err(_) => 0,
                 };
@@ -189,11 +188,11 @@ mod tests {
     fn recommended_move_test() {
         let encoded = String::from("bbbbbbbbbb-b--b-----wwwwwwwwwwwww");
         let game_state = checkers::game_state::parse(&encoded).unwrap();
-        let mov = recommended_move(game_state); 
+        let mov = recommended_move(game_state, 5); 
 
         match mov {
             Some(m) => {
-                assert_eq!(m.from, 21);
+                assert_eq!(m.from, 22);
                 assert_eq!(m.to, vec![17]);
             },
             None => assert!(false, "expected move"), 

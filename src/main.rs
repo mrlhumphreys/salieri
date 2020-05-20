@@ -12,6 +12,11 @@ async fn index() -> impl Responder {
 }
 
 async fn checkers_move(info: web::Path<String>) -> impl Responder {
+    let minimax_depth = env::var("MINIMAX_DEPTH")
+        .unwrap_or_else(|_| "10".to_string())
+        .parse()
+        .expect("MINIMAX_DEPTH must be a number");
+
     match openings::recommended_move(&info.clone()) {
         Some(m) => HttpResponse::Ok().body(m),
         None => {
@@ -19,7 +24,7 @@ async fn checkers_move(info: web::Path<String>) -> impl Responder {
                 Ok(gs) => gs,
                 Err(_) => return HttpResponse::NotFound().body("404 Not Found\n"),
             };
-            let recommended_move = minimax::recommended_move(game_state);
+            let recommended_move = minimax::recommended_move(game_state, minimax_depth);
             match recommended_move {
                 Some(m) => HttpResponse::Ok().body(format!("{}\n", m.format())),
                 None => return HttpResponse::NotFound().body("404 Not Found\n"),
@@ -34,7 +39,6 @@ async fn main() -> std::io::Result<()> {
         .unwrap_or_else(|_| "7878".to_string())
         .parse()
         .expect("PORT must be a number");
-
 
     HttpServer::new(|| {
         let allowed_origin = env::var("ALLOWED_ORIGIN")
