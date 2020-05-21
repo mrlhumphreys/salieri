@@ -1,9 +1,9 @@
-use crate::checkers::vector::Vector;
-use crate::checkers::vector::Direction;
-use crate::checkers::square::Square;
-use crate::checkers::piece::Piece;
-use crate::checkers::mov::Move;
-use crate::checkers::square::parse as parse_square;
+use crate::checkers::state::vector::Vector;
+use crate::checkers::state::vector::Direction;
+use crate::checkers::state::square::Square;
+use crate::checkers::state::piece::Piece;
+use crate::checkers::state::mov::Move;
+use crate::checkers::state::square::parse as parse_square;
 
 pub struct SquareSet {
     pub squares: Vec<Square>,

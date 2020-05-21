@@ -1,7 +1,6 @@
-use crate::checkers::square_set::SquareSet;
-use crate::checkers::square_set::parse_square_set;
-use crate::checkers::mov::Move;
-use crate::checkers::mov::MoveKind;
+use crate::checkers::state::square_set::SquareSet;
+use crate::checkers::state::square_set::parse_square_set;
+use crate::checkers::state::mov::Move;
 
 pub struct GameState {
     pub current_player_number: i8,
@@ -91,6 +90,7 @@ pub fn parse(encoded: &String) -> Result<GameState, &'static str> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::checkers::state::mov::MoveKind;
 
     #[test]
     fn parsing() {

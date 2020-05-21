@@ -1,11 +1,11 @@
 use std::cmp;
 use std::convert::TryFrom;
-use crate::checkers::point::Point;
-use crate::checkers::square_set::SquareSet;
-use crate::checkers::mov::Move;
-use crate::checkers::mov::MoveKind;
-use crate::checkers::piece::Piece;
-use crate::checkers::piece::parse as parse_piece;
+use crate::checkers::state::point::Point;
+use crate::checkers::state::square_set::SquareSet;
+use crate::checkers::state::mov::Move;
+use crate::checkers::state::mov::MoveKind;
+use crate::checkers::state::piece::Piece;
+use crate::checkers::state::piece::parse as parse_piece;
 
 #[derive(Clone, Copy)]
 pub struct Square {

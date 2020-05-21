@@ -1,6 +1,6 @@
 use std::fmt;
 use std::cmp::Ordering;
-use crate::checkers::point::Point;
+use crate::checkers::state::point::Point;
 
 pub struct Vector {
     pub from: Point,

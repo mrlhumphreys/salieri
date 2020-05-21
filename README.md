@@ -10,7 +10,7 @@ Environment Variables:
 
 * `ALLOWED_ORIGIN` - CORS allowed origins, default: `http://127.0.0.1:3000`.
 * `PORT` - Port server runs on, default: `7878`.
-* `MINIMAX_DEPTH - How many layers the minimax algorithm will search, default: `10`
+* `MINIMAX_DEPTH` - How many layers the minimax algorithm will search, default: `5`
 
 ## Usage
 
@@ -47,12 +47,8 @@ Jumps are represented with crosses (x) between the numbers. There can be more th
 
 ## TODO
 
-* Add tests for main.rs
-* Move checkers state into checkers/state folder
-* Move checkers algorithms into checkers folder
 * Extract checkers component
 * Add Caching of Calculated Moves
 * Implement Monte Carlo Tree Search
 * Other Games
-
 

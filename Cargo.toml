@@ -11,4 +11,5 @@ actix-web = "2.0"
 actix-rt = "1.0"
 actix-cors = "0.2.0"
 rand = "0.7"
+bytes = "0.5.4"
 

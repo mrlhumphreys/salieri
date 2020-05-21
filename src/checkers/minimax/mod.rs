@@ -4,7 +4,7 @@ use crate::checkers;
 
 const CENTER_SQUARE_IDS: [i8; 4] = [14, 15, 18, 19];
 
-pub fn recommended_move(game_state: checkers::game_state::GameState, depth: i8) -> Option<checkers::mov::Move> {
+pub fn recommended_move(game_state: checkers::state::game_state::GameState, depth: i8) -> Option<checkers::state::mov::Move> {
     let moves = game_state.possible_moves();
     match moves.len() {
         0 => None,
@@ -52,7 +52,7 @@ pub fn recommended_move(game_state: checkers::game_state::GameState, depth: i8) 
     }
 }
 
-pub fn evaluate(game_state: &checkers::game_state::GameState, depth: i8, mut alpha: i32, mut beta: i32, maximizing_player: bool) -> Result<i32, &'static str> {
+pub fn evaluate(game_state: &checkers::state::game_state::GameState, depth: i8, mut alpha: i32, mut beta: i32, maximizing_player: bool) -> Result<i32, &'static str> {
     let moves = game_state.possible_moves();
     if depth == 0 || moves.len() == 0 {
         return Ok(static_evaluation(&game_state));
@@ -105,7 +105,7 @@ pub fn evaluate(game_state: &checkers::game_state::GameState, depth: i8, mut alp
 
 // positive -> w
 // negative -> b
-pub fn static_evaluation(game_state: &checkers::game_state::GameState) -> i32 {
+pub fn static_evaluation(game_state: &checkers::state::game_state::GameState) -> i32 {
     let player_one_pieces_count = player_pieces_count(game_state, 1);
     let player_two_pieces_count = player_pieces_count(game_state, 2);
     let pieces_count_value = u_to_i32(player_one_pieces_count) - u_to_i32(player_two_pieces_count);
@@ -121,7 +121,7 @@ pub fn static_evaluation(game_state: &checkers::game_state::GameState) -> i32 {
     2*pieces_count_value + 4*kings_count_value + 1*center_squares_count_value + 256*lose_value(game_state)
 }
 
-fn lose_value(game_state: &checkers::game_state::GameState) -> i32 {
+fn lose_value(game_state: &checkers::state::game_state::GameState) -> i32 {
     if game_state.possible_moves().len() == 0 {
         match game_state.current_player_number {
             1 => -1,
@@ -133,7 +133,7 @@ fn lose_value(game_state: &checkers::game_state::GameState) -> i32 {
     }
 }
 
-fn center_squares_count(game_state: &checkers::game_state::GameState, player_number: i8) -> usize {
+fn center_squares_count(game_state: &checkers::state::game_state::GameState, player_number: i8) -> usize {
     game_state.squares.squares.iter().filter(|s| {
         match s.piece {
             Some(p) => {
@@ -144,7 +144,7 @@ fn center_squares_count(game_state: &checkers::game_state::GameState, player_num
     }).count()
 }
 
-fn player_pieces_count(game_state: &checkers::game_state::GameState, player_number: i8) -> usize {
+fn player_pieces_count(game_state: &checkers::state::game_state::GameState, player_number: i8) -> usize {
     game_state.squares.squares.iter().filter(|s| {
         match s.piece {
             Some(p) => p.player_number == player_number,
@@ -153,7 +153,7 @@ fn player_pieces_count(game_state: &checkers::game_state::GameState, player_numb
     }).count()
 }
 
-fn player_kings_count(game_state: &checkers::game_state::GameState, player_number: i8) -> usize {
+fn player_kings_count(game_state: &checkers::state::game_state::GameState, player_number: i8) -> usize {
     game_state.squares.squares.iter().filter(|s| {
         match s.piece {
             Some(p) => p.king && p.player_number == player_number,
@@ -176,7 +176,7 @@ mod tests {
     #[test]
     fn evaluate_test() {
         let encoded = String::from("bbbbbbbbbb-b--b-----wwwwwwwwwwwww");
-        let game_state = checkers::game_state::parse(&encoded).unwrap();
+        let game_state = checkers::state::game_state::parse(&encoded).unwrap();
 
         match evaluate(&game_state, 4, std::i32::MIN, std::i32::MAX, false) {
             Ok(result) => assert_eq!(result, 0),
@@ -187,7 +187,7 @@ mod tests {
     #[test]
     fn recommended_move_test() {
         let encoded = String::from("bbbbbbbbbb-b--b-----wwwwwwwwwwwww");
-        let game_state = checkers::game_state::parse(&encoded).unwrap();
+        let game_state = checkers::state::game_state::parse(&encoded).unwrap();
         let mov = recommended_move(game_state, 5); 
 
         match mov {
