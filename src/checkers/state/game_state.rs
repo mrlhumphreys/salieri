@@ -2,16 +2,40 @@ use crate::checkers::state::square_set::SquareSet;
 use crate::checkers::state::square_set::parse_square_set;
 use crate::checkers::state::mov::Move;
 
+#[derive(PartialEq, Debug)]
 pub struct GameState {
     pub current_player_number: i8,
     pub squares: SquareSet,
 }
 
+impl Clone for GameState {
+    fn clone(&self) -> GameState {
+        GameState {
+            current_player_number: self.current_player_number,
+            squares: self.squares.clone(),
+        }
+    }
+}
+
 impl GameState {
+    pub fn winner(&self) -> Option<i8> {
+        if self.possible_moves_for_player(1).len() == 0 {
+            Some(2) 
+        } else if self.possible_moves_for_player(2).len() == 0 {
+            Some(1)
+        } else {
+            None
+        }
+    }
+
     pub fn possible_moves(&self) -> Vec<Move> {
-        let jumps = self.squares.jumps_for_player(self.current_player_number, &self.squares);
+        self.possible_moves_for_player(self.current_player_number)
+    }
+
+    pub fn possible_moves_for_player(&self, player_number: i8) -> Vec<Move> {
+        let jumps = self.squares.jumps_for_player(player_number, &self.squares);
         if jumps.len() == 0 {
-            self.squares.moves_for_player(self.current_player_number, &self.squares)
+            self.squares.moves_for_player(player_number, &self.squares)
         } else {
             jumps
         }
@@ -121,7 +145,21 @@ mod tests {
     }
 
     #[test]
-    fn possible_moves() {
+    fn winner_none_test() {
+        let encoded = String::from("bbbbbbbbbbbb--------wwwwwwwwwwwwb");
+        let game_state = parse(&encoded).unwrap();
+        assert_eq!(None, game_state.winner());
+    }
+
+    #[test]
+    fn winner_some_test() {
+        let encoded = String::from("bbbbbbbbbbbb--------------------b");
+        let game_state = parse(&encoded).unwrap();
+        assert_eq!(Some(1), game_state.winner());
+    }
+
+    #[test]
+    fn possible_moves_test() {
         let encoded = String::from("bbbbbbbbbbbb--------wwwwwwwwwwwwb");
         let game_state = parse(&encoded).unwrap();
         let result = game_state.possible_moves();
@@ -147,6 +185,49 @@ mod tests {
 
         assert_eq!((&result[6]).from, 12);
         assert_eq!((&result[6]).to, vec![16]);
+    }
+
+    #[test]
+    fn possible_moves_for_player_test() {
+        let encoded = String::from("bbbbbbbbbbbb--------wwwwwwwwwwwwb");
+        let game_state = parse(&encoded).unwrap();
+        let result = game_state.possible_moves_for_player(2);
+        assert_eq!(result.len(), 7);
+
+        assert_eq!((&result[0]).from, 21);
+        assert_eq!((&result[0]).to, vec![17]);
+
+        assert_eq!((&result[1]).from, 22);
+        assert_eq!((&result[1]).to, vec![17]);
+
+        assert_eq!((&result[2]).from, 22);
+        assert_eq!((&result[2]).to, vec![18]);
+
+        assert_eq!((&result[3]).from, 23);
+        assert_eq!((&result[3]).to, vec![18]);
+
+        assert_eq!((&result[4]).from, 23);
+        assert_eq!((&result[4]).to, vec![19]);
+
+        assert_eq!((&result[5]).from, 24);
+        assert_eq!((&result[5]).to, vec![19]);
+
+        assert_eq!((&result[6]).from, 24);
+        assert_eq!((&result[6]).to, vec![20]);
+    }
+
+    #[test]
+    fn possible_moves_b_test() {
+        let encoded = String::from("bbbbb-b--bb-b--ww-bwww-wwww-w--ww");
+        let game_state = parse(&encoded).unwrap();
+        let result = game_state.possible_moves_for_player(2);
+        assert_eq!(result.len(), 2);
+
+        assert_eq!((&result[0]).from, 24);
+        assert_eq!((&result[0]).to, vec![15, 6]);
+
+        assert_eq!((&result[1]).from, 24);
+        assert_eq!((&result[1]).to, vec![15, 8]);
     }
 
     #[test]

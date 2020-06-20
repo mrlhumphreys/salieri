@@ -1,4 +1,4 @@
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Piece {
     pub player_number: i8,
     pub king: bool,

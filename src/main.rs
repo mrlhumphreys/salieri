@@ -10,23 +10,73 @@ async fn index() -> impl Responder {
 }
 
 async fn checkers_move(info: web::Path<String>) -> impl Responder {
-    let minimax_depth = env::var("MINIMAX_DEPTH")
+    match checkers::openings::recommended_move(&info.clone()) {
+        Some(m) => HttpResponse::Ok().body(m),
+        None => checkers_mcts(&info.into_inner()) 
+    }
+}
+
+async fn checkers_move_algorithm(info: web::Path<(String, String)>) -> impl Responder {
+    let game_data = &info.0;
+    let algorithm = &info.1;
+
+    match algorithm.as_str() {
+        "openings_db" => checkers_opening(game_data), 
+        "minimax" => checkers_minimax(game_data), 
+        "mcts" => checkers_mcts(game_data),
+        _ => HttpResponse::NotFound().body("404 Not Found\n"),
+    }
+}
+
+fn checkers_opening(game_data: &String) -> HttpResponse {
+    match checkers::openings::recommended_move(game_data) {
+        Some(m) => HttpResponse::Ok().body(m),
+        None => HttpResponse::NotFound().body("404 Not Found\n")
+    }
+}
+
+fn checkers_minimax(game_data: &String) -> HttpResponse {
+    let game_state = match checkers::state::game_state::parse(game_data) {
+        Ok(gs) => gs,
+        Err(_) => return HttpResponse::NotFound().body("404 Not Found\n"),
+    };
+
+    let minimax_depth: i8 = env::var("MINIMAX_DEPTH")
         .unwrap_or_else(|_| "5".to_string())
         .parse()
         .expect("MINIMAX_DEPTH must be a number");
 
-    match checkers::openings::recommended_move(&info.clone()) {
-        Some(m) => HttpResponse::Ok().body(m),
-        None => {
-            let game_state = match checkers::state::game_state::parse(&info.into_inner()) {
-                Ok(gs) => gs,
-                Err(_) => return HttpResponse::NotFound().body("404 Not Found\n"),
-            };
-            let recommended_move = checkers::minimax::recommended_move(game_state, minimax_depth);
-            match recommended_move {
-                Some(m) => HttpResponse::Ok().body(format!("{}\n", m.format())),
-                None => return HttpResponse::NotFound().body("404 Not Found\n"),
-            }
+    let recommended_move = checkers::minimax::recommended_move(game_state, minimax_depth);
+
+    match recommended_move {
+        Some(m) => HttpResponse::Ok().body(format!("{}\n", m.format())),
+        None => HttpResponse::NotFound().body("404 Not Found\n"),
+    }
+}
+
+fn checkers_mcts(game_data: &String) -> HttpResponse {
+    let game_state = match checkers::state::game_state::parse(game_data) {
+        Ok(gs) => gs,
+        Err(_) => return HttpResponse::NotFound().body("404 Not Found\n"),
+    };
+
+    let mcts_simulation_count: i16 = env::var("MCTS_SIMULATION_COUNT")
+        .unwrap_or_else(|_| "120".to_string())
+        .parse()
+        .expect("MCTS_SIMULATION_COUNT must be a number");
+
+    let mcts_simulation_depth: i16 = env::var("MCTS_SIMULATION_DEPTH")
+        .unwrap_or_else(|_| "40".to_string())
+        .parse()
+        .expect("MCTS_SIMULATION_DEPTH must be a number");
+
+    let recommended_move = checkers::mcts::recommended_move(game_state, mcts_simulation_count, mcts_simulation_depth);
+
+    match recommended_move {
+        Ok(m) => HttpResponse::Ok().body(format!("{}\n", m.format())),
+        Err(e) => {
+            println!("{}", e);
+            HttpResponse::NotFound().body("404 Not Found\n")
         }
     }
 }
@@ -52,6 +102,11 @@ async fn main() -> std::io::Result<()> {
             .service(
                 web::resource("/api/v0/checkers/{state}")
                     .route(web::get().to(checkers_move))
+                    .route(web::head().to(|| HttpResponse::MethodNotAllowed()))
+            ) 
+            .service(
+                web::resource("/api/v0/checkers/{state}/{algorithm}")
+                    .route(web::get().to(checkers_move_algorithm))
                     .route(web::head().to(|| HttpResponse::MethodNotAllowed()))
             ) 
             .route("/", web::get().to(index))
@@ -100,7 +155,7 @@ mod tests {
 
         let result = test::read_response(&mut app, req).await;
 
-        assert_eq!(result, Bytes::from_static(b"21-17\n"));
+        assert_eq!(result, Bytes::from_static(b"24-20\n"));
     }
 
     #[actix_rt::test]

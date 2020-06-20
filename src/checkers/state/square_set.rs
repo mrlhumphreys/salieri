@@ -1,3 +1,5 @@
+use std::fmt;
+
 use crate::checkers::state::vector::Vector;
 use crate::checkers::state::vector::Direction;
 use crate::checkers::state::square::Square;
@@ -5,6 +7,7 @@ use crate::checkers::state::piece::Piece;
 use crate::checkers::state::mov::Move;
 use crate::checkers::state::square::parse as parse_square;
 
+#[derive(PartialEq, Debug)]
 pub struct SquareSet {
     pub squares: Vec<Square>,
 }
@@ -17,11 +20,30 @@ impl Clone for SquareSet {
     }
 }
 
+impl fmt::Display for SquareSet {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let characters = self.squares.iter().map(|s| {
+            match s.piece {
+                Some(p) => {
+                   match p.player_number {
+                        1 => "b",
+                        2 => "w",
+                        _ => "?"
+                   }
+                },
+                None => "-"
+            }
+        }).collect::<String>();
+        write!(f, "{}", characters)
+    }
+}
+
 impl SquareSet {
     pub fn perform_move(&self, from: i8, to: i8) -> Result<SquareSet, &'static str> {
         let mut squares = self.squares.clone();
         let player_number: i8;
         let king: bool;
+        // println!("Moving: {} {} {}", self, from, to);
 
         match squares.iter_mut().find(|s| s.id == from) {
             Some(s) => {
@@ -31,7 +53,7 @@ impl SquareSet {
                         king = p.king;
                     },
                     None => {
-                        return Err("No piece on from");
+                        return Err("square_set::perform_move - No piece on from");
                     },
                 }
                 s.piece = None;

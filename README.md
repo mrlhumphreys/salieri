@@ -2,7 +2,11 @@
 
 Board Game Move Recommender written in Rust.
 
-Implements the Minimax algorithm with Alpha Beta Pruning.
+## Games and Algorithms
+
+* Checkers - Common openings db
+* Checkers - Minimax algorithm with Alpha Beta Pruning
+* Checkers - Monte-Carlo Tree Search
 
 ## Config
 
@@ -11,14 +15,47 @@ Environment Variables:
 * `ALLOWED_ORIGIN` - CORS allowed origins, default: `http://127.0.0.1:3000`.
 * `PORT` - Port server runs on, default: `7878`.
 * `MINIMAX_DEPTH` - How many layers the minimax algorithm will search, default: `5`
+* `MCTS_SIMULATION_COUNT` - How many simulations the Monte Carlo Tree Search algorithm will search, default: `120`
+* `MCTS_SIMULATION_DEPTH` - How many moves deep in the Monte Carlo Tree Search algorithm will search for each simulation, default: `40`
 
-## Usage
+## Api Endpoints 
+
+### Default Algorithm - Openings DB with Monte Carlo Tree Search
 
 ```
   curl http://localhost:7878/api/v0/checkers/bbbbbbbbb-bb--b-----wwwwwwwwwwwww
 ```
 
-Checkers State is represented with 33 characters.
+### Algorithm - Openings DB 
+
+```
+  curl http://localhost:7878/api/v0/checkers/bbbbbbbbb-bb--b-----wwwwwwwwwwwww/openings_db
+```
+
+### Algorithm - Minimax 
+
+```
+  curl http://localhost:7878/api/v0/checkers/bbbbbbbbb-bb--b-----wwwwwwwwwwwww/minimax
+```
+
+### Algorithm - Monte-Carlo Tree Search 
+
+```
+  curl http://localhost:7878/api/v0/checkers/bbbbbbbbb-bb--b-----wwwwwwwwwwwww/mcts
+```
+
+## API reponse codes
+
+* 200 - Recomended move was able to be generated using the algorithm 
+* 404 - No move was able to be generated using the algorithm. Possible causes include invalid game state or no move found in lookup (e.g. openings db)
+
+## Checkers State Argument Format
+
+Checkers State is represented with 33 characters. Example:
+
+```
+  bbbbbbbbb-bb--b-----wwwwwwwwwwwww
+```
 
 The first 32 characters represent the 32 squares on the board. Each character represents the state of the square:
 
@@ -32,6 +69,8 @@ The last (33rd) character represents the player who's turn it is. The recommende
 
 * `w`
 * `b`
+
+## Checkers Move Reponse Format
 
 The response is in standard checkers notation:
 
@@ -49,6 +88,6 @@ Jumps are represented with crosses (x) between the numbers. There can be more th
 
 * Extract checkers component
 * Add Caching of Calculated Moves
-* Implement Monte Carlo Tree Search
-* Other Games
+* Add Backgammon
+* Add Chess
 

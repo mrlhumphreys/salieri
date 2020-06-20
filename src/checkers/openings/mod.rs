@@ -1,6 +1,5 @@
 use rand::prelude::*;
 
-
 pub fn recommended_move(game_state: &String) -> Option<&'static str> {
     let game_state_string = game_state.as_str();
     match game_state_string {

@@ -7,7 +7,7 @@ use crate::checkers::state::mov::MoveKind;
 use crate::checkers::state::piece::Piece;
 use crate::checkers::state::piece::parse as parse_piece;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Square {
     pub id: i8,
     pub x: i8,
@@ -130,9 +130,11 @@ impl Square {
 
         if destinations.len() > 0 {
             for destination in destinations.iter() {
+                
                 if current_leg.len() == 0 {
                     current_leg.push(self.id);
                 }
+                
                 current_leg.push(destination.id);
 
                 match board.perform_move(self.id, destination.id) {
@@ -144,9 +146,10 @@ impl Square {
             }
         } else {
             accumulator.push(current_leg.clone());
-            current_leg.clear();
         }
 
+        // pop the last element of the leg before we return and go back up the tree
+        current_leg.pop();
         accumulator
     }
 
@@ -458,8 +461,27 @@ mod tests {
     }
 
     #[test]
+    fn fetch_branching_jump_legs() {
+        let piece = Piece { player_number: 1, king: false };
+        let from = Square { id: 1, x: 3, y: 3, piece: Some(Piece { player_number: 1, king: false }) };
+        let over_a = Square { id: 2, x: 4, y: 4, piece: Some(Piece { player_number: 2, king: false }) };
+        let to_a = Square { id: 3, x: 5, y: 5, piece: None };
+        let over_aa = Square { id: 4, x: 6, y: 6, piece: Some(Piece { player_number: 2, king: false }) };
+        let to_aa = Square { id: 5, x: 7, y: 7, piece: None };
+
+        let over_b = Square { id: 6, x: 4, y: 6, piece: Some(Piece { player_number: 2, king: false }) };
+        let to_b = Square { id: 7, x: 3, y: 7, piece: None };
+        let square_set = SquareSet { squares: vec![from, over_a, to_a, over_aa, to_aa, over_b, to_b] };
+        let mut accumulator = vec![];
+        let mut current_leg = vec![];
+        let result = from.jump_legs(&piece, &square_set, &mut accumulator, &mut current_leg);
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0], vec![1,3,5]);
+        assert_eq!(result[1], vec![1,3,7]);
+    }
+
+    #[test]
     fn fetch_jumps_test() {
-        //pub fn jumps(&self, piece: &Piece, board: &SquareSet) -> Vec<Move> {
         let piece = Piece { player_number: 1, king: false };
         let from = Square { id: 1, x: 3, y: 3, piece: Some(Piece { player_number: 1, king: false }) };
         let over_a = Square { id: 2, x: 4, y: 4, piece: Some(Piece { player_number: 2, king: false }) };
@@ -475,6 +497,29 @@ mod tests {
         assert_eq!(result[0].to, vec![3, 5]);
         assert_eq!(result[1].from, 1);
         assert_eq!(result[1].to, vec![7]);
+
+        assert_eq!(result.len(), 2);
+    }
+
+    #[test]
+    fn fetch_branching_jumps_test() {
+        let piece = Piece { player_number: 1, king: false };
+        let from = Square { id: 1, x: 3, y: 3, piece: Some(Piece { player_number: 1, king: false }) };
+        let over_a = Square { id: 2, x: 4, y: 4, piece: Some(Piece { player_number: 2, king: false }) };
+        let to_a = Square { id: 3, x: 5, y: 5, piece: None };
+        let over_aa = Square { id: 4, x: 6, y: 6, piece: Some(Piece { player_number: 2, king: false }) };
+        let to_aa = Square { id: 5, x: 7, y: 7, piece: None };
+
+        let over_b = Square { id: 6, x: 4, y: 6, piece: Some(Piece { player_number: 2, king: false }) };
+        let to_b = Square { id: 7, x: 3, y: 7, piece: None };
+        let square_set = SquareSet { squares: vec![from, over_a, to_a, over_aa, to_aa, over_b, to_b] };
+        let result = from.jumps(&piece, &square_set);
+
+        assert_eq!(result[0].from, 1);
+        assert_eq!(result[0].to, vec![3, 5]);
+
+        assert_eq!(result[1].from, 1);
+        assert_eq!(result[1].to, vec![3, 7]);
 
         assert_eq!(result.len(), 2);
     }
