@@ -12,7 +12,7 @@ Board Game Move Recommender written in Rust.
 
 Environment Variables:
 
-* `ALLOWED_ORIGIN` - CORS allowed origins, default: `http://127.0.0.1:3000`.
+* `ALLOWED_ORIGIN` - CORS allowed origins, default: `http://127.0.0.1:5000`.
 * `PORT` - Port server runs on, default: `7878`.
 * `MINIMAX_DEPTH` - How many layers the minimax algorithm will search, default: `5`
 * `MCTS_SIMULATION_COUNT` - How many simulations the Monte Carlo Tree Search algorithm will search, default: `120`

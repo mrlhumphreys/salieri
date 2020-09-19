@@ -90,7 +90,7 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(|| {
         let allowed_origin = env::var("ALLOWED_ORIGIN")
-            .unwrap_or_else(|_| "http://127.0.0.1:3000".to_string());
+            .unwrap_or_else(|_| "http://127.0.0.1:5000".to_string());
         App::new()
             .wrap(
                 Cors::new()
