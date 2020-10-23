@@ -359,7 +359,7 @@ mod tests {
         let nodes = vec![node];
         let max_simulation_depth = 5;
         match simulate(&nodes, 1, max_simulation_depth) {
-            Ok(win) => assert!(true),
+            Ok(_) => assert!(true),
             Err(e) => assert!(false, e)
         }
     }
