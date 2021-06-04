@@ -6,6 +6,9 @@ use std::env;
 mod checkers;
 mod checkers_controller;
 
+mod backgammon;
+mod backgammon_controller;
+
 async fn index() -> impl Responder {
     HttpResponse::Ok().body("200 OK\n")
 }
@@ -21,6 +24,7 @@ async fn game_move(info: web::Path<(String, String)>) -> impl Responder {
                 None => checkers_controller::mcts(game_data) 
             }
         },
+        "backgammon" => backgammon_controller::minimax(game_data), 
         _ => HttpResponse::NotFound().body("404 Not Found\n")
     }
 }
@@ -36,6 +40,12 @@ async fn game_move_algorithm(info: web::Path<(String, String, String)>) -> impl 
                 "openings_db" => checkers_controller::opening(game_data), 
                 "minimax" => checkers_controller::minimax(game_data), 
                 "mcts" => checkers_controller::mcts(game_data),
+                _ => HttpResponse::NotFound().body("404 Not Found\n"),
+            }
+        },
+        "backgammon" => {
+            match algorithm.as_str() {
+                "minimax" => backgammon_controller::minimax(game_data),
                 _ => HttpResponse::NotFound().body("404 Not Found\n"),
             }
         },
@@ -84,62 +94,94 @@ mod tests {
     use actix_web::{test, web, App};
     use bytes::Bytes;
 
+    // index page
     #[actix_rt::test]
     async fn test_index_status() {
         let mut app = test::init_service(App::new().route("/", web::get().to(index))).await;
         let req = test::TestRequest::with_header("content-type", "text/plain").to_request();
-        let resp = test::call_service(&mut app, req).await;
-        assert!(resp.status().is_success());
+        let res = test::call_service(&mut app, req).await;
+        assert!(res.status().is_success());
     }
 
     #[actix_rt::test]
     async fn test_index_body() {
         let mut app = test::init_service(App::new().route("/", web::get().to(index))).await;
         let req = test::TestRequest::with_header("content-type", "text/plain").to_request();
-
-        let result = test::read_response(&mut app, req).await;
-
-        assert_eq!(result, Bytes::from_static(b"200 OK\n"));
+        let res = test::read_response(&mut app, req).await;
+        assert_eq!(res, Bytes::from_static(b"200 OK\n"));
     }
 
+    // checkers with valid params
     #[actix_rt::test]
     async fn test_checkers_status_with_valid_params() {
         let mut app = test::init_service(App::new().route("/api/v0/{game_type}/{state}", web::get().to(game_move))).await;
         let req = test::TestRequest::with_header("content-type", "text/plain").uri("/api/v0/checkers/bbbbbbbbb-bb--b-----wwwwwwwwwwwww").to_request();
-        let resp = test::call_service(&mut app, req).await;
-        assert!(resp.status().is_success());
+        let res = test::call_service(&mut app, req).await;
+        assert!(res.status().is_success());
     }
 
     #[actix_rt::test]
     async fn test_checkers_body_with_valid_params() {
         let mut app = test::init_service(App::new().route("/api/v0/{game_type}/{state}", web::get().to(game_move))).await;
         let req = test::TestRequest::with_header("content-type", "text/plain").uri("/api/v0/checkers/bbbbbbbbb-bb--b-----wwwwwwwwwwwww").to_request();
-
-        let result = test::read_response(&mut app, req).await;
-
-        assert_eq!(result, Bytes::from_static(b"24-20\n"));
+        let res = test::read_response(&mut app, req).await;
+        assert_eq!(res, Bytes::from_static(b"24-20\n"));
     }
 
+    // checkers with invalid params
     #[actix_rt::test]
     async fn test_checkers_status_with_invalid_params() {
         let mut app = test::init_service(App::new().route("/api/v0/{game_type}/{state}", web::get().to(game_move))).await;
         let req = test::TestRequest::with_header("content-type", "text/plain").uri("/api/v0/checkers/-bbbbbbbbb-bb--b-----wwwwwwwwwwwww").to_request();
-        let resp = test::call_service(&mut app, req).await;
-        assert!(resp.status().is_client_error());
+        let res = test::call_service(&mut app, req).await;
+        assert!(res.status().is_client_error());
     }
 
     #[actix_rt::test]
     async fn test_checkers_body_with_invalid_params() {
         let mut app = test::init_service(App::new().route("/api/v0/{game_type}/{state}", web::get().to(game_move))).await;
         let req = test::TestRequest::with_header("content-type", "text/plain").uri("/api/v0/checkers/-bbbbbbbbb-bb--b-----wwwwwwwwwwwww").to_request();
+        let res = test::read_response(&mut app, req).await;
+        assert_eq!(res, Bytes::from_static(b"404 Not Found\n"));
+    }
 
-        let result = test::read_response(&mut app, req).await;
-
-        assert_eq!(result, Bytes::from_static(b"404 Not Found\n"));
+    // backgammon with valid params
+    #[actix_rt::test]
+    async fn test_backgammon_status_with_valid_params() {
+        let mut app = test::init_service(App::new().route("/api/v0/{game_type}/{state}", web::get().to(game_move))).await;
+        let req = test::TestRequest::with_header("content-type", "text/plain").uri("/api/v0/backgammon/0020000000000500300000005005000000030050000000000200121").to_request();
+        let res = test::call_service(&mut app, req).await;
+        assert!(res.status().is_success());
     }
 
     #[actix_rt::test]
-    async fn test_invalid_game_status() {
+    async fn test_backgammon_body_with_valid_params() {
+        let mut app = test::init_service(App::new().route("/api/v0/{game_type}/{state}", web::get().to(game_move))).await;
+        let req = test::TestRequest::with_header("content-type", "text/plain").uri("/api/v0/backgammon/0020000000000500300000005005000000030050000000000200121").to_request();
+        let res = test::read_response(&mut app, req).await;
+        assert_eq!(res, Bytes::from_static(b"2-1: 19/21 21/22\n"));
+    }
+
+    // backgammon invalid params
+    #[actix_rt::test]
+    async fn test_backgammon_status_with_invalid_params() {
+        let mut app = test::init_service(App::new().route("/api/v0/{game_type}/{state}", web::get().to(game_move))).await;
+        let req = test::TestRequest::with_header("content-type", "text/plain").uri("/api/v0/backgammon/002000000000050030000000500500000003005000000000020012n").to_request();
+        let res = test::call_service(&mut app, req).await;
+        assert!(res.status().is_client_error());
+    }
+
+    #[actix_rt::test]
+    async fn test_backgammon_body_with_invalid_params() {
+        let mut app = test::init_service(App::new().route("/api/v0/{game_type}/{state}", web::get().to(game_move))).await;
+        let req = test::TestRequest::with_header("content-type", "text/plain").uri("/api/v0/backgammon/002000000000050030000000500500000003005000000000020012n").to_request();
+        let res = test::read_response(&mut app, req).await;
+        assert_eq!(res, Bytes::from_static(b"404 Not Found\n"));
+    }
+
+    // invalid game type 
+    #[actix_rt::test]
+    async fn test_invalid_game_type_status() {
         let mut app = test::init_service(App::new().route("/api/v0/{game_type}/{state}", web::get().to(game_move))).await;
         let req = test::TestRequest::with_header("content-type", "text/plain").uri("/api/v0/mario/-bbbbbbbbb-bb--b-----wwwwwwwwwwwww").to_request();
         let resp = test::call_service(&mut app, req).await;
@@ -147,7 +189,7 @@ mod tests {
     }
 
     #[actix_rt::test]
-    async fn test_invalid_game_body() {
+    async fn test_invalid_game_type_body() {
         let mut app = test::init_service(App::new().route("/api/v0/{game_type}/{state}", web::get().to(game_move))).await;
         let req = test::TestRequest::with_header("content-type", "text/plain").uri("/api/v0/mario/-bbbbbbbbb-bb--b-----wwwwwwwwwwwww").to_request();
 

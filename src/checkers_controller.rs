@@ -17,10 +17,10 @@ pub fn minimax(game_data: &String) -> HttpResponse {
         Err(_) => return HttpResponse::NotFound().body("404 Not Found\n"),
     };
 
-    let minimax_depth: i8 = env::var("MINIMAX_DEPTH")
+    let minimax_depth: i8 = env::var("CHECKERS_MINIMAX_DEPTH")
         .unwrap_or_else(|_| "5".to_string())
         .parse()
-        .expect("MINIMAX_DEPTH must be a number");
+        .expect("CHECKERS_MINIMAX_DEPTH must be a number");
 
     let recommended_move = checkers::minimax::recommended_move(game_state, minimax_depth);
 

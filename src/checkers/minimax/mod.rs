@@ -126,7 +126,7 @@ fn lose_value(game_state: &checkers::state::game_state::GameState) -> i32 {
         match game_state.current_player_number {
             1 => -1,
             2 => 1,
-            _ => 0,
+            _ => 0
         }
     } else {
         0
@@ -180,7 +180,7 @@ mod tests {
 
         match evaluate(&game_state, 4, std::i32::MIN, std::i32::MAX, false) {
             Ok(result) => assert_eq!(result, 0),
-            Err(e) => assert!(false, e),
+            Err(e) => assert!(false, e)
         }
     }
 

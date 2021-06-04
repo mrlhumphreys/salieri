@@ -43,7 +43,6 @@ impl SquareSet {
         let mut squares = self.squares.clone();
         let player_number: i8;
         let king: bool;
-        // println!("Moving: {} {} {}", self, from, to);
 
         match squares.iter_mut().find(|s| s.id == from) {
             Some(s) => {
