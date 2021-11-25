@@ -1,19 +1,7 @@
 use crate::backgammon::state::die::Die;
 use crate::backgammon::state::die::parse as parse_die;
 
-pub struct DiceSet {
-    pub dice: Vec<Die>
-}
-
-impl Clone for DiceSet {
-    fn clone(&self) -> DiceSet {
-        DiceSet {
-            dice: self.dice.clone()
-        }
-    }
-}
-
-pub fn parse_dice_set(encoded: &str) -> Result<DiceSet, &'static str> {
+pub fn parse_dice_set(encoded: &str) -> Result<Vec<Die>, &'static str> {
     if encoded.len() == 2 {
         let mut dice = Vec::new();
     
@@ -24,8 +12,7 @@ pub fn parse_dice_set(encoded: &str) -> Result<DiceSet, &'static str> {
             }
         }
 
-        let dice_set = DiceSet { dice };
-        Ok(dice_set)
+        Ok(dice)
     } else {
         Err("invalid dice set")
     }
@@ -38,8 +25,7 @@ mod tests {
     #[test]
     fn parsing_dice_set_test() {
        let encoded = "12"; 
-       let dice_set = parse_dice_set(encoded).unwrap();
-       let dice = dice_set.dice;
+       let dice = parse_dice_set(encoded).unwrap();
        assert_eq!(dice.len(), 2);
        let die = &dice[0];
        assert_eq!(die.number.unwrap(), 1);
@@ -48,9 +34,9 @@ mod tests {
     #[test]
     fn parsing_one_die_test() {
        let encoded = "1";    
-       let dice_set = parse_dice_set(encoded);
+       let dice = parse_dice_set(encoded);
 
-       match dice_set {
+       match dice {
             Ok(_) => assert!(false, "should not return dice set"),
             Err(_) => assert!(true)
        }
@@ -59,9 +45,9 @@ mod tests {
     #[test]
     fn parsing_three_die_test() {
        let encoded = "123";    
-       let dice_set = parse_dice_set(encoded);
+       let dice = parse_dice_set(encoded);
 
-       match dice_set {
+       match dice {
             Ok(_) => assert!(false, "should not return dice set"),
             Err(_) => assert!(true)
        }
