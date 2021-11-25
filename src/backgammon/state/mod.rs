@@ -1,6 +1,5 @@
 mod die;
 mod dice_set;
-mod piece;
 mod bar;
 mod point;
 mod point_set;

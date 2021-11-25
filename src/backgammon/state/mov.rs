@@ -122,7 +122,6 @@ pub fn point_to_point_move_step(origin_point: &Point, destination_point: Option<
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::backgammon::state::piece::Piece;
 
     #[test]
     fn location_format_point_test() {
@@ -205,8 +204,8 @@ mod tests {
 
     #[test]
     fn bar_move_step_prime_test() {
-        let piece_a = Piece { player_number: 2 };
-        let piece_b = Piece { player_number: 2 };
+        let piece_a = 2;
+        let piece_b = 2;
         let destination_point = Point { number: 2, pieces: vec![piece_a, piece_b] }; 
         let die_number = 2;
         let player_number = 1;
@@ -296,8 +295,8 @@ mod tests {
     #[test]
     fn point_to_point_move_step_prime_test() {
         let origin_point = Point { number: 1, pieces: vec![] }; 
-        let piece_a = Piece { player_number: 2 };
-        let piece_b = Piece { player_number: 2 };
+        let piece_a =  2;
+        let piece_b =  2;
         let destination_point = Point { number: 4, pieces: vec![piece_a, piece_b] }; 
         let die_number = 3;
         let player_number = 1;

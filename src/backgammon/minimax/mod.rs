@@ -157,13 +157,13 @@ fn static_evaluation(game_state: &backgammon::state::game_state::GameState) -> i
 
 fn player_prime_count(game_state: &backgammon::state::game_state::GameState, player_number: i8) -> usize {
     game_state.points.points.iter().filter(|point| {
-        point.pieces.iter().filter(|p| p.player_number == player_number).count() >= 1  
+        point.pieces.iter().filter(|p| **p == player_number).count() >= 1  
     }).count()
 }
 
 fn player_blot_count(game_state: &backgammon::state::game_state::GameState, player_number: i8) -> usize {
     game_state.points.points.iter().filter(|point| {
-        point.pieces.iter().filter(|p| p.player_number == player_number).count() == 1
+        point.pieces.iter().filter(|p| **p == player_number).count() == 1
     }).count()
 }
 
@@ -175,19 +175,19 @@ fn player_home_count(game_state: &backgammon::state::game_state::GameState, play
             _ => false
         }
     }).map(|point| {
-        point.pieces.iter().filter(|p| p.player_number == player_number).count()
+        point.pieces.iter().filter(|p| **p == player_number).count()
     }).sum()
 }
 
 fn player_bar_count(game_state: &backgammon::state::game_state::GameState, player_number: i8) -> usize {
     game_state.bar.pieces.iter().filter(|p| {
-        p.player_number == player_number
+        **p == player_number
     }).count()
 }
 
 fn player_off_board_count(game_state: &backgammon::state::game_state::GameState, player_number: i8) -> usize {
     game_state.off_board.pieces.iter().filter(|p| {
-        p.player_number == player_number
+        **p == player_number
     }).count()
 }
 

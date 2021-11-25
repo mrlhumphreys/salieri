@@ -1,8 +1,7 @@
 use regex::Regex;
-use crate::backgammon::state::piece::Piece;
 
 pub struct OffBoard {
-    pub pieces: Vec<Piece>
+    pub pieces: Vec<i8>
 }
 
 impl Clone for OffBoard {
@@ -14,7 +13,7 @@ impl Clone for OffBoard {
 }
 
 impl OffBoard {
-    pub fn push_piece(&mut self, piece: Piece) -> Result<(), &'static str> {
+    pub fn push_piece(&mut self, piece: i8) -> Result<(), &'static str> {
         self.pieces.push(piece);
         Ok(())
     }
@@ -32,12 +31,12 @@ pub fn parse_off_board(encoded: &str) -> Result<OffBoard, &'static str> {
             let number_of_player_two_pieces = c.get(2).unwrap().as_str().chars().nth(0).unwrap().to_digit(16).unwrap();
 
             for _ in 0..number_of_player_one_pieces {
-                let piece = Piece { player_number: 1 };
+                let piece = 1;
                 pieces.push(piece);
             }
 
             for _ in 0..number_of_player_two_pieces {
-                let piece = Piece { player_number: 2 };
+                let piece = 2;
                 pieces.push(piece);
             }
 
@@ -57,11 +56,11 @@ mod tests {
         let encoded = "23";
         let point = parse_off_board(encoded).unwrap();
         assert_eq!(point.pieces.len(), 5);
-        assert_eq!(point.pieces[0].player_number, 1);
-        assert_eq!(point.pieces[1].player_number, 1);
-        assert_eq!(point.pieces[2].player_number, 2);
-        assert_eq!(point.pieces[3].player_number, 2);
-        assert_eq!(point.pieces[4].player_number, 2);
+        assert_eq!(point.pieces[0], 1);
+        assert_eq!(point.pieces[1], 1);
+        assert_eq!(point.pieces[2], 2);
+        assert_eq!(point.pieces[3], 2);
+        assert_eq!(point.pieces[4], 2);
     }
 
     #[test]
@@ -76,7 +75,7 @@ mod tests {
         let encoded = "b0";
         let point = parse_off_board(encoded).unwrap();
         assert_eq!(point.pieces.len(), 11);
-        assert_eq!(point.pieces[0].player_number, 1);
+        assert_eq!(point.pieces[0], 1);
     }
 
     #[test]
@@ -92,7 +91,7 @@ mod tests {
 
     #[test]
     fn push_piece_test() {
-        let piece = Piece { player_number: 1 };    
+        let piece = 1;    
         let mut off_board = OffBoard { pieces: vec![] };
         match off_board.push_piece(piece) {
             Ok(_) => assert_eq!(1, off_board.pieces.len()),

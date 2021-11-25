@@ -1,10 +1,9 @@
 use std::convert::TryFrom;
 use regex::Regex;
-use crate::backgammon::state::piece::Piece;
 
 pub struct Point {
     pub number: i8,
-    pub pieces: Vec<Piece>
+    pub pieces: Vec<i8>
 }
 
 impl Point {
@@ -21,22 +20,22 @@ impl Point {
     }
 
     pub fn occupied_by_player(&self, player_number: i8) -> bool {
-        self.pieces.iter().any(|p| p.player_number == player_number) 
+        self.pieces.iter().any(|p| *p == player_number) 
     }
 
     pub fn occupied_by_opponent(&self, player_number: i8) -> bool {
-        self.pieces.iter().any(|p| p.player_number != player_number) 
+        self.pieces.iter().any(|p| *p != player_number) 
     }
 
-    pub fn pop_piece(&mut self) -> Result<Piece, &'static str> {
+    pub fn pop_piece(&mut self) -> Result<i8, &'static str> {
         match self.pieces.pop() {
             Some(p) => Ok(p),
             None => Err("no piece to pop")
         }
     }
 
-    pub fn push_piece(&mut self, piece: Piece) -> Result<Option<Piece>, &'static str> {
-        let opponent_piece_count = self.pieces.iter().filter(|p| p.player_number != piece.player_number).count();
+    pub fn push_piece(&mut self, piece: i8) -> Result<Option<i8>, &'static str> {
+        let opponent_piece_count = self.pieces.iter().filter(|p| **p != piece).count();
 
         match opponent_piece_count {
             0 => {
@@ -87,14 +86,14 @@ pub fn parse_point(index: usize, encoded: &str) -> Result<Point, &'static str> {
             } else { 
                 if number_of_player_one_pieces > 0 {
                     for _ in 0..number_of_player_one_pieces {
-                        let piece = Piece { player_number: 1 };
+                        let piece = 1;
                         pieces.push(piece);
                     }
                 }
 
                 if number_of_player_two_pieces > 0 {
                     for _ in 0..number_of_player_two_pieces {
-                        let piece = Piece { player_number: 2 };
+                        let piece = 2;
                         pieces.push(piece);
                     }
                 }
@@ -153,8 +152,8 @@ mod tests {
 
     #[test]
     fn prime_test() {
-        let piece_a = Piece { player_number: 1 };
-        let piece_b = Piece { player_number: 1 };
+        let piece_a = 1;
+        let piece_b = 1;
         let point = Point { number: 1, pieces: vec![piece_a, piece_b] };    
         let result = point.prime();
         assert!(result)
@@ -162,7 +161,7 @@ mod tests {
 
     #[test]
     fn not_prime_test() {
-        let piece_a = Piece { player_number: 1 };
+        let piece_a = 1;
         let point = Point { number: 1, pieces: vec![piece_a] };
         let result = point.prime();
         assert!(!result)
@@ -170,7 +169,7 @@ mod tests {
 
     #[test]
     fn occupied_by_player_with_player_test() {
-        let piece = Piece { player_number: 1 };
+        let piece = 1;
         let point = Point { number: 7, pieces: vec![piece] };
         let result = point.occupied_by_player(1);
         assert!(result)
@@ -178,7 +177,7 @@ mod tests {
 
     #[test]
     fn occupied_by_player_with_opponent_test() {
-        let piece = Piece { player_number: 1 };
+        let piece = 1;
         let point = Point { number: 7, pieces: vec![piece] };
         let result = point.occupied_by_player(2);
         assert!(!result)
@@ -193,7 +192,7 @@ mod tests {
 
     #[test]
     fn occupied_by_opponent_with_player_test() {
-        let piece = Piece { player_number: 1 };
+        let piece = 1;
         let point = Point { number: 7, pieces: vec![piece] };
         let result = point.occupied_by_opponent(1);
         assert!(!result)
@@ -201,7 +200,7 @@ mod tests {
 
     #[test]
     fn occupied_by_opponent_with_opponent_test() {
-        let piece = Piece { player_number: 1 };
+        let piece = 1;
         let point = Point { number: 7, pieces: vec![piece] };
         let result = point.occupied_by_opponent(2);
         assert!(result)
@@ -220,7 +219,7 @@ mod tests {
         let point = parse_point(1, encoded).unwrap();
         assert_eq!(point.number, 1);
         assert_eq!(point.pieces.len(), 5);
-        assert_eq!(point.pieces[0].player_number, 1);
+        assert_eq!(point.pieces[0], 1);
     }
 
     #[test]
@@ -229,7 +228,7 @@ mod tests {
         let point = parse_point(2, encoded).unwrap();
         assert_eq!(point.number, 2);
         assert_eq!(point.pieces.len(), 3);
-        assert_eq!(point.pieces[0].player_number, 2);
+        assert_eq!(point.pieces[0], 2);
     }
 
     #[test]
@@ -246,7 +245,7 @@ mod tests {
         let point = parse_point(4, encoded).unwrap();
         assert_eq!(point.number, 4);
         assert_eq!(point.pieces.len(), 11);
-        assert_eq!(point.pieces[0].player_number, 1);
+        assert_eq!(point.pieces[0], 1);
     }
 
     #[test]
@@ -273,12 +272,12 @@ mod tests {
 
     #[test]
     fn pop_piece_valid_test() {
-        let piece = Piece { player_number: 1 };
+        let piece = 1;
         let mut point = Point { number: 1, pieces: vec![piece] };  
         let result = point.pop_piece();
         match result {
-            Ok(p) => assert_eq!(1, p.player_number),
-            Err(_) => assert!(false, "expected piece")    
+            Ok(p) => assert_eq!(1, p),
+            Err(_) => assert!(false, "expected number")    
         }
     }
 
@@ -287,20 +286,20 @@ mod tests {
         let mut point = Point { number: 1, pieces: vec![] };  
         let result = point.pop_piece();
         match result {
-            Ok(_) => assert!(false, "expected no piece"),
+            Ok(_) => assert!(false, "expected no number"),
             Err(_) => assert!(true)    
         }
     }
 
     #[test]
     fn push_empty_test() {
-        let piece = Piece { player_number: 1 };
+        let piece = 1;
         let mut point = Point { number: 1, pieces: vec![] }; 
         let result = point.push_piece(piece);
         match result {
             Ok(piece) => {
                 match piece {
-                    Some(_) => assert!(false, "expected no piece"),
+                    Some(_) => assert!(false, "expected no number"),
                     None => assert!(true)
                 }
             },
@@ -310,15 +309,15 @@ mod tests {
 
     #[test]
     fn push_blot_test() {
-       let piece = Piece { player_number: 1 }; 
-       let opposing_piece = Piece { player_number: 2 };
+       let piece = 1; 
+       let opposing_piece = 2;
        let mut point = Point { number: 1, pieces: vec![opposing_piece] };
        let result = point.push_piece(piece);
        match result {
             Ok(piece) => {
                 match piece {
-                    Some(p) => assert_eq!(2, p.player_number),
-                    None => assert!(false, "expected piece")
+                    Some(p) => assert_eq!(2, p),
+                    None => assert!(false, "expected number")
                 }
             },
             Err(_) => assert!(false, "expected no error")
@@ -327,9 +326,9 @@ mod tests {
 
     #[test]
     fn push_prime_test() {
-        let piece = Piece { player_number: 1 };
-        let opposing_piece_a = Piece { player_number: 2 };
-        let opposing_piece_b = Piece { player_number: 2 };
+        let piece = 1;
+        let opposing_piece_a = 2;
+        let opposing_piece_b = 2;
         let mut point = Point { number: 1, pieces: vec![opposing_piece_a, opposing_piece_b] };
         let result = point.push_piece(piece);
         match result {
