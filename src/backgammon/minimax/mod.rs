@@ -142,7 +142,7 @@ fn static_evaluation(game_state: &backgammon::state::game_state::GameState) -> i
 
     let player_one_bar_count = player_bar_count(game_state, 1);
     let player_two_bar_count = player_bar_count(game_state, 2);
-    let bar_count_value = u_to_i32(player_two_bar_count) - u_to_i32(player_one_bar_count);
+    let bar_count_value = i32::from(player_two_bar_count - player_one_bar_count);
     
     let player_one_home_count = player_home_count(game_state, 1);
     let player_two_home_count = player_home_count(game_state, 2);
@@ -179,10 +179,12 @@ fn player_home_count(game_state: &backgammon::state::game_state::GameState, play
     }).sum()
 }
 
-fn player_bar_count(game_state: &backgammon::state::game_state::GameState, player_number: i8) -> usize {
-    game_state.bar.pieces.iter().filter(|p| {
-        **p == player_number
-    }).count()
+fn player_bar_count(game_state: &backgammon::state::game_state::GameState, player_number: i8) -> i8 {
+    match player_number {
+        1 => game_state.bar.player_one_piece_count,
+        2 => game_state.bar.player_two_piece_count,
+        _ => 0
+    }
 }
 
 fn player_off_board_count(game_state: &backgammon::state::game_state::GameState, player_number: i8) -> usize {
