@@ -134,7 +134,7 @@ pub fn evaluate_move_phase(game_state: &backgammon::state::game_state::GameState
 fn static_evaluation(game_state: &backgammon::state::game_state::GameState) -> i32 {
     let player_one_prime_count = player_prime_count(game_state, 1);
     let player_two_prime_count = player_prime_count(game_state, 2);
-    let prime_count_value = u_to_i32(player_one_prime_count) - u_to_i32(player_two_prime_count);
+    let prime_count_value = u_to_i32(player_one_prime_count - player_two_prime_count);
 
     let player_one_blot_count = player_blot_count(game_state, 1);
     let player_two_blot_count = player_blot_count(game_state, 2);
@@ -146,28 +146,36 @@ fn static_evaluation(game_state: &backgammon::state::game_state::GameState) -> i
     
     let player_one_home_count = player_home_count(game_state, 1);
     let player_two_home_count = player_home_count(game_state, 2);
-    let home_count_value = u_to_i32(player_one_home_count) - u_to_i32(player_two_home_count);
+    let home_count_value = i32::from(player_one_home_count - player_two_home_count);
 
     let player_one_off_board_count = player_off_board_count(game_state, 1); 
     let player_two_off_board_count = player_off_board_count(game_state, 2); 
-    let off_board_count_value = u_to_i32(player_one_off_board_count) - u_to_i32(player_two_off_board_count);
+    let off_board_count_value = i32::from(player_one_off_board_count - player_two_off_board_count);
 
     8*prime_count_value + 16*blot_count_value + 32*bar_count_value + 64*home_count_value + 128*off_board_count_value + 256*win_value(game_state) 
 }
 
 fn player_prime_count(game_state: &backgammon::state::game_state::GameState, player_number: i8) -> usize {
     game_state.points.points.iter().filter(|point| {
-        point.pieces.iter().filter(|p| **p == player_number).count() >= 1  
+        match player_number {
+            1 => point.player_one_piece_count >= 1,
+            2 => point.player_two_piece_count >= 1,
+            _ => false 
+        }
     }).count()
 }
 
 fn player_blot_count(game_state: &backgammon::state::game_state::GameState, player_number: i8) -> usize {
     game_state.points.points.iter().filter(|point| {
-        point.pieces.iter().filter(|p| **p == player_number).count() == 1
+        match player_number {
+            1 => point.player_one_piece_count == 1,
+            2 => point.player_two_piece_count == 1,
+            _ => false
+        }
     }).count()
 }
 
-fn player_home_count(game_state: &backgammon::state::game_state::GameState, player_number: i8) -> usize {
+fn player_home_count(game_state: &backgammon::state::game_state::GameState, player_number: i8) -> i8 {
     game_state.points.points.iter().filter(|point| {
         match player_number {
             1 => point.number >= 19,
@@ -175,7 +183,7 @@ fn player_home_count(game_state: &backgammon::state::game_state::GameState, play
             _ => false
         }
     }).map(|point| {
-        point.pieces.iter().filter(|p| **p == player_number).count()
+        point.player_one_piece_count + point.player_two_piece_count
     }).sum()
 }
 
@@ -187,10 +195,12 @@ fn player_bar_count(game_state: &backgammon::state::game_state::GameState, playe
     }
 }
 
-fn player_off_board_count(game_state: &backgammon::state::game_state::GameState, player_number: i8) -> usize {
-    game_state.off_board.pieces.iter().filter(|p| {
-        **p == player_number
-    }).count()
+fn player_off_board_count(game_state: &backgammon::state::game_state::GameState, player_number: i8) -> i8 {
+    match player_number {
+        1 => game_state.off_board.player_one_piece_count,
+        2 => game_state.off_board.player_two_piece_count,
+        _ => 0
+    }
 }
 
 fn win_value(game_state: &backgammon::state::game_state::GameState) -> i32 {

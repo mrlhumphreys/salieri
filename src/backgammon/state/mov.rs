@@ -186,7 +186,11 @@ mod tests {
 
     #[test]
     fn bar_move_step_valid_test() {
-        let destination_point = Point { number: 2, pieces: vec![] }; 
+        let destination_point = Point { 
+            number: 2, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        }; 
         let die_number = 2;
         let player_number = 1;
 
@@ -204,9 +208,11 @@ mod tests {
 
     #[test]
     fn bar_move_step_prime_test() {
-        let piece_a = 2;
-        let piece_b = 2;
-        let destination_point = Point { number: 2, pieces: vec![piece_a, piece_b] }; 
+        let destination_point = Point { 
+            number: 2, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 2 
+        }; 
         let die_number = 2;
         let player_number = 1;
 
@@ -229,7 +235,11 @@ mod tests {
 
     #[test]
     fn off_board_move_step_test() {
-        let origin_point = Point { number: 24, pieces: vec![] }; 
+        let origin_point = Point { 
+            number: 24, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        }; 
         let die_number = 1;
 
         match off_board_move_step(&origin_point, die_number) {
@@ -246,7 +256,11 @@ mod tests {
 
     #[test]
     fn beyond_off_board_move_step_valid_test() {
-        let origin_point = Point { number: 21, pieces: vec![] }; 
+        let origin_point = Point { 
+            number: 21, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        }; 
         let die_number = 6;
         let back_point_number = 21;
 
@@ -264,7 +278,11 @@ mod tests {
 
     #[test]
     fn beyond_off_board_move_step_invalid_test() {
-        let origin_point = Point { number: 21, pieces: vec![] }; 
+        let origin_point = Point { 
+            number: 21, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        }; 
         let die_number = 6;
 
         match beyond_off_board_move_step(&origin_point, die_number, None) {
@@ -275,8 +293,16 @@ mod tests {
 
     #[test]
     fn point_to_point_move_step_valid_test() {
-        let origin_point = Point { number: 1, pieces: vec![] }; 
-        let destination_point = Point { number: 4, pieces: vec![] }; 
+        let origin_point = Point { 
+            number: 1, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        }; 
+        let destination_point = Point { 
+            number: 4, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        }; 
         let die_number = 3;
         let player_number = 1;
 
@@ -294,10 +320,16 @@ mod tests {
 
     #[test]
     fn point_to_point_move_step_prime_test() {
-        let origin_point = Point { number: 1, pieces: vec![] }; 
-        let piece_a =  2;
-        let piece_b =  2;
-        let destination_point = Point { number: 4, pieces: vec![piece_a, piece_b] }; 
+        let origin_point = Point { 
+            number: 1, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        }; 
+        let destination_point = Point { 
+            number: 4, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 2 
+        }; 
         let die_number = 3;
         let player_number = 1;
 
@@ -309,7 +341,11 @@ mod tests {
 
     #[test]
     fn point_to_point_move_step_invalid_test() {
-        let origin_point = Point { number: 1, pieces: vec![] }; 
+        let origin_point = Point { 
+            number: 1, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        }; 
         let die_number = 3;
         let player_number = 1;
 

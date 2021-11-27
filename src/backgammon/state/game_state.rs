@@ -48,9 +48,9 @@ impl Clone for GameState {
 
 impl GameState {
     pub fn winner(&self) -> Option<i8> {
-        if self.off_board.pieces.iter().filter(|p| **p == 1).count() == 15 {
+        if self.off_board.player_one_piece_count == 15 {
             Some(1)
-        } else if self.off_board.pieces.iter().filter(|p| **p == 2).count() == 15 {
+        } else if self.off_board.player_two_piece_count == 15 {
             Some(2)
         } else {
             None
@@ -367,7 +367,8 @@ mod tests {
         assert_eq!(result.bar.player_one_piece_count, 0);
         assert_eq!(result.bar.player_two_piece_count, 0);
         assert_eq!(result.points.points.len(), 24);
-        assert_eq!(result.off_board.pieces.len(), 0);
+        assert_eq!(result.off_board.player_one_piece_count, 0);
+        assert_eq!(result.off_board.player_two_piece_count, 0);
     }
 
     #[test]
@@ -381,31 +382,30 @@ mod tests {
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let piece_a = 2;
-        let piece_b = 2;
-        let point_a = Point { number: 1, pieces: vec![piece_a, piece_b] };
-        let point_b = Point { number: 2, pieces: vec![] };
-        let point_c = Point { number: 3, pieces: vec![] };
-        let point_d = Point { number: 4, pieces: vec![] };
+        let point_a = Point { 
+            number: 1, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 2 
+        };
+        let point_b = Point { 
+            number: 2, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
+        let point_c = Point { 
+            number: 3, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
+        let point_d = Point { 
+            number: 4, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let points = PointSet { points: vec![point_a, point_b, point_c, point_d] };
         let off_board = OffBoard { 
-            pieces: vec![
-                1,
-                1,
-                1,
-                1,
-                1,
-                1,
-                1,
-                1,
-                1,
-                1,
-                1,
-                1,
-                1,
-                1,
-                1
-            ] 
+            player_one_piece_count: 15,
+            player_two_piece_count: 0
         };
         let game_state = GameState {
             current_player_number,
@@ -430,30 +430,30 @@ mod tests {
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let piece_a = 2;
-        let piece_b = 2;
-        let point_a = Point { number: 1, pieces: vec![piece_a, piece_b] };
-        let point_b = Point { number: 2, pieces: vec![] };
-        let point_c = Point { number: 3, pieces: vec![] };
-        let point_d = Point { number: 4, pieces: vec![] };
+        let point_a = Point { 
+            number: 1, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 2
+        };
+        let point_b = Point { 
+            number: 2, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
+        let point_c = Point { 
+            number: 3, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
+        let point_d = Point { 
+            number: 4, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let points = PointSet { points: vec![point_a, point_b, point_c, point_d] };
         let off_board = OffBoard { 
-            pieces: vec![
-                1,
-                1,
-                1,
-                1,
-                1,
-                1,
-                1,
-                1,
-                1,
-                1,
-                1,
-                1,
-                1,
-                1
-            ] 
+            player_one_piece_count: 14,
+            player_two_piece_count: 0
         };
         let game_state = GameState {
             current_player_number,
@@ -478,14 +478,31 @@ mod tests {
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let piece_a = 1;
-        let piece_b = 1;
-        let point_a = Point { number: 1, pieces: vec![piece_a, piece_b] };
-        let point_b = Point { number: 2, pieces: vec![] };
-        let point_c = Point { number: 3, pieces: vec![] };
-        let point_d = Point { number: 4, pieces: vec![] };
+        let point_a = Point { 
+            number: 1, 
+            player_one_piece_count: 2,
+            player_two_piece_count: 0
+        };
+        let point_b = Point { 
+            number: 2, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
+        let point_c = Point { 
+            number: 3, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
+        let point_d = Point { 
+            number: 4, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let points = PointSet { points: vec![point_a, point_b, point_c, point_d] };
-        let off_board = OffBoard { pieces: vec![] };
+        let off_board = OffBoard { 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let game_state = GameState {
             current_player_number,
             current_phase,
@@ -574,9 +591,16 @@ mod tests {
             player_one_piece_count: 1,
             player_two_piece_count: 0
         };
-        let point = Point { number: 19, pieces: vec![] };
+        let point = Point { 
+            number: 19, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let points = PointSet { points: vec![point] };
-        let off_board = OffBoard { pieces: vec![] };
+        let off_board = OffBoard { 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let game_state = GameState {
             current_player_number,
             current_phase,
@@ -596,14 +620,20 @@ mod tests {
         let current_phase = Phase::MovePhase;
         let die = Die { number: Some(1), used: false };
         let dice = vec![die];
-        let piece = 1;
         let bar = Bar { 
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let point = Point { number: 19, pieces: vec![piece] };
+        let point = Point { 
+            number: 19, 
+            player_one_piece_count: 1,
+            player_two_piece_count: 0
+        };
         let points = PointSet { points: vec![point] };
-        let off_board = OffBoard { pieces: vec![] };
+        let off_board = OffBoard { 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let game_state = GameState {
             current_player_number,
             current_phase,
@@ -627,11 +657,21 @@ mod tests {
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let piece = 1;
-        let non_home_point = Point { number: 18, pieces: vec![piece] };
-        let home_point = Point { number: 19, pieces: vec![] };
+        let non_home_point = Point { 
+            number: 18, 
+            player_one_piece_count: 1,
+            player_two_piece_count: 0
+        };
+        let home_point = Point { 
+            number: 19, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let points = PointSet { points: vec![non_home_point, home_point] };
-        let off_board = OffBoard { pieces: vec![] };
+        let off_board = OffBoard { 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let game_state = GameState {
             current_player_number,
             current_phase,
@@ -655,11 +695,21 @@ mod tests {
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let piece = 1;
-        let non_home_point = Point { number: 18, pieces: vec![] };
-        let home_point = Point { number: 19, pieces: vec![piece] };
+        let non_home_point = Point { 
+            number: 18, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
+        let home_point = Point { 
+            number: 19, 
+            player_one_piece_count: 1,
+            player_two_piece_count: 0
+        };
         let points = PointSet { points: vec![non_home_point, home_point] };
-        let off_board = OffBoard { pieces: vec![] };
+        let off_board = OffBoard { 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let game_state = GameState {
             current_player_number,
             current_phase,
@@ -683,12 +733,21 @@ mod tests {
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let back_piece = 1;
-        let front_piece = 1;
-        let front_point = Point { number: 24, pieces: vec![front_piece] };
-        let back_point = Point { number: 18, pieces: vec![back_piece] };
+        let front_point = Point { 
+            number: 24, 
+            player_one_piece_count: 1,
+            player_two_piece_count: 0
+        };
+        let back_point = Point { 
+            number: 18, 
+            player_one_piece_count: 1,
+            player_two_piece_count: 0
+        };
         let points = PointSet { points: vec![front_point, back_point] };
-        let off_board = OffBoard { pieces: vec![] };
+        let off_board = OffBoard { 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let game_state = GameState {
             current_player_number,
             current_phase,
@@ -716,12 +775,21 @@ mod tests {
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let back_piece = 2;
-        let front_piece = 2;
-        let front_point = Point { number: 1, pieces: vec![front_piece] };
-        let back_point = Point { number: 6, pieces: vec![back_piece] };
+        let front_point = Point { 
+            number: 1, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 1 
+        };
+        let back_point = Point { 
+            number: 6, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 1 
+        };
         let points = PointSet { points: vec![front_point, back_point] };
-        let off_board = OffBoard { pieces: vec![] };
+        let off_board = OffBoard { 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let game_state = GameState {
             current_player_number,
             current_phase,
@@ -749,10 +817,21 @@ mod tests {
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let front_point = Point { number: 1, pieces: vec![] };
-        let back_point = Point { number: 6, pieces: vec![] };
+        let front_point = Point { 
+            number: 1, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
+        let back_point = Point { 
+            number: 6, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let points = PointSet { points: vec![front_point, back_point] };
-        let off_board = OffBoard { pieces: vec![] };
+        let off_board = OffBoard { 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let game_state = GameState {
             current_player_number,
             current_phase,
@@ -776,16 +855,30 @@ mod tests {
         let current_phase = Phase::MovePhase;
         let die = Die { number: Some(1), used: false };
         let dice = vec![die];
-        let piece = 1;
         let bar = Bar { 
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let from_point = Point { number: 1, pieces: vec![piece] };
-        let to_point = Point { number: 2, pieces: vec![] };
-        let beyond_point = Point { number: 3, pieces: vec![] };
+        let from_point = Point { 
+            number: 1, 
+            player_one_piece_count: 1,
+            player_two_piece_count: 0
+        };
+        let to_point = Point { 
+            number: 2, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
+        let beyond_point = Point { 
+            number: 3, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let points = PointSet { points: vec![from_point, to_point, beyond_point] };
-        let off_board = OffBoard { pieces: vec![] };
+        let off_board = OffBoard { 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let game_state = GameState {
             current_player_number,
             current_phase,
@@ -821,10 +914,21 @@ mod tests {
             player_one_piece_count: 1,
             player_two_piece_count: 0
         };
-        let to_point = Point { number: 1, pieces: vec![] };
-        let beyond_point = Point { number: 2, pieces: vec![] };
+        let to_point = Point { 
+            number: 1, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
+        let beyond_point = Point { 
+            number: 2, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let points = PointSet { points: vec![to_point, beyond_point] };
-        let off_board = OffBoard { pieces: vec![] };
+        let off_board = OffBoard { 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let game_state = GameState {
             current_player_number,
             current_phase,
@@ -856,14 +960,20 @@ mod tests {
         let current_phase = Phase::MovePhase;
         let die = Die { number: Some(1), used: false };
         let dice = vec![die];
-        let piece = 1;
         let bar = Bar { 
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let from_point = Point { number: 24, pieces: vec![piece] };
+        let from_point = Point { 
+            number: 24, 
+            player_one_piece_count: 1,
+            player_two_piece_count: 0
+        };
         let points = PointSet { points: vec![from_point] };
-        let off_board = OffBoard { pieces: vec![] };
+        let off_board = OffBoard { 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let game_state = GameState {
             current_player_number,
             current_phase,
@@ -895,16 +1005,25 @@ mod tests {
         let current_phase = Phase::MovePhase;
         let die = Die { number: Some(1), used: false };
         let dice = vec![die];
-        let piece = 1;
-        let other_piece = 1;
         let bar = Bar { 
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let not_home_point = Point { number: 18, pieces: vec![other_piece] };
-        let from_point = Point { number: 24, pieces: vec![piece] };
+        let not_home_point = Point { 
+            number: 18, 
+            player_one_piece_count: 1,
+            player_two_piece_count: 0
+        };
+        let from_point = Point { 
+            number: 24, 
+            player_one_piece_count: 1,
+            player_two_piece_count: 0
+        };
         let points = PointSet { points: vec![from_point, not_home_point] };
-        let off_board = OffBoard { pieces: vec![] };
+        let off_board = OffBoard { 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let game_state = GameState {
             current_player_number,
             current_phase,
@@ -925,15 +1044,25 @@ mod tests {
         let current_phase = Phase::MovePhase;
         let die = Die { number: Some(6), used: false };
         let dice = vec![die];
-        let piece = 1;
         let bar = Bar { 
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let back_point = Point { number: 19, pieces: vec![] };
-        let from_point = Point { number: 24, pieces: vec![piece] };
+        let back_point = Point { 
+            number: 19, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
+        let from_point = Point { 
+            number: 24, 
+            player_one_piece_count: 1,
+            player_two_piece_count: 0
+        };
         let points = PointSet { points: vec![back_point, from_point] };
-        let off_board = OffBoard { pieces: vec![] };
+        let off_board = OffBoard { 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let game_state = GameState {
             current_player_number,
             current_phase,
@@ -965,16 +1094,25 @@ mod tests {
         let current_phase = Phase::MovePhase;
         let die = Die { number: Some(6), used: false };
         let dice = vec![die];
-        let piece = 1;
-        let other_piece = 1;
         let bar = Bar { 
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let back_point = Point { number: 19, pieces: vec![other_piece] };
-        let from_point = Point { number: 24, pieces: vec![piece] };
+        let back_point = Point { 
+            number: 19, 
+            player_one_piece_count: 1,
+            player_two_piece_count: 0
+        };
+        let from_point = Point { 
+            number: 24, 
+            player_one_piece_count: 1,
+            player_two_piece_count: 0
+        };
         let points = PointSet { points: vec![back_point, from_point] };
-        let off_board = OffBoard { pieces: vec![] };
+        let off_board = OffBoard { 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let game_state = GameState {
             current_player_number,
             current_phase,
@@ -1011,13 +1149,26 @@ mod tests {
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let piece_a = 1;
-        let piece_b = 1;
-        let from_point = Point { number: 1, pieces: vec![piece_a, piece_b] };
-        let to_point_a = Point { number: 2, pieces: vec![] };
-        let to_point_b = Point { number: 3, pieces: vec![] };
+        let from_point = Point { 
+            number: 1, 
+            player_one_piece_count: 2,
+            player_two_piece_count: 0
+        };
+        let to_point_a = Point { 
+            number: 2, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
+        let to_point_b = Point { 
+            number: 3, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let points = PointSet { points: vec![from_point, to_point_a, to_point_b] };
-        let off_board = OffBoard { pieces: vec![] };
+        let off_board = OffBoard { 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let game_state = GameState {
             current_player_number,
             current_phase,
@@ -1053,13 +1204,26 @@ mod tests {
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let piece_a = 1;
-        let piece_b = 1;
-        let from_point = Point { number: 1, pieces: vec![piece_a, piece_b] };
-        let to_point_a = Point { number: 2, pieces: vec![] };
-        let to_point_b = Point { number: 3, pieces: vec![] };
+        let from_point = Point { 
+            number: 1, 
+            player_one_piece_count: 2,
+            player_two_piece_count: 0
+        };
+        let to_point_a = Point { 
+            number: 2, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
+        let to_point_b = Point { 
+            number: 3, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let points = PointSet { points: vec![from_point, to_point_a, to_point_b] };
-        let off_board = OffBoard { pieces: vec![] };
+        let off_board = OffBoard { 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let game_state = GameState {
             current_player_number,
             current_phase,
@@ -1091,13 +1255,26 @@ mod tests {
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let piece_a = 1;
-        let piece_b = 1;
-        let from_point = Point { number: 1, pieces: vec![piece_a, piece_b] };
-        let to_point_a = Point { number: 2, pieces: vec![] };
-        let to_point_b = Point { number: 3, pieces: vec![] };
+        let from_point = Point { 
+            number: 1, 
+            player_one_piece_count: 2,
+            player_two_piece_count: 0
+        };
+        let to_point_a = Point { 
+            number: 2, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
+        let to_point_b = Point { 
+            number: 3, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let points = PointSet { points: vec![from_point, to_point_a, to_point_b] };
-        let off_board = OffBoard { pieces: vec![] };
+        let off_board = OffBoard { 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let game_state = GameState {
             current_player_number,
             current_phase,
@@ -1122,17 +1299,17 @@ mod tests {
         match game_state.perform_move(&mov) {
             Ok(new_game_state) => {
                 match new_game_state.points.points.iter().find(|p| p.number == 1) {
-                    Some(p) => assert_eq!(p.pieces.iter().count(), 0),
+                    Some(p) => assert_eq!(p.player_one_piece_count, 0),
                     None => assert!(false, "expected piece")
                 }
 
                 match new_game_state.points.points.iter().find(|p| p.number == 2) {
-                    Some(p) => assert_eq!(p.pieces.iter().count(), 1),
+                    Some(p) => assert_eq!(p.player_one_piece_count, 1),
                     None => assert!(false, "expected piece")
                 }
 
                 match new_game_state.points.points.iter().find(|p| p.number == 3) {
-                    Some(p) => assert_eq!(p.pieces.iter().count(), 1),
+                    Some(p) => assert_eq!(p.player_one_piece_count, 1),
                     None => assert!(false, "expected piece")
                 }
 
@@ -1156,13 +1333,26 @@ mod tests {
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let piece_a = 1;
-        let piece_b = 1;
-        let from_point = Point { number: 1, pieces: vec![piece_a, piece_b] };
-        let to_point_a = Point { number: 2, pieces: vec![] };
-        let to_point_b = Point { number: 3, pieces: vec![] };
+        let from_point = Point { 
+            number: 1, 
+            player_one_piece_count: 2,
+            player_two_piece_count: 0
+        };
+        let to_point_a = Point { 
+            number: 2, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
+        let to_point_b = Point { 
+            number: 3, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let points = PointSet { points: vec![from_point, to_point_a, to_point_b] };
-        let off_board = OffBoard { pieces: vec![] };
+        let off_board = OffBoard { 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let game_state = GameState {
             current_player_number,
             current_phase,
@@ -1200,11 +1390,21 @@ mod tests {
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let piece = 1;
-        let from_point = Point { number: 1, pieces: vec![piece] };
-        let to_point = Point { number: 2, pieces: vec![] };
+        let from_point = Point { 
+            number: 1, 
+            player_one_piece_count: 1,
+            player_two_piece_count: 0
+        };
+        let to_point = Point { 
+            number: 2, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let points = PointSet { points: vec![from_point, to_point] };
-        let off_board = OffBoard { pieces: vec![] };
+        let off_board = OffBoard { 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let mut game_state = GameState {
             current_player_number,
             current_phase,
@@ -1227,12 +1427,12 @@ mod tests {
         }
 
         match game_state.points.points.iter().find(|p| p.number == 1) {
-            Some(p) => assert_eq!(p.pieces.len(), 0),
+            Some(p) => assert_eq!(p.player_one_piece_count, 0),
             None => assert!(false, "expected point") 
         }
 
         match game_state.points.points.iter().find(|p| p.number == 2) {
-            Some(p) => assert_eq!(p.pieces.len(), 1),
+            Some(p) => assert_eq!(p.player_one_piece_count, 1),
             None => assert!(false, "expected point") 
         }
 
@@ -1252,10 +1452,23 @@ mod tests {
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let from_point = Point { number: 1, pieces: vec![] };
-        let to_point = Point { number: 2, pieces: vec![] };
-        let points = PointSet { points: vec![from_point, to_point] };
-        let off_board = OffBoard { pieces: vec![] };
+        let from_point = Point { 
+            number: 1, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
+        let to_point = Point { 
+            number: 2, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
+        let points = PointSet { 
+            points: vec![from_point, to_point] 
+        };
+        let off_board = OffBoard { 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let mut game_state = GameState {
             current_player_number,
             current_phase,
@@ -1286,11 +1499,21 @@ mod tests {
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let piece = 1;
-        let from_point = Point { number: 1, pieces: vec![piece] };
-        let to_point = Point { number: 2, pieces: vec![] };
+        let from_point = Point { 
+            number: 1, 
+            player_one_piece_count: 1,
+            player_two_piece_count: 0
+        };
+        let to_point = Point { 
+            number: 2, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let points = PointSet { points: vec![from_point, to_point] };
-        let off_board = OffBoard { pieces: vec![] };
+        let off_board = OffBoard { 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let mut game_state = GameState {
             current_player_number,
             current_phase,
@@ -1321,10 +1544,16 @@ mod tests {
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let piece = 1;
-        let point = Point { number: 1, pieces: vec![piece] };
+        let point = Point { 
+            number: 1, 
+            player_one_piece_count: 1,
+            player_two_piece_count: 0
+        };
         let points = PointSet { points: vec![point] };
-        let off_board = OffBoard { pieces: vec![] };
+        let off_board = OffBoard { 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let mut game_state = GameState {
             current_player_number,
             current_phase,
@@ -1355,9 +1584,16 @@ mod tests {
             player_one_piece_count: 1,
             player_two_piece_count: 0
         };
-        let point = Point { number: 1, pieces: vec![] };
+        let point = Point { 
+            number: 1, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let points = PointSet { points: vec![point] };
-        let off_board = OffBoard { pieces: vec![] };
+        let off_board = OffBoard { 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let mut game_state = GameState {
             current_player_number,
             current_phase,
@@ -1384,14 +1620,20 @@ mod tests {
         let current_phase = Phase::RollPhase;
         let die = Die { number: Some(1), used: false };
         let dice = vec![die];
-        let piece = 1;
         let bar = Bar { 
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let point = Point { number: 1, pieces: vec![] };
+        let point = Point { 
+            number: 1, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let points = PointSet { points: vec![point] };
-        let off_board = OffBoard { pieces: vec![piece] };
+        let off_board = OffBoard { 
+            player_one_piece_count: 1,
+            player_two_piece_count: 0
+        };
         let mut game_state = GameState {
             current_player_number,
             current_phase,
@@ -1423,9 +1665,16 @@ mod tests {
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let point = Point { number: 1, pieces: vec![] };
+        let point = Point { 
+            number: 1, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let points = PointSet { points: vec![point] };
-        let off_board = OffBoard { pieces: vec![] };
+        let off_board = OffBoard { 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let mut game_state = GameState {
             current_player_number,
             current_phase,
@@ -1441,7 +1690,7 @@ mod tests {
         };
 
         match game_state.push_piece(&location, piece) {
-            Ok(_) => assert_eq!(1, game_state.points.points[0].pieces[0]),
+            Ok(_) => assert_eq!(game_state.points.points[0].player_one_piece_count, 1),
             Err(_) => assert!(false, "expected no error")
         }
     }
@@ -1457,9 +1706,16 @@ mod tests {
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let point = Point { number: 1, pieces: vec![] };
+        let point = Point { 
+            number: 1, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let points = PointSet { points: vec![point] };
-        let off_board = OffBoard { pieces: vec![] };
+        let off_board = OffBoard { 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let mut game_state = GameState {
             current_player_number,
             current_phase,
@@ -1491,9 +1747,16 @@ mod tests {
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let point = Point { number: 1, pieces: vec![] };
+        let point = Point { 
+            number: 1, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let points = PointSet { points: vec![point] };
-        let off_board = OffBoard { pieces: vec![] };
+        let off_board = OffBoard { 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let mut game_state = GameState {
             current_player_number,
             current_phase,
@@ -1521,14 +1784,20 @@ mod tests {
         let die = Die { number: Some(1), used: false };
         let dice = vec![die];
         let piece = 1;
-        let opposing_piece = 2;
         let bar = Bar { 
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let point = Point { number: 1, pieces: vec![opposing_piece] };
+        let point = Point { 
+            number: 1, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 1 
+        };
         let points = PointSet { points: vec![point] };
-        let off_board = OffBoard { pieces: vec![] };
+        let off_board = OffBoard { 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let mut game_state = GameState {
             current_player_number,
             current_phase,
@@ -1545,7 +1814,7 @@ mod tests {
 
         match game_state.push_piece(&location, piece) {
             Ok(_) => {
-                assert_eq!(1, game_state.points.points[0].pieces[0]);
+                assert_eq!(game_state.points.points[0].player_one_piece_count, 1);
                 assert_eq!(1, game_state.bar.player_two_piece_count); 
             },
             Err(_) => assert!(false, "expected no error")
@@ -1563,9 +1832,16 @@ mod tests {
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let point = Point { number: 1, pieces: vec![] };
+        let point = Point { 
+            number: 1, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let points = PointSet { points: vec![point] };
-        let off_board = OffBoard { pieces: vec![] };
+        let off_board = OffBoard { 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let mut game_state = GameState {
             current_player_number,
             current_phase,
@@ -1597,9 +1873,16 @@ mod tests {
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let point = Point { number: 1, pieces: vec![] };
+        let point = Point { 
+            number: 1, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let points = PointSet { points: vec![point] };
-        let off_board = OffBoard { pieces: vec![] };
+        let off_board = OffBoard { 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         let mut game_state = GameState {
             current_player_number,
             current_phase,
@@ -1615,7 +1898,7 @@ mod tests {
         };
 
         match game_state.push_piece(&location, piece) {
-            Ok(_) => assert_eq!(1, game_state.off_board.pieces[0]), 
+            Ok(_) => assert_eq!(game_state.off_board.player_one_piece_count, 1), 
             Err(_) => assert!(false, "expected no error")
         }
     }

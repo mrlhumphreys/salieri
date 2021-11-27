@@ -89,8 +89,11 @@ mod tests {
 
     #[test]
     fn pop_piece_valid_test() {
-        let piece = 2;
-        let point = Point { number: 1, pieces: vec![piece] };
+        let point = Point { 
+            number: 1, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 1
+        };
         let mut point_set = PointSet { points: vec![point] };
         let result = point_set.pop_piece(1);
         match result {
@@ -101,8 +104,11 @@ mod tests {
 
     #[test]
     fn pop_piece_unknown_point_test() {
-        let piece = 2;
-        let point = Point { number: 1, pieces: vec![piece] };
+        let point = Point { 
+            number: 1, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 1
+        };
         let mut point_set = PointSet { points: vec![point] };
         let result = point_set.pop_piece(25);
         match result {
@@ -113,7 +119,11 @@ mod tests {
 
     #[test]
     fn pop_piece_no_piece_test() {
-        let point = Point { number: 1, pieces: vec![] };
+        let point = Point { 
+            number: 1, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0 
+        };
         let mut point_set = PointSet { points: vec![point] };
         let result = point_set.pop_piece(1);
         match result {
@@ -125,7 +135,11 @@ mod tests {
     #[test]
     fn push_piece_with_point_test() {
         let piece = 1;
-        let point = Point { number: 1, pieces: vec![] };  
+        let point = Point { 
+            number: 1, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0 
+        };
         let mut point_set = PointSet { points: vec![point] };
         let result = point_set.push_piece(piece, 1);
         match result {
@@ -142,7 +156,11 @@ mod tests {
     #[test]
     fn push_piece_with_not_point_test() {
         let piece = 1;
-        let point = Point { number: 1, pieces: vec![] };  
+        let point = Point { 
+            number: 1, 
+            player_one_piece_count: 0,
+            player_two_piece_count: 0 
+        };
         let mut point_set = PointSet { points: vec![point] };
         let result = point_set.push_piece(piece, 4);
         match result {
