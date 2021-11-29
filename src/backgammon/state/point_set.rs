@@ -1,35 +1,7 @@
 use crate::backgammon::state::point::Point;
 use crate::backgammon::state::point::parse_point;
 
-pub struct PointSet {
-    pub points: Vec<Point>
-}
-
-impl Clone for PointSet {
-    fn clone(&self) -> PointSet {
-        PointSet {
-            points: self.points.clone()
-        }
-    }
-}
-
-impl PointSet {
-    pub fn pop_piece(&mut self, point_number: i8) -> Result<i8, &'static str> {
-        match self.points.iter_mut().find(|p| p.number == point_number) {
-            Some(p) => p.pop_piece(),
-            None => Err("point not found")
-        }
-    }
-
-    pub fn push_piece(&mut self, piece: i8, point_number: i8) -> Result<Option<i8>, &'static str> {
-        match self.points.iter_mut().find(|p| p.number == point_number) {
-            Some(p) => p.push_piece(piece),
-            None => Err("point not found") 
-        }
-    }
-}
-
-pub fn parse_point_set(encoded: &str) -> Result<PointSet, &'static str> {
+pub fn parse_point_set(encoded: &str) -> Result<Vec<Point>, &'static str> {
     if encoded.len() == 48 {
         let mut points = Vec::new();
 
@@ -49,8 +21,7 @@ pub fn parse_point_set(encoded: &str) -> Result<PointSet, &'static str> {
             point_counter += 1;
         }
 
-        let point_set = PointSet { points };
-        Ok(point_set)
+        Ok(points)
     } else {
         Err("invalid point set")
     }
@@ -64,7 +35,7 @@ mod tests {
     fn parse_test() {
         let encoded = String::from("200000000005003000000050020000000050003000000005");
         let result = parse_point_set(&encoded).unwrap(); 
-        assert_eq!(result.points.len(), 24);
+        assert_eq!(result.len(), 24);
     }
 
     #[test]
@@ -83,88 +54,6 @@ mod tests {
         let result = parse_point_set(&encoded); 
         match result {
             Ok(_) => assert!(false, "must not return point set"),
-            Err(_) => assert!(true)
-        }
-    }
-
-    #[test]
-    fn pop_piece_valid_test() {
-        let point = Point { 
-            number: 1, 
-            player_one_piece_count: 0,
-            player_two_piece_count: 1
-        };
-        let mut point_set = PointSet { points: vec![point] };
-        let result = point_set.pop_piece(1);
-        match result {
-            Ok(p) => assert_eq!(2, p),
-            Err(_) => assert!(false, "expected number")
-        }
-    }
-
-    #[test]
-    fn pop_piece_unknown_point_test() {
-        let point = Point { 
-            number: 1, 
-            player_one_piece_count: 0,
-            player_two_piece_count: 1
-        };
-        let mut point_set = PointSet { points: vec![point] };
-        let result = point_set.pop_piece(25);
-        match result {
-            Ok(_) => assert!(false, "expected no number"),
-            Err(_) => assert!(true)
-        }
-    }
-
-    #[test]
-    fn pop_piece_no_piece_test() {
-        let point = Point { 
-            number: 1, 
-            player_one_piece_count: 0,
-            player_two_piece_count: 0 
-        };
-        let mut point_set = PointSet { points: vec![point] };
-        let result = point_set.pop_piece(1);
-        match result {
-            Ok(_) => assert!(false, "expected no number"),
-            Err(_) => assert!(true)
-        }
-    }
-
-    #[test]
-    fn push_piece_with_point_test() {
-        let piece = 1;
-        let point = Point { 
-            number: 1, 
-            player_one_piece_count: 0,
-            player_two_piece_count: 0 
-        };
-        let mut point_set = PointSet { points: vec![point] };
-        let result = point_set.push_piece(piece, 1);
-        match result {
-            Ok(piece) => {
-                match piece {
-                    Some(_) => assert!(false, "expected no number"),
-                    None => assert!(true)
-                }
-            }, 
-            Err(_) => assert!(false, "expected no error")
-        }
-    }
-
-    #[test]
-    fn push_piece_with_not_point_test() {
-        let piece = 1;
-        let point = Point { 
-            number: 1, 
-            player_one_piece_count: 0,
-            player_two_piece_count: 0 
-        };
-        let mut point_set = PointSet { points: vec![point] };
-        let result = point_set.push_piece(piece, 4);
-        match result {
-            Ok(_) => assert!(false, "expected error"),
             Err(_) => assert!(true)
         }
     }

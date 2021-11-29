@@ -4,7 +4,6 @@ use crate::backgammon::state::die::Die;
 use crate::backgammon::state::dice_set::parse_dice_set;
 use crate::backgammon::state::bar::Bar;
 use crate::backgammon::state::bar::parse_bar;
-use crate::backgammon::state::point_set::PointSet;
 use crate::backgammon::state::point_set::parse_point_set;
 use crate::backgammon::state::point::Point;
 use crate::backgammon::state::off_board::OffBoard;
@@ -29,7 +28,7 @@ pub struct GameState {
     pub current_phase: Phase,
     pub dice: Vec<Die>,
     pub bar: Bar,
-    pub points: PointSet,
+    pub points: Vec<Point>,
     pub off_board: OffBoard
 }
 
@@ -66,11 +65,11 @@ impl GameState {
     }
 
     fn bearing_off(&self) -> bool {
-        !self.points.points.iter().any(|p| p.occupied_by_player(self.current_player_number) && !p.home(self.current_player_number))
+        !self.points.iter().any(|p| p.occupied_by_player(self.current_player_number) && !p.home(self.current_player_number))
     }
 
     fn back_point_number(&self) -> Option<i8> {
-        let players_points = self.points.points.iter().filter(|p| p.occupied_by_player(self.current_player_number));
+        let players_points = self.points.iter().filter(|p| p.occupied_by_player(self.current_player_number));
         let point = match self.current_player_number {
             2 => {
                 players_points.max_by(|a,b| {
@@ -117,7 +116,7 @@ impl GameState {
                 }
             } else {
                 let mut move_step: Option<MoveStep>;
-                for point in self.points.points.iter().filter(|p| p.occupied_by_player(self.current_player_number)) {
+                for point in self.points.iter().filter(|p| p.occupied_by_player(self.current_player_number)) {
                     let destination_point_number = self.point_destination_point_number(point.number, die_number);
 
                     if self.bearing_off() {
@@ -196,7 +195,7 @@ impl GameState {
     }
 
     fn find_point_by_number(&self, point_number: i8) -> Option<&Point> {
-        self.points.points.iter().find(|p| p.number == point_number)
+        self.points.iter().find(|p| p.number == point_number)
     }
 
     fn perform_move_step(&mut self, move_step: &MoveStep) -> Result<(), &'static str> {
@@ -265,7 +264,7 @@ impl GameState {
         match location.kind {
             PointKind::Point => {
                 match location.number {
-                    Some(n) => self.points.pop_piece(n),
+                    Some(n) => self.points_pop_piece(n),
                     None => Err("point number must be specified")
                 }
             }
@@ -279,7 +278,7 @@ impl GameState {
             PointKind::Point => {
                 match location.number {
                     Some(n) => {
-                        match self.points.push_piece(piece, n) {
+                        match self.points_push_piece(piece, n) {
                             Ok(res) => {
                                 match res {
                                     Some(hit_piece) => self.bar.push_piece(hit_piece),
@@ -294,6 +293,20 @@ impl GameState {
             },
             PointKind::Bar => self.bar.push_piece(piece),
             PointKind::OffBoard => self.off_board.push_piece(piece) 
+        }
+    }
+
+    fn points_pop_piece(&mut self, point_number: i8) -> Result<i8, &'static str> {
+        match self.points.iter_mut().find(|p| p.number == point_number) {
+            Some(p) => p.pop_piece(),
+            None => Err("point not found")
+        }
+    }
+
+    fn points_push_piece(&mut self, piece: i8, point_number: i8) -> Result<Option<i8>, &'static str> {
+        match self.points.iter_mut().find(|p| p.number == point_number) {
+            Some(p) => p.push_piece(piece),
+            None => Err("point not found") 
         }
     }
 }
@@ -366,7 +379,7 @@ mod tests {
         assert_eq!(result.dice.len(), 2);
         assert_eq!(result.bar.player_one_piece_count, 0);
         assert_eq!(result.bar.player_two_piece_count, 0);
-        assert_eq!(result.points.points.len(), 24);
+        assert_eq!(result.points.len(), 24);
         assert_eq!(result.off_board.player_one_piece_count, 0);
         assert_eq!(result.off_board.player_two_piece_count, 0);
     }
@@ -402,7 +415,7 @@ mod tests {
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let points = PointSet { points: vec![point_a, point_b, point_c, point_d] };
+        let points = vec![point_a, point_b, point_c, point_d];
         let off_board = OffBoard { 
             player_one_piece_count: 15,
             player_two_piece_count: 0
@@ -450,7 +463,7 @@ mod tests {
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let points = PointSet { points: vec![point_a, point_b, point_c, point_d] };
+        let points = vec![point_a, point_b, point_c, point_d];
         let off_board = OffBoard { 
             player_one_piece_count: 14,
             player_two_piece_count: 0
@@ -498,7 +511,7 @@ mod tests {
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let points = PointSet { points: vec![point_a, point_b, point_c, point_d] };
+        let points = vec![point_a, point_b, point_c, point_d];
         let off_board = OffBoard { 
             player_one_piece_count: 0,
             player_two_piece_count: 0
@@ -596,7 +609,7 @@ mod tests {
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let points = PointSet { points: vec![point] };
+        let points = vec![point];
         let off_board = OffBoard { 
             player_one_piece_count: 0,
             player_two_piece_count: 0
@@ -629,7 +642,7 @@ mod tests {
             player_one_piece_count: 1,
             player_two_piece_count: 0
         };
-        let points = PointSet { points: vec![point] };
+        let points = vec![point];
         let off_board = OffBoard { 
             player_one_piece_count: 0,
             player_two_piece_count: 0
@@ -667,7 +680,7 @@ mod tests {
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let points = PointSet { points: vec![non_home_point, home_point] };
+        let points = vec![non_home_point, home_point];
         let off_board = OffBoard { 
             player_one_piece_count: 0,
             player_two_piece_count: 0
@@ -705,7 +718,7 @@ mod tests {
             player_one_piece_count: 1,
             player_two_piece_count: 0
         };
-        let points = PointSet { points: vec![non_home_point, home_point] };
+        let points = vec![non_home_point, home_point];
         let off_board = OffBoard { 
             player_one_piece_count: 0,
             player_two_piece_count: 0
@@ -743,7 +756,7 @@ mod tests {
             player_one_piece_count: 1,
             player_two_piece_count: 0
         };
-        let points = PointSet { points: vec![front_point, back_point] };
+        let points = vec![front_point, back_point];
         let off_board = OffBoard { 
             player_one_piece_count: 0,
             player_two_piece_count: 0
@@ -785,7 +798,7 @@ mod tests {
             player_one_piece_count: 0,
             player_two_piece_count: 1 
         };
-        let points = PointSet { points: vec![front_point, back_point] };
+        let points = vec![front_point, back_point];
         let off_board = OffBoard { 
             player_one_piece_count: 0,
             player_two_piece_count: 0
@@ -827,7 +840,7 @@ mod tests {
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let points = PointSet { points: vec![front_point, back_point] };
+        let points = vec![front_point, back_point];
         let off_board = OffBoard { 
             player_one_piece_count: 0,
             player_two_piece_count: 0
@@ -874,7 +887,7 @@ mod tests {
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let points = PointSet { points: vec![from_point, to_point, beyond_point] };
+        let points = vec![from_point, to_point, beyond_point];
         let off_board = OffBoard { 
             player_one_piece_count: 0,
             player_two_piece_count: 0
@@ -924,7 +937,7 @@ mod tests {
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let points = PointSet { points: vec![to_point, beyond_point] };
+        let points = vec![to_point, beyond_point];
         let off_board = OffBoard { 
             player_one_piece_count: 0,
             player_two_piece_count: 0
@@ -969,7 +982,7 @@ mod tests {
             player_one_piece_count: 1,
             player_two_piece_count: 0
         };
-        let points = PointSet { points: vec![from_point] };
+        let points = vec![from_point];
         let off_board = OffBoard { 
             player_one_piece_count: 0,
             player_two_piece_count: 0
@@ -1019,7 +1032,7 @@ mod tests {
             player_one_piece_count: 1,
             player_two_piece_count: 0
         };
-        let points = PointSet { points: vec![from_point, not_home_point] };
+        let points = vec![from_point, not_home_point];
         let off_board = OffBoard { 
             player_one_piece_count: 0,
             player_two_piece_count: 0
@@ -1058,7 +1071,7 @@ mod tests {
             player_one_piece_count: 1,
             player_two_piece_count: 0
         };
-        let points = PointSet { points: vec![back_point, from_point] };
+        let points = vec![back_point, from_point];
         let off_board = OffBoard { 
             player_one_piece_count: 0,
             player_two_piece_count: 0
@@ -1108,7 +1121,7 @@ mod tests {
             player_one_piece_count: 1,
             player_two_piece_count: 0
         };
-        let points = PointSet { points: vec![back_point, from_point] };
+        let points = vec![back_point, from_point];
         let off_board = OffBoard { 
             player_one_piece_count: 0,
             player_two_piece_count: 0
@@ -1164,7 +1177,7 @@ mod tests {
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let points = PointSet { points: vec![from_point, to_point_a, to_point_b] };
+        let points = vec![from_point, to_point_a, to_point_b];
         let off_board = OffBoard { 
             player_one_piece_count: 0,
             player_two_piece_count: 0
@@ -1219,7 +1232,7 @@ mod tests {
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let points = PointSet { points: vec![from_point, to_point_a, to_point_b] };
+        let points = vec![from_point, to_point_a, to_point_b];
         let off_board = OffBoard { 
             player_one_piece_count: 0,
             player_two_piece_count: 0
@@ -1270,7 +1283,7 @@ mod tests {
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let points = PointSet { points: vec![from_point, to_point_a, to_point_b] };
+        let points = vec![from_point, to_point_a, to_point_b];
         let off_board = OffBoard { 
             player_one_piece_count: 0,
             player_two_piece_count: 0
@@ -1298,17 +1311,17 @@ mod tests {
 
         match game_state.perform_move(&mov) {
             Ok(new_game_state) => {
-                match new_game_state.points.points.iter().find(|p| p.number == 1) {
+                match new_game_state.points.iter().find(|p| p.number == 1) {
                     Some(p) => assert_eq!(p.player_one_piece_count, 0),
                     None => assert!(false, "expected piece")
                 }
 
-                match new_game_state.points.points.iter().find(|p| p.number == 2) {
+                match new_game_state.points.iter().find(|p| p.number == 2) {
                     Some(p) => assert_eq!(p.player_one_piece_count, 1),
                     None => assert!(false, "expected piece")
                 }
 
-                match new_game_state.points.points.iter().find(|p| p.number == 3) {
+                match new_game_state.points.iter().find(|p| p.number == 3) {
                     Some(p) => assert_eq!(p.player_one_piece_count, 1),
                     None => assert!(false, "expected piece")
                 }
@@ -1348,7 +1361,7 @@ mod tests {
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let points = PointSet { points: vec![from_point, to_point_a, to_point_b] };
+        let points = vec![from_point, to_point_a, to_point_b];
         let off_board = OffBoard { 
             player_one_piece_count: 0,
             player_two_piece_count: 0
@@ -1400,7 +1413,7 @@ mod tests {
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let points = PointSet { points: vec![from_point, to_point] };
+        let points = vec![from_point, to_point];
         let off_board = OffBoard { 
             player_one_piece_count: 0,
             player_two_piece_count: 0
@@ -1426,12 +1439,12 @@ mod tests {
             Err(e) => assert!(false, e)
         }
 
-        match game_state.points.points.iter().find(|p| p.number == 1) {
+        match game_state.points.iter().find(|p| p.number == 1) {
             Some(p) => assert_eq!(p.player_one_piece_count, 0),
             None => assert!(false, "expected point") 
         }
 
-        match game_state.points.points.iter().find(|p| p.number == 2) {
+        match game_state.points.iter().find(|p| p.number == 2) {
             Some(p) => assert_eq!(p.player_one_piece_count, 1),
             None => assert!(false, "expected point") 
         }
@@ -1462,9 +1475,7 @@ mod tests {
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let points = PointSet { 
-            points: vec![from_point, to_point] 
-        };
+        let points = vec![from_point, to_point];
         let off_board = OffBoard { 
             player_one_piece_count: 0,
             player_two_piece_count: 0
@@ -1509,7 +1520,7 @@ mod tests {
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let points = PointSet { points: vec![from_point, to_point] };
+        let points = vec![from_point, to_point];
         let off_board = OffBoard { 
             player_one_piece_count: 0,
             player_two_piece_count: 0
@@ -1549,7 +1560,7 @@ mod tests {
             player_one_piece_count: 1,
             player_two_piece_count: 0
         };
-        let points = PointSet { points: vec![point] };
+        let points = vec![point];
         let off_board = OffBoard { 
             player_one_piece_count: 0,
             player_two_piece_count: 0
@@ -1589,7 +1600,7 @@ mod tests {
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let points = PointSet { points: vec![point] };
+        let points = vec![point];
         let off_board = OffBoard { 
             player_one_piece_count: 0,
             player_two_piece_count: 0
@@ -1629,7 +1640,7 @@ mod tests {
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let points = PointSet { points: vec![point] };
+        let points = vec![point];
         let off_board = OffBoard { 
             player_one_piece_count: 1,
             player_two_piece_count: 0
@@ -1670,7 +1681,7 @@ mod tests {
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let points = PointSet { points: vec![point] };
+        let points = vec![point];
         let off_board = OffBoard { 
             player_one_piece_count: 0,
             player_two_piece_count: 0
@@ -1690,7 +1701,7 @@ mod tests {
         };
 
         match game_state.push_piece(&location, piece) {
-            Ok(_) => assert_eq!(game_state.points.points[0].player_one_piece_count, 1),
+            Ok(_) => assert_eq!(game_state.points[0].player_one_piece_count, 1),
             Err(_) => assert!(false, "expected no error")
         }
     }
@@ -1711,7 +1722,7 @@ mod tests {
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let points = PointSet { points: vec![point] };
+        let points = vec![point];
         let off_board = OffBoard { 
             player_one_piece_count: 0,
             player_two_piece_count: 0
@@ -1752,7 +1763,7 @@ mod tests {
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let points = PointSet { points: vec![point] };
+        let points = vec![point];
         let off_board = OffBoard { 
             player_one_piece_count: 0,
             player_two_piece_count: 0
@@ -1793,7 +1804,7 @@ mod tests {
             player_one_piece_count: 0,
             player_two_piece_count: 1 
         };
-        let points = PointSet { points: vec![point] };
+        let points = vec![point];
         let off_board = OffBoard { 
             player_one_piece_count: 0,
             player_two_piece_count: 0
@@ -1814,7 +1825,7 @@ mod tests {
 
         match game_state.push_piece(&location, piece) {
             Ok(_) => {
-                assert_eq!(game_state.points.points[0].player_one_piece_count, 1);
+                assert_eq!(game_state.points[0].player_one_piece_count, 1);
                 assert_eq!(1, game_state.bar.player_two_piece_count); 
             },
             Err(_) => assert!(false, "expected no error")
@@ -1837,7 +1848,7 @@ mod tests {
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let points = PointSet { points: vec![point] };
+        let points = vec![point];
         let off_board = OffBoard { 
             player_one_piece_count: 0,
             player_two_piece_count: 0
@@ -1878,7 +1889,7 @@ mod tests {
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let points = PointSet { points: vec![point] };
+        let points = vec![point];
         let off_board = OffBoard { 
             player_one_piece_count: 0,
             player_two_piece_count: 0

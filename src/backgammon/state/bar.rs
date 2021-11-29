@@ -28,7 +28,7 @@ impl Bar {
             },
             2 => {
                 if self.player_two_piece_count > 0 {
-                    self.player_two_piece_count -= 2;
+                    self.player_two_piece_count -= 1;
                     Ok(2)
                 } else {
                     Err("no piece to pop")

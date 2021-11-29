@@ -156,7 +156,7 @@ fn static_evaluation(game_state: &backgammon::state::game_state::GameState) -> i
 }
 
 fn player_prime_count(game_state: &backgammon::state::game_state::GameState, player_number: i8) -> usize {
-    game_state.points.points.iter().filter(|point| {
+    game_state.points.iter().filter(|point| {
         match player_number {
             1 => point.player_one_piece_count >= 1,
             2 => point.player_two_piece_count >= 1,
@@ -166,7 +166,7 @@ fn player_prime_count(game_state: &backgammon::state::game_state::GameState, pla
 }
 
 fn player_blot_count(game_state: &backgammon::state::game_state::GameState, player_number: i8) -> usize {
-    game_state.points.points.iter().filter(|point| {
+    game_state.points.iter().filter(|point| {
         match player_number {
             1 => point.player_one_piece_count == 1,
             2 => point.player_two_piece_count == 1,
@@ -176,7 +176,7 @@ fn player_blot_count(game_state: &backgammon::state::game_state::GameState, play
 }
 
 fn player_home_count(game_state: &backgammon::state::game_state::GameState, player_number: i8) -> i8 {
-    game_state.points.points.iter().filter(|point| {
+    game_state.points.iter().filter(|point| {
         match player_number {
             1 => point.number >= 19,
             2 => point.number <= 6,
