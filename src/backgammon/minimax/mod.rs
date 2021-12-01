@@ -23,8 +23,9 @@ pub fn recommended_move(game_state: backgammon::state::game_state::GameState, de
         _ => {
             // Do something
             let moves_with_value = moves.iter().map(|mov| {
-                let new_game_state = match game_state.perform_move(mov) {
-                    Ok(n) => n,
+                let mut new_game_state = game_state.clone(); 
+                match new_game_state.perform_move(mov) {
+                    Ok(_) => (),
                     Err(_) => return (mov, 0),
                 };
 
@@ -64,7 +65,8 @@ pub fn recommended_move(game_state: backgammon::state::game_state::GameState, de
 // evaluate game state without roll. i.e. roll_phase
 pub fn evaluate_roll_phase(game_state: &backgammon::state::game_state::GameState, depth: i8, alpha: i32, beta: i32, maximizing_player: bool) -> Result<i32, &'static str> {
     let results: Result<Vec<i32>, _> = ALL_ROLLS.iter().map(|roll| {
-        let new_game_state = game_state.perform_set_roll(roll.0, roll.1);
+        let mut new_game_state = game_state.clone();
+        new_game_state.perform_set_roll(roll.0, roll.1);
         evaluate_move_phase(&new_game_state, depth - 1, alpha, beta, maximizing_player)
     }).collect();
     
@@ -89,9 +91,10 @@ pub fn evaluate_move_phase(game_state: &backgammon::state::game_state::GameState
     if maximizing_player {
         let mut max_eval = std::i32::MIN;
         for mov in moves {
-            match game_state.perform_move(&mov) {
-                Ok(after_move_game_state) => {
-                    match evaluate_roll_phase(&after_move_game_state, depth, alpha, beta, false) {
+            let mut new_game_state = game_state.clone();
+            match new_game_state.perform_move(&mov) {
+                Ok(_) => {
+                    match evaluate_roll_phase(&new_game_state, depth, alpha, beta, false) {
                         Ok(eval) => {
                             max_eval = cmp::max(max_eval, eval);
                             alpha = cmp::max(alpha, eval);
@@ -109,9 +112,10 @@ pub fn evaluate_move_phase(game_state: &backgammon::state::game_state::GameState
     } else {
         let mut min_eval = std::i32::MAX;
         for mov in moves {
-            match game_state.perform_move(&mov) {
-                Ok(after_move_game_state) => {
-                    match evaluate_roll_phase(&after_move_game_state, depth, alpha, beta, true) {
+            let mut new_game_state = game_state.clone();
+            match new_game_state.perform_move(&mov) {
+                Ok(_) => {
+                    match evaluate_roll_phase(&new_game_state, depth, alpha, beta, true) {
                         Ok(eval) => {
                             min_eval = cmp::min(min_eval, eval);
                             beta = cmp::min(beta, eval);
@@ -134,7 +138,7 @@ pub fn evaluate_move_phase(game_state: &backgammon::state::game_state::GameState
 fn static_evaluation(game_state: &backgammon::state::game_state::GameState) -> i32 {
     let player_one_prime_count = player_prime_count(game_state, 1);
     let player_two_prime_count = player_prime_count(game_state, 2);
-    let prime_count_value = u_to_i32(player_one_prime_count - player_two_prime_count);
+    let prime_count_value = u_to_i32(player_one_prime_count) - u_to_i32(player_two_prime_count);
 
     let player_one_blot_count = player_blot_count(game_state, 1);
     let player_two_blot_count = player_blot_count(game_state, 2);

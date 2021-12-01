@@ -210,33 +210,27 @@ impl GameState {
         }
     }
     
-    pub fn perform_set_roll(&self, die_a: i8, die_b: i8) -> GameState {
-        let mut new_game_state = self.clone();
-
+    pub fn perform_set_roll(&mut self, die_a: i8, die_b: i8) -> () {
         if die_a == die_b {
-            new_game_state.dice = vec![
+            self.dice = vec![
                 Die { number: Some(die_a), used: false },
                 Die { number: Some(die_b), used: false },
                 Die { number: Some(die_a), used: false },
                 Die { number: Some(die_b), used: false }
             ];
         } else {
-            new_game_state.dice = vec![
+            self.dice = vec![
                 Die { number: Some(die_a), used: false },
                 Die { number: Some(die_b), used: false }
             ];
         }
 
-        new_game_state.current_phase = Phase::MovePhase;
-
-        new_game_state
+        self.current_phase = Phase::MovePhase;
     }
 
-    pub fn perform_move(&self, mov: &Move) -> Result<GameState, &'static str> {
-        let mut new_game_state = self.clone();
-
+    pub fn perform_move(&mut self, mov: &Move) -> Result<(), &'static str> {
         let items: Result<Vec<_>, _> = mov.list.iter().map(|step| {
-            new_game_state.perform_move_step(step)
+            self.perform_move_step(step)
         }).collect();
 
         match items {
@@ -244,20 +238,20 @@ impl GameState {
             Err(e) => return Err(e)
         };
 
-        new_game_state.dice = vec![
+        self.dice = vec![
             Die { number: None, used: false },
             Die { number: None, used: false }
         ];
 
         match self.current_player_number { 
-            1 => new_game_state.current_player_number = 2,
-            2 => new_game_state.current_player_number = 1,
+            1 => self.current_player_number = 2,
+            2 => self.current_player_number = 1,
             _ => return Err("invalid player number")
         };
 
-        new_game_state.current_phase = Phase::RollPhase;
+        self.current_phase = Phase::RollPhase;
 
-        Ok(new_game_state)
+        Ok(())
     }
     
     fn pop_piece(&mut self, player_number: i8, location: &Location) -> Result<i8, &'static str> {
@@ -1182,7 +1176,7 @@ mod tests {
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let game_state = GameState {
+        let mut game_state = GameState {
             current_player_number,
             current_phase,
             dice,
@@ -1191,19 +1185,19 @@ mod tests {
             off_board
         };
 
-        let new_game_state = game_state.perform_set_roll(1, 2);
+        game_state.perform_set_roll(1, 2);
 
-        match new_game_state.dice.iter().find(|p| p.number == Some(1)) {
+        match game_state.dice.iter().find(|p| p.number == Some(1)) {
             Some(_) => assert!(true),
             None => assert!(false, "expected dice")
         }
 
-        match new_game_state.dice.iter().find(|p| p.number == Some(2)) {
+        match game_state.dice.iter().find(|p| p.number == Some(2)) {
             Some(_) => assert!(true),
             None => assert!(false, "expected dice")
         }
 
-        assert_eq!(new_game_state.current_phase, Phase::MovePhase);
+        assert_eq!(game_state.current_phase, Phase::MovePhase);
     }
 
     #[test]
@@ -1237,7 +1231,7 @@ mod tests {
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let game_state = GameState {
+        let mut game_state = GameState {
             current_player_number,
             current_phase,
             dice,
@@ -1246,15 +1240,15 @@ mod tests {
             off_board
         };
 
-        let new_game_state = game_state.perform_set_roll(2, 2);
+        game_state.perform_set_roll(2, 2);
 
-        match new_game_state.dice.iter().find(|p| p.number == Some(2)) {
+        match game_state.dice.iter().find(|p| p.number == Some(2)) {
             Some(_) => assert!(true),
             None => assert!(false, "expected dice")
         }
 
-        assert_eq!(new_game_state.dice.len(), 4);
-        assert_eq!(new_game_state.current_phase, Phase::MovePhase);
+        assert_eq!(game_state.dice.len(), 4);
+        assert_eq!(game_state.current_phase, Phase::MovePhase);
     }
 
     #[test]
@@ -1288,7 +1282,7 @@ mod tests {
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let game_state = GameState {
+        let mut game_state = GameState {
             current_player_number,
             current_phase,
             dice,
@@ -1300,36 +1294,36 @@ mod tests {
         let from_a = Location { kind: PointKind::Point, number: Some(1) };
         let to_a = Location { kind: PointKind::Point, number: Some(2) };
         let die_number_a = 1;
-        let move_step_a = MoveStep { from: from_a, to: to_a, die_number: die_number_a };
+        let move_step_a = MoveStep { from: from_a, to: to_a, die_number: die_number_a, hit: false };
 
         let from_b = Location { kind: PointKind::Point, number: Some(1) };
         let to_b = Location { kind: PointKind::Point, number: Some(3) };
         let die_number_b = 2;
-        let move_step_b = MoveStep { from: from_b, to: to_b, die_number: die_number_b };
+        let move_step_b = MoveStep { from: from_b, to: to_b, die_number: die_number_b, hit: false };
 
         let mov = Move { list: vec![move_step_a, move_step_b] };
 
         match game_state.perform_move(&mov) {
-            Ok(new_game_state) => {
-                match new_game_state.points.iter().find(|p| p.number == 1) {
+            Ok(_) => {
+                match game_state.points.iter().find(|p| p.number == 1) {
                     Some(p) => assert_eq!(p.player_one_piece_count, 0),
                     None => assert!(false, "expected piece")
                 }
 
-                match new_game_state.points.iter().find(|p| p.number == 2) {
+                match game_state.points.iter().find(|p| p.number == 2) {
                     Some(p) => assert_eq!(p.player_one_piece_count, 1),
                     None => assert!(false, "expected piece")
                 }
 
-                match new_game_state.points.iter().find(|p| p.number == 3) {
+                match game_state.points.iter().find(|p| p.number == 3) {
                     Some(p) => assert_eq!(p.player_one_piece_count, 1),
                     None => assert!(false, "expected piece")
                 }
 
-                assert!(new_game_state.dice.iter().all(|d| d.number == None && d.used == false));
+                assert!(game_state.dice.iter().all(|d| d.number == None && d.used == false));
 
-                assert_eq!(new_game_state.current_phase, Phase::RollPhase);
-                assert_eq!(new_game_state.current_player_number, 2);
+                assert_eq!(game_state.current_phase, Phase::RollPhase);
+                assert_eq!(game_state.current_player_number, 2);
             },
             Err(_) => assert!(false, "expected no error") 
         }
@@ -1366,7 +1360,7 @@ mod tests {
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
-        let game_state = GameState {
+        let mut game_state = GameState {
             current_player_number,
             current_phase,
             dice,
@@ -1378,12 +1372,12 @@ mod tests {
         let from_a = Location { kind: PointKind::Point, number: Some(1) };
         let to_a = Location { kind: PointKind::Point, number: Some(2) };
         let die_number_a = 1;
-        let move_step_a = MoveStep { from: from_a, to: to_a, die_number: die_number_a };
+        let move_step_a = MoveStep { from: from_a, to: to_a, die_number: die_number_a, hit: false };
 
         let from_b = Location { kind: PointKind::Point, number: Some(1) };
         let to_b = Location { kind: PointKind::Point, number: Some(3) };
         let die_number_b = 7;
-        let move_step_b = MoveStep { from: from_b, to: to_b, die_number: die_number_b };
+        let move_step_b = MoveStep { from: from_b, to: to_b, die_number: die_number_b, hit: false };
 
         let mov = Move { list: vec![move_step_a, move_step_b] };
 
@@ -1430,7 +1424,8 @@ mod tests {
         let from = Location { kind: PointKind::Point, number: Some(1) };
         let to = Location { kind: PointKind::Point, number: Some(2) };
         let die_number = 1;
-        let move_step = MoveStep { from, to, die_number };
+        let hit = false;
+        let move_step = MoveStep { from, to, die_number, hit };
         
         let result = game_state.perform_move_step(&move_step);
 
@@ -1492,7 +1487,8 @@ mod tests {
         let from = Location { kind: PointKind::Point, number: Some(1) };
         let to = Location { kind: PointKind::Point, number: Some(2) };
         let die_number = 1;
-        let move_step = MoveStep { from, to, die_number };
+        let hit = false;
+        let move_step = MoveStep { from, to, die_number, hit };
 
         match game_state.perform_move_step(&move_step) {
             Ok(_) => assert!(false, "expected error"),
@@ -1537,7 +1533,8 @@ mod tests {
         let from = Location { kind: PointKind::Point, number: Some(1) };
         let to = Location { kind: PointKind::Point, number: Some(2) };
         let die_number = 3;
-        let move_step = MoveStep { from, to, die_number };
+        let hit = false;
+        let move_step = MoveStep { from, to, die_number, hit };
 
         match game_state.perform_move_step(&move_step) {
             Ok(_) => assert!(false, "expected error"),

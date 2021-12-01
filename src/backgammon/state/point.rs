@@ -20,6 +20,10 @@ impl Point {
         self.player_one_piece_count > 1 || self.player_two_piece_count > 1
     }
 
+    pub fn blot(&self) -> bool {
+        self.player_one_piece_count == 1 || self.player_two_piece_count == 1
+    }
+
     pub fn occupied_by_player(&self, player_number: i8) -> bool {
         match player_number {
             1 => self.player_one_piece_count > 0,
@@ -225,6 +229,28 @@ mod tests {
             player_two_piece_count: 0
         };
         let result = point.prime();
+        assert!(!result)
+    }
+
+    #[test]
+    fn blot_test() {
+        let point = Point { 
+            number: 1, 
+            player_one_piece_count: 1,
+            player_two_piece_count: 0
+        };
+        let result = point.blot();
+        assert!(result)
+    }
+
+    #[test]
+    fn not_blot_test() {
+        let point = Point { 
+            number: 1, 
+            player_one_piece_count: 2,
+            player_two_piece_count: 0
+        };
+        let result = point.blot();
         assert!(!result)
     }
 

@@ -32,12 +32,18 @@ impl Location {
 pub struct MoveStep {
     pub from: Location,
     pub to: Location,
-    pub die_number: i8
+    pub die_number: i8,
+    pub hit: bool
 }
 
 impl MoveStep {
     pub fn format(&self) -> String {
-        String::from(format!("{}/{}", self.from.format(), self.to.format()))
+        let hit_string = if self.hit {
+            "*"
+        } else {
+            ""
+        };
+        String::from(format!("{}/{}{}", self.from.format(), self.to.format(), hit_string))
     }
 }
 
@@ -58,20 +64,22 @@ impl Move {
     }
 }
 
-pub fn build_move_step(from_kind: PointKind, from_number: Option<i8>, to_kind: PointKind, to_number: Option<i8>, die_number: i8) -> MoveStep {
+pub fn build_move_step(from_kind: PointKind, from_number: Option<i8>, to_kind: PointKind, to_number: Option<i8>, die_number: i8, hit: bool) -> MoveStep {
     let from = Location { kind: from_kind, number: from_number };
     let to = Location { kind: to_kind, number: to_number };
-    MoveStep { from, to, die_number }
+    MoveStep { from, to, die_number, hit }
 }
 
 pub fn bar_move_step(destination_point: Option<&Point>, die_number: i8, player_number: i8) -> Option<MoveStep> {
    match destination_point {
        Some(p) => {
            if !(p.prime() && p.occupied_by_opponent(player_number)) {
+               let hit = p.occupied_by_opponent(player_number) && p.blot();
                Some(build_move_step(
                    PointKind::Bar, None, 
                    PointKind::Point, Some(p.number),
-                   die_number
+                   die_number,
+                   hit
                ))    
            } else {
                None
@@ -85,7 +93,8 @@ pub fn off_board_move_step(origin_point: &Point, die_number: i8) -> Option<MoveS
    Some(build_move_step(
        PointKind::Point, Some(origin_point.number),
        PointKind::OffBoard, None,
-       die_number
+       die_number,
+       false
    ))
 }
 
@@ -106,10 +115,12 @@ pub fn point_to_point_move_step(origin_point: &Point, destination_point: Option<
    match destination_point {
        Some(p) => {
            if !(p.prime() && p.occupied_by_opponent(player_number)) {
+               let hit = p.occupied_by_opponent(player_number) && p.blot();
                Some(build_move_step(
                    PointKind::Point, Some(origin_point.number),
                    PointKind::Point, Some(p.number),
-                   die_number
+                   die_number,
+                   hit
                ))
            } else {
                None
@@ -146,8 +157,9 @@ mod tests {
        let from = Location { kind: PointKind::Point, number: Some(1) }; 
        let to = Location { kind: PointKind::Point, number: Some(2) }; 
        let die_number = 1;
-       let move_step = MoveStep { from, to, die_number };
-       assert_eq!(move_step.format(), "1/2");
+       let hit = true;
+       let move_step = MoveStep { from, to, die_number, hit };
+       assert_eq!(move_step.format(), "1/2*");
     }
 
     #[test]
@@ -155,12 +167,12 @@ mod tests {
        let from_a = Location { kind: PointKind::Point, number: Some(1) }; 
        let to_a = Location { kind: PointKind::Point, number: Some(2) }; 
        let die_number_a = 1;
-       let move_step_a = MoveStep { from: from_a, to: to_a, die_number: die_number_a };
+       let move_step_a = MoveStep { from: from_a, to: to_a, die_number: die_number_a, hit: false };
        
        let from_b = Location { kind: PointKind::Point, number: Some(2) }; 
        let to_b = Location { kind: PointKind::Point, number: Some(4) }; 
        let die_number_b = 2;
-       let move_step_b = MoveStep { from: from_b, to: to_b, die_number: die_number_b };
+       let move_step_b = MoveStep { from: from_b, to: to_b, die_number: die_number_b, hit: false };
 
        let mov = Move { list: vec![move_step_a, move_step_b] };
        
@@ -175,7 +187,7 @@ mod tests {
         let to_number = Some(2);
         let die_number = 1;
 
-        let move_step = build_move_step(from_kind, from_number, to_kind, to_number, die_number);
+        let move_step = build_move_step(from_kind, from_number, to_kind, to_number, die_number, false);
 
         assert_eq!(move_step.from.kind, PointKind::Point);
         assert_eq!(move_step.from.number, Some(1));
