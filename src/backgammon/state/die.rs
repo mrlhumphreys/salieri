@@ -10,6 +10,11 @@ impl Die {
        self.used = true; 
        true
     }
+
+    pub fn mark_unused(&mut self) -> bool {
+       self.used = false; 
+       true
+    }
 }
 
 impl Clone for Die {
