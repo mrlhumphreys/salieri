@@ -273,11 +273,6 @@ impl GameState {
             Err(e) => return Err(e)
         };
 
-        self.dice = vec![
-            Die { number: None, used: false },
-            Die { number: None, used: false }
-        ];
-
         match self.current_player_number {
             1 => self.current_player_number = 2,
             2 => self.current_player_number = 1,
@@ -289,9 +284,26 @@ impl GameState {
         Ok(())
     }
 
-    // pub fn undo_move(&mut self, mov: &Move) -> Result<(), &'static str> {
-    //     Ok(())
-    // }
+    pub fn undo_move(&mut self, mov: &Move) -> Result<(), &'static str> {
+        self.current_phase = Phase::MovePhase;
+
+        match self.current_player_number {
+            1 => self.current_player_number = 2,
+            2 => self.current_player_number = 1,
+            _ => return Err("invalid player number")
+        };
+
+        let items: Result<Vec<_>, _> = mov.list.iter().rev().map(|step| {
+            self.undo_move_step(step)
+        }).collect();
+
+        match items {
+            Ok(_) => (),
+            Err(e) => return Err(e)
+        };
+
+        Ok(())
+    }
 
     fn pop_piece(&mut self, player_number: i8, location: &Location) -> Result<i8, &'static str> {
         match location.kind {
@@ -1359,8 +1371,6 @@ mod tests {
                     None => assert!(false, "expected piece")
                 }
 
-                assert!(game_state.dice.iter().all(|d| d.number == None && d.used == false));
-
                 assert_eq!(game_state.current_phase, Phase::RollPhase);
                 assert_eq!(game_state.current_player_number, 2);
             },
@@ -1421,6 +1431,140 @@ mod tests {
         let mov = Move { list: vec![move_step_a, move_step_b] };
 
         match game_state.perform_move(&mov) {
+            Ok(_) => assert!(false, "expected error"),
+            Err(_) => assert!(true)
+        };
+    }
+
+    #[test]
+    fn undo_move_valid_test() {
+        let current_player_number = 2;
+        let current_phase = Phase::RollPhase;
+        let die_a = Die { number: Some(1), used: true };
+        let die_b = Die { number: Some(2), used: true };
+        let dice = vec![die_a, die_b];
+        let bar = Bar {
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
+        let from_point = Point {
+            number: 1,
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
+        let to_point_a = Point {
+            number: 2,
+            player_one_piece_count: 1,
+            player_two_piece_count: 0
+        };
+        let to_point_b = Point {
+            number: 3,
+            player_one_piece_count: 1,
+            player_two_piece_count: 0
+        };
+        let points = vec![from_point, to_point_a, to_point_b];
+        let off_board = OffBoard {
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
+        let mut game_state = GameState {
+            current_player_number,
+            current_phase,
+            dice,
+            bar,
+            points,
+            off_board
+        };
+
+        let from_a = Location { kind: PointKind::Point, number: Some(1) };
+        let to_a = Location { kind: PointKind::Point, number: Some(2) };
+        let die_number_a = 1;
+        let move_step_a = MoveStep { from: from_a, to: to_a, die_number: die_number_a, hit: false };
+
+        let from_b = Location { kind: PointKind::Point, number: Some(1) };
+        let to_b = Location { kind: PointKind::Point, number: Some(3) };
+        let die_number_b = 2;
+        let move_step_b = MoveStep { from: from_b, to: to_b, die_number: die_number_b, hit: false };
+
+        let mov = Move { list: vec![move_step_a, move_step_b] };
+
+        match game_state.undo_move(&mov) {
+            Ok(_) => {
+                match game_state.points.iter().find(|p| p.number == 1) {
+                    Some(p) => assert_eq!(p.player_one_piece_count, 2),
+                    None => assert!(false, "expected piece")
+                }
+
+                match game_state.points.iter().find(|p| p.number == 2) {
+                    Some(p) => assert_eq!(p.player_one_piece_count, 0),
+                    None => assert!(false, "expected piece")
+                }
+
+                match game_state.points.iter().find(|p| p.number == 3) {
+                    Some(p) => assert_eq!(p.player_one_piece_count, 0),
+                    None => assert!(false, "expected piece")
+                }
+
+                assert_eq!(game_state.current_phase, Phase::MovePhase);
+                assert_eq!(game_state.current_player_number, 1);
+            },
+            Err(e) => assert!(false, e)
+        }
+    }
+
+    #[test]
+    fn undo_move_invalid_test() {
+        let current_player_number = 2;
+        let current_phase = Phase::RollPhase;
+        let die_a = Die { number: Some(1), used: true };
+        let die_b = Die { number: Some(2), used: true };
+        let dice = vec![die_a, die_b];
+        let bar = Bar {
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
+        let from_point = Point {
+            number: 1,
+            player_one_piece_count: 2,
+            player_two_piece_count: 0
+        };
+        let to_point_a = Point {
+            number: 2,
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
+        let to_point_b = Point {
+            number: 3,
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
+        let points = vec![from_point, to_point_a, to_point_b];
+        let off_board = OffBoard {
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
+        let mut game_state = GameState {
+            current_player_number,
+            current_phase,
+            dice,
+            bar,
+            points,
+            off_board
+        };
+
+        let from_a = Location { kind: PointKind::Point, number: Some(1) };
+        let to_a = Location { kind: PointKind::Point, number: Some(2) };
+        let die_number_a = 1;
+        let move_step_a = MoveStep { from: from_a, to: to_a, die_number: die_number_a, hit: false };
+
+        let from_b = Location { kind: PointKind::Point, number: Some(1) };
+        let to_b = Location { kind: PointKind::Point, number: Some(3) };
+        let die_number_b = 7;
+        let move_step_b = MoveStep { from: from_b, to: to_b, die_number: die_number_b, hit: false };
+
+        let mov = Move { list: vec![move_step_a, move_step_b] };
+
+        match game_state.undo_move(&mov) {
             Ok(_) => assert!(false, "expected error"),
             Err(_) => assert!(true)
         };
