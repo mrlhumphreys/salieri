@@ -49,6 +49,7 @@ impl MoveStep {
 
 #[derive(Clone)]
 pub struct Move {
+    pub die_numbers: Vec<i8>,
     pub list: Vec<MoveStep>
 }
 
@@ -58,7 +59,9 @@ impl Move {
     // bar - bar
     // off - off board
     pub fn format(&self) -> String {
-        let dice = String::from(format!("{}-{}", self.list[0].die_number, self.list[1].die_number));
+        let mut die_numbers_copy = self.die_numbers.clone();
+        die_numbers_copy.sort();
+        let dice = String::from(format!("{}-{}", die_numbers_copy[1], die_numbers_copy[0]));
         let move_steps = self.list.iter().map(|ms| { ms.format() }).collect::<Vec<String>>().join(" ");
         String::from(format!("{}: {}", dice, move_steps))
     }
@@ -174,9 +177,12 @@ mod tests {
        let die_number_b = 2;
        let move_step_b = MoveStep { from: from_b, to: to_b, die_number: die_number_b, hit: false };
 
-       let mov = Move { list: vec![move_step_a, move_step_b] };
+       let mov = Move {
+           die_numbers: vec![die_number_a, die_number_b],
+           list: vec![move_step_a, move_step_b]
+       };
        
-       assert_eq!(mov.format(), "1-2: 1/2 2/4");
+       assert_eq!(mov.format(), "2-1: 1/2 2/4");
     }
 
     #[test]

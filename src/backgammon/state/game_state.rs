@@ -150,7 +150,17 @@ impl GameState {
         let steps = self.possible_steps();
         if steps.len() == 0 {
             // generate move and push to list
-            let mov = Move { list: step_list };
+            let die_numbers: Vec<i8> = self.dice.iter().map(|d| {
+                match d.number {
+                    Some(n) => n,
+                    None => 0
+                }
+            }).collect();
+
+            let mov = Move {
+                die_numbers: die_numbers,
+                list: step_list
+            };
             moves.push(mov);
         } else {
             for step in steps {
@@ -1352,7 +1362,10 @@ mod tests {
         let die_number_b = 2;
         let move_step_b = MoveStep { from: from_b, to: to_b, die_number: die_number_b, hit: false };
 
-        let mov = Move { list: vec![move_step_a, move_step_b] };
+        let mov = Move {
+            die_numbers: vec![die_number_a, die_number_b],
+            list: vec![move_step_a, move_step_b]
+        };
 
         match game_state.perform_move(&mov) {
             Ok(_) => {
@@ -1428,7 +1441,10 @@ mod tests {
         let die_number_b = 7;
         let move_step_b = MoveStep { from: from_b, to: to_b, die_number: die_number_b, hit: false };
 
-        let mov = Move { list: vec![move_step_a, move_step_b] };
+        let mov = Move {
+            die_numbers: vec![die_number_a, die_number_b],
+            list: vec![move_step_a, move_step_b]
+        };
 
         match game_state.perform_move(&mov) {
             Ok(_) => assert!(false, "expected error"),
@@ -1486,7 +1502,10 @@ mod tests {
         let die_number_b = 2;
         let move_step_b = MoveStep { from: from_b, to: to_b, die_number: die_number_b, hit: false };
 
-        let mov = Move { list: vec![move_step_a, move_step_b] };
+        let mov = Move {
+            die_numbers: vec![die_number_a, die_number_b],
+            list: vec![move_step_a, move_step_b]
+        };
 
         match game_state.undo_move(&mov) {
             Ok(_) => {
@@ -1562,7 +1581,10 @@ mod tests {
         let die_number_b = 7;
         let move_step_b = MoveStep { from: from_b, to: to_b, die_number: die_number_b, hit: false };
 
-        let mov = Move { list: vec![move_step_a, move_step_b] };
+        let mov = Move {
+            die_numbers: vec![die_number_a, die_number_b],
+            list: vec![move_step_a, move_step_b]
+        };
 
         match game_state.undo_move(&mov) {
             Ok(_) => assert!(false, "expected error"),
