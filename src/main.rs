@@ -176,7 +176,7 @@ mod tests {
         let mut app = test::init_service(App::new().route("/api/v0/{game_type}/{state}", web::get().to(game_move))).await;
         let req = test::TestRequest::with_header("content-type", "text/plain").uri("/api/v0/backgammon/002000000000050030000000500500000003005000000000020012n").to_request();
         let res = test::read_response(&mut app, req).await;
-        assert_eq!(res, Bytes::from_static(b"404 Not Found\n"));
+        assert_eq!(res, Bytes::from_static(b"Invalid State\n"));
     }
 
     // invalid game type 

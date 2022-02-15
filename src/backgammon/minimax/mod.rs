@@ -14,7 +14,10 @@ const ALL_ROLLS: [(i8,i8); 21] = [
 
 pub fn recommended_move(game_state: backgammon::state::game_state::GameState, depth: i8) -> Option<backgammon::state::mov::Move> {
     let mut new_game_state = game_state.clone();
-    let moves = new_game_state.possible_moves();
+    let moves = match new_game_state.possible_moves() {
+        Ok(m) => m,
+        Err(_) => vec![]
+    };
     match moves.len() {
         0 => None,
         1 => match moves.first() {
@@ -81,7 +84,10 @@ pub fn evaluate_roll_phase(game_state: &mut backgammon::state::game_state::GameS
 
 // evaluate game state with roll, i.e. move_phase
 pub fn evaluate_move_phase(game_state: &mut backgammon::state::game_state::GameState, depth: i8, mut alpha: i32, mut beta: i32, maximizing_player: bool) -> Result<i32, &'static str> {
-    let moves = game_state.possible_moves(); 
+    let moves = match game_state.possible_moves() {
+        Ok(m) => m,
+        Err(_) => vec![]
+    };
     if depth == 0 || moves.len() == 0 {
         return Ok(static_evaluation(&game_state));
     }

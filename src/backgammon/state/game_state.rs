@@ -186,12 +186,12 @@ impl GameState {
         Ok(moves)
     }
 
-    pub fn possible_moves(&mut self) -> Vec<Move> {
+    pub fn possible_moves(&mut self) -> Result<Vec<Move>, &'static str> {
         let moves: Vec<Move> = vec![];
         let step_list: Vec<MoveStep> = vec![];
         match self.find_moves(step_list, moves) {
-            Ok(m) => return m,
-            Err(_) => return vec![]
+            Ok(m) => return Ok(m),
+            Err(e) => return Err(e)
         }
     }
 
@@ -324,7 +324,7 @@ impl GameState {
                 }
             }
             PointKind::Bar => self.bar.pop_piece(player_number),
-            PointKind::OffBoard => Err("Cannot move piece from OffBoard")
+            PointKind::OffBoard => self.off_board.pop_piece(player_number)
         }
     }
 
@@ -580,7 +580,10 @@ mod tests {
             off_board
         };
 
-        let possible_moves = game_state.possible_moves();
+        let possible_moves = match game_state.possible_moves() {
+            Ok(moves) => moves,
+            Err(_) => vec![]
+        };
 
         assert_eq!(possible_moves.len(), 4);
 
@@ -1203,6 +1206,17 @@ mod tests {
                 assert_eq!(s.die_number, 6);
             },
             None => assert!(false, "expected step")
+        }
+    }
+
+    #[test]
+    fn off_boarding_test() {
+        let encoded = String::from("000c010101000000000000000000000000000060102010100040262");
+        let mut game_state = parse(&encoded).unwrap();
+
+        match game_state.possible_moves() {
+            Ok(m) => assert_eq!(m.len(), 3),
+            Err(e) => assert!(false, e)
         }
     }
 
@@ -2017,8 +2031,8 @@ mod tests {
         };
 
         match game_state.pop_piece(1, &location) {
-            Ok(_) => assert!(false, "cannot pop piece from off board"),
-            Err(_) => assert!(true)
+            Ok(_) => assert!(true),
+            Err(e) => assert!(false, e)
         }
     }
 

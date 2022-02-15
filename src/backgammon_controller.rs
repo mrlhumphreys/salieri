@@ -7,7 +7,7 @@ use super::backgammon;
 pub fn minimax(game_data: &String) -> HttpResponse {
     let game_state = match backgammon::state::game_state::parse(game_data) {
         Ok(gs) => gs,
-        Err(_) => return HttpResponse::NotFound().body("404 Not Found\n"),
+        Err(_) => return HttpResponse::NotFound().body("Invalid State\n"),
     };
 
     let minimax_depth: i8 = env::var("BACKGAMMON_MINIMAX_DEPTH")
@@ -19,7 +19,7 @@ pub fn minimax(game_data: &String) -> HttpResponse {
 
     match recommended_move {
         Some(m) => HttpResponse::Ok().body(format!("{}\n", m.format())),
-        None => HttpResponse::NotFound().body("404 Not Found\n"),
+        None => HttpResponse::NotFound().body("No Moves\n"),
     }
 }
 
@@ -55,7 +55,7 @@ mod tests {
         match result.body() {
             ResponseBody::Body(body) => {
                 match body {
-                    Body::Bytes(bytes) => assert_eq!(bytes, "404 Not Found\n"),
+                    Body::Bytes(bytes) => assert_eq!(bytes, "Invalid State\n"),
                     _ => assert!(false, "unexepected body")
                 }
             },
