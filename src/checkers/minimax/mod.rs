@@ -135,30 +135,19 @@ fn lose_value(game_state: &checkers::state::game_state::GameState) -> i32 {
 
 fn center_squares_count(game_state: &checkers::state::game_state::GameState, player_number: i8) -> usize {
     game_state.squares.squares.iter().filter(|s| {
-        match s.piece {
-            Some(p) => {
-               p.player_number == player_number && CENTER_SQUARE_IDS.iter().any(|id| s.id == *id )
-            },
-            None => false,
-        }
+        s.player_number == player_number && CENTER_SQUARE_IDS.iter().any(|id| s.id == *id )
     }).count()
 }
 
 fn player_pieces_count(game_state: &checkers::state::game_state::GameState, player_number: i8) -> usize {
     game_state.squares.squares.iter().filter(|s| {
-        match s.piece {
-            Some(p) => p.player_number == player_number,
-            None => false,
-        }
+        s.player_number == player_number
     }).count()
 }
 
 fn player_kings_count(game_state: &checkers::state::game_state::GameState, player_number: i8) -> usize {
     game_state.squares.squares.iter().filter(|s| {
-        match s.piece {
-            Some(p) => p.king && p.player_number == player_number,
-            None => false,
-        }
+        s.king && s.player_number == player_number
     }).count()
 }
 

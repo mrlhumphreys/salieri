@@ -243,22 +243,12 @@ mod tests {
         match game_state.perform_move(&mov) {
             Ok(n) => {
                 match n.squares.squares.clone().into_iter().find(|s| s.id == 9) {
-                    Some(s) => {
-                        match s.piece {
-                            Some(_) => assert!(false, "piece should not exist"), 
-                            None => assert!(true),
-                        }
-                    },
+                    Some(s) => assert_eq!(s.occupied(), false),
                     None => assert!(false, "square not found"),
                 }
 
                 match n.squares.squares.clone().into_iter().find(|s| s.id == 13) {
-                    Some(s) => {
-                        match s.piece {
-                            Some(_) => assert!(true), 
-                            None => assert!(false, "piece should exists"),
-                        }
-                    },
+                    Some(s) => assert_eq!(s.occupied(), true),
                     None => assert!(false, "square not found"),
                 }
             },
@@ -278,12 +268,7 @@ mod tests {
         match game_state.perform_move(&mov) {
             Ok(n) => {
                 match n.squares.squares.clone().into_iter().find(|s| s.id == 32) {
-                    Some(s) => {
-                        match s.piece {
-                            Some(p) => assert_eq!(true, p.king), 
-                            None => assert!(false, "piece should exist"),
-                        }
-                    },
+                    Some(s) => assert_eq!(s.king, true),
                     None => assert!(false, "square not found"),
                 }
             },
