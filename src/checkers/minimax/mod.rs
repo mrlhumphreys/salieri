@@ -14,8 +14,9 @@ pub fn recommended_move(game_state: checkers::state::game_state::GameState, dept
         },
         _ => {
             let moves_with_value = moves.iter().map(|mov| {
-                let new_game_state = match game_state.perform_move(mov) {
-                    Ok(n) => n,
+                let mut new_game_state = game_state.clone();
+                match new_game_state.perform_move(mov) {
+                    Ok(_) => (),
                     Err(_) => return (mov, 0),
                 };
 
@@ -61,8 +62,9 @@ pub fn evaluate(game_state: &checkers::state::game_state::GameState, depth: i8, 
     if maximizing_player {
         let mut max_eval = std::i32::MIN;
         for mov in moves {
-            match game_state.perform_move(&mov) {
-                Ok(new_game_state) => {
+            let mut new_game_state = game_state.clone();
+            match new_game_state.perform_move(&mov) {
+                Ok(()) => {
                     match evaluate(&new_game_state, depth - 1, alpha, beta, false) {
                         Ok(eval) => {
                             max_eval = cmp::max(max_eval, eval);
@@ -81,8 +83,9 @@ pub fn evaluate(game_state: &checkers::state::game_state::GameState, depth: i8, 
     } else {
         let mut min_eval = std::i32::MAX;
         for mov in moves {
-            match game_state.perform_move(&mov) {
-                Ok(new_game_state) => {
+            let mut new_game_state = game_state.clone();
+            match new_game_state.perform_move(&mov) {
+                Ok(()) => {
                     match evaluate(&new_game_state, depth - 1, alpha, beta, true) {
                         Ok(eval) => {
                             min_eval = cmp::min(min_eval, eval);
@@ -168,7 +171,7 @@ mod tests {
         let game_state = checkers::state::game_state::parse(&encoded).unwrap();
 
         match evaluate(&game_state, 4, std::i32::MIN, std::i32::MAX, false) {
-            Ok(result) => assert_eq!(result, 0),
+            Ok(result) => assert_eq!(result, -3),
             Err(e) => assert!(false, e)
         }
     }
@@ -181,7 +184,7 @@ mod tests {
 
         match mov {
             Some(m) => {
-                assert_eq!(m.from, 22);
+                assert_eq!(m.from, 21);
                 assert_eq!(m.to, vec![17]);
             },
             None => assert!(false, "expected move"), 

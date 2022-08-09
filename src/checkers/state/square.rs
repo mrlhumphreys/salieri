@@ -139,8 +139,9 @@ impl Square {
                 
                 current_leg.push(destination.id);
 
-                match board.perform_move(self.id, destination.id) {
-                    Ok(new_board) => {
+                let mut new_board = board.clone();
+                match new_board.perform_move(self.id, destination.id) {
+                    Ok(_) => {
                         destination.jump_legs(player_number, king, &new_board, &mut accumulator, &mut current_leg);
                     },
                     Err(_) => (),

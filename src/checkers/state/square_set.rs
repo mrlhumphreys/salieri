@@ -33,12 +33,11 @@ impl fmt::Display for SquareSet {
 }
 
 impl SquareSet {
-    pub fn perform_move(&self, from: i8, to: i8) -> Result<SquareSet, &'static str> {
-        let mut squares = self.squares.clone();
+    pub fn perform_move(&mut self, from: i8, to: i8) -> Result<(), &'static str> {
         let player_number: i8;
         let king: bool;
 
-        match squares.iter_mut().find(|s| s.id == from) {
+        match self.squares.iter_mut().find(|s| s.id == from) {
             Some(s) => {
                 if s.occupied() {
                     player_number = s.player_number;
@@ -52,7 +51,7 @@ impl SquareSet {
             None => return Err("Invalid From Square"),
         }
 
-        match squares.iter_mut().find(|s| s.id == to) {
+        match self.squares.iter_mut().find(|s| s.id == to) {
             Some(s) => { 
                 s.player_number = player_number;
                 s.king = king;
@@ -60,12 +59,12 @@ impl SquareSet {
             None => return Err("Invalid To Square"),
         }
 
-        let from_square = squares.iter().find(|s| s.id == from);
-        let to_square = squares.iter().find(|s| s.id == to);
+        let from_square = self.squares.iter().find(|s| s.id == from);
+        let to_square = self.squares.iter().find(|s| s.id == to);
 
         match self.between(&from_square.unwrap(), &to_square.unwrap()).first() {
             Some(b) => {
-                let new_between = squares.iter_mut().find(|s| s.id == b.id);
+                let new_between = self.squares.iter_mut().find(|s| s.id == b.id);
                 match new_between {
                     Some(n) => {
                         n.player_number = 0;
@@ -77,12 +76,11 @@ impl SquareSet {
             None => (),
         }
 
-        Ok(SquareSet { squares }) 
+        Ok(())
     }
 
-    pub fn promote(&self, id: i8) -> Result<SquareSet, &'static str> {
-        let mut squares = self.squares.clone();
-        match squares.iter_mut().find(|s| s.id == id) {
+    pub fn promote(&mut self, id: i8) -> Result<(), &'static str> {
+        match self.squares.iter_mut().find(|s| s.id == id) {
             Some(s) => { 
                 match s.promote() {
                     Ok(_) => (),
@@ -91,7 +89,7 @@ impl SquareSet {
             },
             None => return Err("Invalid From Square"),
         }
-        Ok(SquareSet { squares }) 
+        Ok(()) 
     }
 
     pub fn jumps_for_player(&self, player_number: i8, board: &SquareSet) -> Vec<Move> {
@@ -251,14 +249,14 @@ mod tests {
         let jump_from = Square { id: 1, x: 4, y: 4, player_number: 1, king: false };
         let jump_over = Square { id: 2, x: 5, y: 5, player_number: 2, king: false };
         let jump_to = Square { id: 3, x: 6, y: 6, player_number: 0, king: false };
-        let board = SquareSet { squares: vec![jump_from, jump_over, jump_to] };
+        let mut board = SquareSet { squares: vec![jump_from, jump_over, jump_to] };
 
-        let new_board = match board.perform_move(jump_from.id, jump_to.id) {
-            Ok(b) => b,
+        match board.perform_move(jump_from.id, jump_to.id) {
+            Ok(_) => (),
             Err(e) => return assert!(false, e), 
         };
 
-        let mut iterator = new_board.squares.iter();
+        let mut iterator = board.squares.iter();
         let new_from = iterator.find(|s| s.id == 1);  
 
         match new_from {
@@ -285,14 +283,14 @@ mod tests {
     fn perform_move_move() {
         let from = Square { id: 1, x: 4, y: 4, player_number: 1, king: false };
         let to = Square { id: 2, x: 5, y: 5, player_number: 0, king: false };
-        let board = SquareSet { squares: vec![from, to] };
+        let mut board = SquareSet { squares: vec![from, to] };
 
-        let new_board = match board.perform_move(from.id, to.id) {
-            Ok(b) => b,
+        match board.perform_move(from.id, to.id) {
+            Ok(_) => (),
             Err(e) => return assert!(false, e), 
         };
 
-        let mut iterator = new_board.squares.iter();
+        let mut iterator = board.squares.iter();
         let new_from = iterator.find(|s| s.id == 1);  
 
         match new_from {
@@ -358,11 +356,11 @@ mod tests {
     fn promote_piece() {
         let promoteable = Square { id: 1, x: 4, y: 4, player_number: 1, king: false };
         let not_promoteable = Square { id: 2, x: 5, y: 5, player_number: 2, king: false };
-        let square_set = SquareSet { squares: vec![promoteable, not_promoteable] };
+        let mut square_set = SquareSet { squares: vec![promoteable, not_promoteable] };
 
         match square_set.promote(1) {
-            Ok(ss) => {
-                match ss.squares.into_iter().find(|s| s.id == 1) {
+            Ok(_) => {
+                match square_set.squares.into_iter().find(|s| s.id == 1) {
                     Some(s) => assert_eq!(true, s.king),
                     None => assert!(false, "expected square"),
                 }

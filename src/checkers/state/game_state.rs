@@ -41,33 +41,31 @@ impl GameState {
         }
     }
 
-    pub fn perform_move(&self, mov: &Move) -> Result<GameState, &'static str> {
+    pub fn perform_move(&mut self, mov: &Move) -> Result<(), &'static str> {
         let legs = mov.legs();
 
-        let mut squares = self.squares.clone();
-
         for (origin, destination) in legs {
-           match squares.perform_move(origin, destination) {
-                Ok(s) => squares = s,
+           match self.squares.perform_move(origin, destination) {
+                Ok(_) => (),
                 Err(e) => {
                     return Err(e);
                 },
            }
         }
 
-        let (other_player_number, promotion_row) = match self.current_player_number {
-            1 => (2, 7),
-            2 => (1, 0),
+        let promotion_row = match self.current_player_number {
+            1 => 7,
+            2 => 0,
             _ => return Err("invalid player number"),
         };
         
         match mov.to.last() {
             Some(last_id) => {
-                match squares.squares.clone().into_iter().find(|s| s.id == *last_id) {
+                match self.squares.squares.iter_mut().find(|s| s.id == *last_id) {
                     Some(s) => {
                         if promotion_row == s.y {
-                            match squares.promote(*last_id) {
-                                Ok(ss) => squares = ss,
+                            match self.squares.promote(*last_id) {
+                                Ok(_) => (),
                                 Err(e) => return Err(e),
                             }
                         }
@@ -78,12 +76,7 @@ impl GameState {
             None => return Err("no square id"),
         };
 
-        let game_state = GameState {
-            current_player_number: other_player_number,
-            squares: squares,
-        };
-
-        Ok(game_state)
+        Ok(())
     }
 }
 
@@ -233,7 +226,7 @@ mod tests {
     #[test]
     fn perform_move_test() {
         let encoded = String::from("wwwwwwwwwwww--------bbbbbbbbbbbbw");
-        let game_state = parse(&encoded).unwrap();
+        let mut game_state = parse(&encoded).unwrap();
         let mov = Move {
             kind: MoveKind::Mov,
             from: 9,
@@ -241,13 +234,13 @@ mod tests {
         };
 
         match game_state.perform_move(&mov) {
-            Ok(n) => {
-                match n.squares.squares.clone().into_iter().find(|s| s.id == 9) {
+            Ok(_) => {
+                match game_state.squares.squares.clone().into_iter().find(|s| s.id == 9) {
                     Some(s) => assert_eq!(s.occupied(), false),
                     None => assert!(false, "square not found"),
                 }
 
-                match n.squares.squares.clone().into_iter().find(|s| s.id == 13) {
+                match game_state.squares.squares.clone().into_iter().find(|s| s.id == 13) {
                     Some(s) => assert_eq!(s.occupied(), true),
                     None => assert!(false, "square not found"),
                 }
@@ -259,15 +252,15 @@ mod tests {
     #[test]
     fn perform_move_with_promote() {
         let encoded = String::from("bbbbbbbbbbb---------------wb----b");
-        let game_state = parse(&encoded).unwrap();
+        let mut game_state = parse(&encoded).unwrap();
         let mov = Move {
             kind: MoveKind::Mov,
             from: 28,
             to: vec![32],
         };
         match game_state.perform_move(&mov) {
-            Ok(n) => {
-                match n.squares.squares.clone().into_iter().find(|s| s.id == 32) {
+            Ok(_) => {
+                match game_state.squares.squares.clone().into_iter().find(|s| s.id == 32) {
                     Some(s) => assert_eq!(s.king, true),
                     None => assert!(false, "square not found"),
                 }

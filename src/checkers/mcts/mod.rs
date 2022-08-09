@@ -112,8 +112,9 @@ fn expansion(nodes: &mut Vec<Node>, id: i32) -> Result<(), &'static str> {
                     let mut child_nodes: Vec<Node> = Vec::new();
                     for mov in node.state.possible_moves() {
                         counter_id = counter_id + 1;
-                        let new_game_state = match node.state.perform_move(&mov) {
-                            Ok(n) => n,
+                        let mut new_game_state = node.state.clone();
+                        match new_game_state.perform_move(&mov) {
+                            Ok(_) => (),
                             Err(e) => return Err(e)
                         };
                         let child_node = Node {
@@ -157,7 +158,7 @@ fn simulate(nodes: &Vec<Node>, id: i32, max_simulation_depth: i16) -> Result<boo
                     1 => {
                         let selected_move = &moves[0];
                         match current_game_state.perform_move(&selected_move) {
-                            Ok(s) => current_game_state = s,
+                            Ok(_) => (),
                             Err(_) => end_game = true 
                         }
                     },
@@ -166,7 +167,7 @@ fn simulate(nodes: &Vec<Node>, id: i32, max_simulation_depth: i16) -> Result<boo
                         moves.shuffle(&mut rng);
                         let selected_move = &moves[0];
                         match current_game_state.perform_move(&selected_move) {
-                            Ok(s) => current_game_state = s,
+                            Ok(_) => (),
                             Err(_) => end_game = true 
                         }
                     }
