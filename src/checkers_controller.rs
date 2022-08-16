@@ -106,7 +106,7 @@ mod tests {
         match result.body() {
             ResponseBody::Body(body) => {
                 match body {
-                    Body::Bytes(bytes) => assert_eq!(bytes, "19-16\n"),
+                    Body::Bytes(bytes) => assert_eq!(bytes, "21-17\n"),
                     _ => assert!(false, "unexpected body")
                 }
             },

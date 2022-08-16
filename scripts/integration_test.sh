@@ -23,7 +23,7 @@ assert_response "checkers move" "http://localhost:7878/api/v0/checkers/bbbbbbbbb
 
 assert_response "checkers openings db" "http://localhost:7878/api/v0/checkers/bbbbbbb-bbbb--b---w-ww-wwwwwwwwww/openings_db" "22-17"
 
-assert_response "checkers minimax" "http://localhost:7878/api/v0/checkers/bbbbbbb-bbbb--b---w-ww-wwwwwwwwww/minimax" "22-18"
+assert_response "checkers minimax" "http://localhost:7878/api/v0/checkers/bbbbbbb-bbbb--b---w-ww-wwwwwwwwww/minimax" "21-17"
 
 assert_response "checkers mcts" "http://localhost:7878/api/v0/checkers/bbbbbbb-bbbb--b---w-ww-wwwwwwwwww/mcts" "27-23"
 

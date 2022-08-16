@@ -53,9 +53,9 @@ impl GameState {
            }
         }
 
-        let promotion_row = match self.current_player_number {
-            1 => 7,
-            2 => 0,
+        let (next_player_number, promotion_row) = match self.current_player_number {
+            1 => (2, 7),
+            2 => (1, 0),
             _ => return Err("invalid player number"),
         };
         
@@ -76,6 +76,49 @@ impl GameState {
             None => return Err("no square id"),
         };
 
+        self.current_player_number = next_player_number;
+
+        Ok(())
+    }
+
+    pub fn undo_move(&mut self, mov: &Move) -> Result<(), &'static str> {
+
+        let (previous_player_number, promotion_row) = match self.current_player_number {
+            1 => (2, 7),
+            2 => (1, 0),
+            _ => return Err("invalid player number"),
+        };
+
+        match mov.to.last() {
+            Some(last_id) => {
+                match self.squares.squares.iter_mut().find(|s| s.id == *last_id) {
+                    Some(s) => {
+                        if promotion_row == s.y {
+                            match self.squares.demote(*last_id) {
+                                Ok(_) => (),
+                                Err(e) => return Err(e),
+                            }
+                        }
+                    },
+                    None => return Err("invalid square id"),
+                }
+            },
+            None => return Err("no square id"),
+        };
+
+        let reverse_legs = mov.legs().into_iter().rev();
+
+        for (origin, destination) in reverse_legs {
+           match self.squares.undo_move(origin, destination) {
+                Ok(_) => (),
+                Err(e) => {
+                    return Err(e);
+                },
+           }
+        }
+
+        self.current_player_number = previous_player_number;
+        
         Ok(())
     }
 }
@@ -244,6 +287,8 @@ mod tests {
                     Some(s) => assert_eq!(s.occupied(), true),
                     None => assert!(false, "square not found"),
                 }
+
+                assert_eq!(game_state.current_player_number, 1);
             },
             Err(e) => assert!(false, e),
         }
@@ -264,8 +309,63 @@ mod tests {
                     Some(s) => assert_eq!(s.king, true),
                     None => assert!(false, "square not found"),
                 }
+                assert_eq!(game_state.current_player_number, 2);
             },
             Err(e) => assert!(false, e),
         } 
+    }
+
+    #[test]
+    fn perform_undo() {
+        let encoded = String::from("wwwwwwww-wwww-------bbbbbbbbbbbbw");
+        let mut game_state = parse(&encoded).unwrap();
+        let mov = Move {
+            kind: MoveKind::Mov,
+            from: 9,
+            to: vec![13],
+        };
+
+        match game_state.undo_move(&mov) {
+            Ok(_) => {
+                match game_state.squares.squares.clone().into_iter().find(|s| s.id == 9) {
+                    Some(s) => assert_eq!(s.occupied(), true),
+                    None => assert!(false, "square not found"),
+                }
+
+                match game_state.squares.squares.clone().into_iter().find(|s| s.id == 13) {
+                    Some(s) => assert_eq!(s.occupied(), false),
+                    None => assert!(false, "square not found"),
+                }
+            },
+            Err(e) => assert!(false, e),
+        }
+    }
+
+    #[test]
+    fn perform_undo_with_demote() {
+        let encoded = String::from("bbbbbbbbbbb----------------b---Wb");
+        let mut game_state = parse(&encoded).unwrap();
+        let mov = Move {
+            kind: MoveKind::Mov,
+            from: 28,
+            to: vec![32],
+        };
+        match game_state.undo_move(&mov) {
+            Ok(_) => {
+                match game_state.squares.squares.clone().into_iter().find(|s| s.id == 28) {
+                    Some(s) => {
+                        assert_eq!(s.occupied(), true);
+                        assert_eq!(s.king, false);
+                    }
+                    None => assert!(false, "square not found"),
+                }
+
+                match game_state.squares.squares.clone().into_iter().find(|s| s.id == 32) {
+                    Some(s) => assert_eq!(s.occupied(), false),
+                    None => assert!(false, "square not found"),
+                }
+            },
+            Err(e) => assert!(false, e)
+        }
     }
 }

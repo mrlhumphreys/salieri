@@ -5,6 +5,7 @@ use crate::checkers;
 const CENTER_SQUARE_IDS: [i8; 4] = [14, 15, 18, 19];
 
 pub fn recommended_move(game_state: checkers::state::game_state::GameState, depth: i8) -> Option<checkers::state::mov::Move> {
+    let mut new_game_state = game_state.clone();
     let moves = game_state.possible_moves();
     match moves.len() {
         0 => None,
@@ -13,33 +14,31 @@ pub fn recommended_move(game_state: checkers::state::game_state::GameState, dept
             None => None
         },
         _ => {
+            let maximizing_player = match new_game_state.current_player_number {
+                1 => true,
+                2 => false,
+                _ => true,
+            };
+
             let moves_with_value = moves.iter().map(|mov| {
-                let mut new_game_state = game_state.clone();
                 match new_game_state.perform_move(mov) {
                     Ok(_) => (),
                     Err(_) => return (mov, 0),
                 };
 
-                let maximizing_player = match new_game_state.current_player_number {
-                    1 => true,
-                    2 => false,
-                    _ => true,
-                };
-
-                let value = match evaluate(&new_game_state, depth, std::i32::MIN, std::i32::MAX, maximizing_player) {
+                let value = match evaluate(&mut new_game_state, depth, std::i32::MIN, std::i32::MAX, maximizing_player) {
                     Ok(v) => v,
                     Err(_) => 0,
                 };
 
+                match new_game_state.undo_move(mov) {
+                    Ok(_) => (),
+                    Err(_) => return (mov, 0)
+                }
+
                 (mov, value)
             });
             
-            let maximizing_player = match game_state.current_player_number {
-               1 => true,
-               2 => false,
-               _ => true,
-            };
-
             let best_move = match maximizing_player {
                 true => moves_with_value.max_by(|a,b| (a.1).cmp(&b.1) ),
                 false => moves_with_value.min_by(|a,b| (a.1).cmp(&b.1) ),
@@ -53,7 +52,7 @@ pub fn recommended_move(game_state: checkers::state::game_state::GameState, dept
     }
 }
 
-pub fn evaluate(game_state: &checkers::state::game_state::GameState, depth: i8, mut alpha: i32, mut beta: i32, maximizing_player: bool) -> Result<i32, &'static str> {
+pub fn evaluate(game_state: &mut checkers::state::game_state::GameState, depth: i8, mut alpha: i32, mut beta: i32, maximizing_player: bool) -> Result<i32, &'static str> {
     let moves = game_state.possible_moves();
     if depth == 0 || moves.len() == 0 {
         return Ok(static_evaluation(&game_state));
@@ -62,10 +61,9 @@ pub fn evaluate(game_state: &checkers::state::game_state::GameState, depth: i8, 
     if maximizing_player {
         let mut max_eval = std::i32::MIN;
         for mov in moves {
-            let mut new_game_state = game_state.clone();
-            match new_game_state.perform_move(&mov) {
+            match game_state.perform_move(&mov) {
                 Ok(()) => {
-                    match evaluate(&new_game_state, depth - 1, alpha, beta, false) {
+                    match evaluate(game_state, depth - 1, alpha, beta, false) {
                         Ok(eval) => {
                             max_eval = cmp::max(max_eval, eval);
                             alpha = cmp::max(alpha, eval);
@@ -75,6 +73,12 @@ pub fn evaluate(game_state: &checkers::state::game_state::GameState, depth: i8, 
                 },
                 Err(e) => return Err(e), 
             }; 
+
+            match game_state.undo_move(&mov) {
+                Ok(()) => (),
+                Err(e) => return Err(e)
+            };
+
             if beta <= alpha {
                 break;
             }
@@ -83,10 +87,9 @@ pub fn evaluate(game_state: &checkers::state::game_state::GameState, depth: i8, 
     } else {
         let mut min_eval = std::i32::MAX;
         for mov in moves {
-            let mut new_game_state = game_state.clone();
-            match new_game_state.perform_move(&mov) {
+            match game_state.perform_move(&mov) {
                 Ok(()) => {
-                    match evaluate(&new_game_state, depth - 1, alpha, beta, true) {
+                    match evaluate(game_state, depth - 1, alpha, beta, true) {
                         Ok(eval) => {
                             min_eval = cmp::min(min_eval, eval);
                             beta = cmp::min(beta, eval);
@@ -98,6 +101,12 @@ pub fn evaluate(game_state: &checkers::state::game_state::GameState, depth: i8, 
                     return Err(e);
                 },
             };
+
+            match game_state.undo_move(&mov) {
+                Ok(()) => (),
+                Err(e) => return Err(e)
+            };
+
             if beta <= alpha {
                 break;
             }
@@ -168,10 +177,10 @@ mod tests {
     #[test]
     fn evaluate_test() {
         let encoded = String::from("bbbbbbbbbb-b--b-----wwwwwwwwwwwww");
-        let game_state = checkers::state::game_state::parse(&encoded).unwrap();
+        let mut game_state = checkers::state::game_state::parse(&encoded).unwrap();
 
-        match evaluate(&game_state, 4, std::i32::MIN, std::i32::MAX, false) {
-            Ok(result) => assert_eq!(result, -3),
+        match evaluate(&mut game_state, 4, std::i32::MIN, std::i32::MAX, false) {
+            Ok(result) => assert_eq!(result, 0),
             Err(e) => assert!(false, e)
         }
     }
@@ -184,8 +193,8 @@ mod tests {
 
         match mov {
             Some(m) => {
-                assert_eq!(m.from, 21);
-                assert_eq!(m.to, vec![17]);
+                assert_eq!(m.from, 23);
+                assert_eq!(m.to, vec![19]);
             },
             None => assert!(false, "expected move"), 
         }

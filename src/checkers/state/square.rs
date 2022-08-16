@@ -30,6 +30,15 @@ impl Square {
         }
     }
 
+    pub fn demote(&mut self) -> Result<bool, &'static str> {
+       if self.occupied() {
+            self.king = false;
+            Ok(true)
+       } else {
+            Err("No Piece")
+       }
+    }
+
     pub fn point(&self) -> Point {
         Point {
             x: self.x,
@@ -541,6 +550,15 @@ mod tests {
         let mut square = Square { id: 1, x: 4, y: 4, player_number: 1, king: false };
         match square.promote() {
             Ok(_) => assert!(square.king),
+            Err(e) => assert!(false, e),
+        }
+    }
+
+    #[test]
+    fn demote_piece() {
+        let mut square = Square { id: 1, x: 4, y: 4, player_number: 1, king: true };
+        match square.demote() {
+            Ok(_) => assert_eq!(square.king, false),
             Err(e) => assert!(false, e),
         }
     }
