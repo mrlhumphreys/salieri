@@ -6,6 +6,10 @@ edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[[bin]]
+name = "salieri"
+path = "src/main.rs"
+
 [dependencies]
 actix-web = "4.2"
 actix-rt = "2.7"
