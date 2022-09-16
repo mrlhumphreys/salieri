@@ -26,8 +26,7 @@ pub fn minimax(game_data: &String) -> HttpResponse {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use actix_web::body::ResponseBody;
-    use actix_web::dev::Body;
+    use actix_web::body::MessageBody;
 
     #[test]
     fn minimax_valid_test() {
@@ -35,15 +34,10 @@ mod tests {
         let result = minimax(&game_state);
 
         assert_eq!(result.status(), 200);
-        match result.body() {
-            ResponseBody::Body(body) => {
-                match body {
-                    Body::Bytes(bytes) => assert_eq!(bytes, "2-1: 19/21 21/22\n"),
-                    _ => assert!(false, "unexepected body")
-                }
-            },
-            ResponseBody::Other(_) => assert!(false, "unexpected body")
-        }
+        match result.into_body().try_into_bytes() {
+           Ok(bytes) => assert_eq!(bytes, "2-1: 19/21 21/22\n"),
+           Err(_) => assert!(false, "unexpected body")
+        };
     }
 
     #[test]
@@ -52,15 +46,10 @@ mod tests {
         let result = minimax(&game_state);
 
         assert_eq!(result.status(), 404);
-        match result.body() {
-            ResponseBody::Body(body) => {
-                match body {
-                    Body::Bytes(bytes) => assert_eq!(bytes, "Invalid State\n"),
-                    _ => assert!(false, "unexepected body")
-                }
-            },
-            ResponseBody::Other(_) => assert!(false, "unexpected body")
-        }
+        match result.into_body().try_into_bytes() {
+           Ok(bytes) => assert_eq!(bytes, "Invalid State\n"),
+           Err(_) => assert!(false, "unexpected body")
+        };
     }
 }
 

@@ -230,7 +230,7 @@ mod tests {
                 assert_eq!(24, mov.from);
                 assert_eq!(vec![20], mov.to);
             },
-            Err(e) => assert!(false, e)
+            Err(e) => assert!(false, "{}", e)
         }
     }
 
@@ -285,7 +285,7 @@ mod tests {
         let result = selection(&nodes);
         match result {
             Ok(r) => assert_eq!(r, 3),
-            Err(e) => assert!(false, e),
+            Err(e) => assert!(false, "{}", e),
         }
     }
 
@@ -340,7 +340,7 @@ mod tests {
 
         match expansion(&mut nodes, 1) {
             Ok(_) => assert_eq!(8, nodes.len()),
-            Err(e) => assert!(false, e)
+            Err(e) => assert!(false, "{}", e)
         }
     }
 
@@ -361,7 +361,7 @@ mod tests {
         let max_simulation_depth = 5;
         match simulate(&nodes, 1, max_simulation_depth) {
             Ok(_) => assert!(true),
-            Err(e) => assert!(false, e)
+            Err(e) => assert!(false, "{}", e)
         }
     }
 
@@ -414,7 +414,7 @@ mod tests {
                     None => assert!(false, "Can't find node")
                }
             },
-            Err(e) => assert!(false, e)
+            Err(e) => assert!(false, "{}", e)
         }
     }
 }

@@ -319,7 +319,7 @@ mod tests {
 
         match board.perform_move(jump_from.id, jump_to.id) {
             Ok(_) => (),
-            Err(e) => return assert!(false, e), 
+            Err(e) => return assert!(false, "{}", e), 
         };
 
         let mut iterator = board.squares.iter();
@@ -353,7 +353,7 @@ mod tests {
 
         match board.perform_move(from.id, to.id) {
             Ok(_) => (),
-            Err(e) => return assert!(false, e), 
+            Err(e) => return assert!(false, "{}", e), 
         };
 
         let mut iterator = board.squares.iter();
@@ -381,7 +381,7 @@ mod tests {
 
         match board.undo_move(jump_from.id, jump_to.id) {
             Ok(_) => (),
-            Err(e) => return assert!(false, e)
+            Err(e) => return assert!(false, "{}", e)
         };
 
         let mut iterator = board.squares.iter();
@@ -418,7 +418,7 @@ mod tests {
 
         match board.undo_move(from.id, to.id) {
             Ok(_) => (),
-            Err(e) => return assert!(false, e)
+            Err(e) => return assert!(false, "{}", e)
         };
 
         let mut iterator = board.squares.iter();
@@ -496,7 +496,7 @@ mod tests {
                     None => assert!(false, "expected square"),
                 }
             },
-            Err(e) => assert!(false, e),
+            Err(e) => assert!(false, "{}", e),
         }
     }
 
@@ -513,7 +513,7 @@ mod tests {
                     None => assert!(false, "expected square"),
                 }
             },
-            Err(e) => assert!(false, e),
+            Err(e) => assert!(false, "{}", e),
         }
     }
 }

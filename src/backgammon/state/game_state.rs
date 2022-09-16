@@ -1216,7 +1216,7 @@ mod tests {
 
         match game_state.possible_moves() {
             Ok(m) => assert_eq!(m.len(), 3),
-            Err(e) => assert!(false, e)
+            Err(e) => assert!(false, "{}", e)
         }
     }
 
@@ -1541,7 +1541,7 @@ mod tests {
                 assert_eq!(game_state.current_phase, Phase::MovePhase);
                 assert_eq!(game_state.current_player_number, 1);
             },
-            Err(e) => assert!(false, e)
+            Err(e) => assert!(false, "{}", e)
         }
     }
 
@@ -1650,7 +1650,7 @@ mod tests {
 
         match result {
             Ok(_) => assert!(true),
-            Err(e) => assert!(false, e)
+            Err(e) => assert!(false, "{}", e)
         }
 
         match game_state.points.iter().find(|p| p.number == 1) {
@@ -1805,7 +1805,7 @@ mod tests {
 
         match result {
             Ok(_) => assert!(true),
-            Err(e) => assert!(false, e)
+            Err(e) => assert!(false, "{}", e)
         }
 
         match game_state.points.iter().find(|p| p.number == 1) {
@@ -2032,7 +2032,7 @@ mod tests {
 
         match game_state.pop_piece(1, &location) {
             Ok(_) => assert!(true),
-            Err(e) => assert!(false, e)
+            Err(e) => assert!(false, "{}", e)
         }
     }
 

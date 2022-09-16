@@ -165,7 +165,7 @@ mod tests {
         let encoded = String::from("bbbbbbbbb-bb--b-----wwwwwwwwwwwww");
         let result = parse(&encoded);
         match result {
-            Err(e) => assert!(false, e),
+            Err(e) => assert!(false, "{}", e),
             Ok(_) => assert!(true, "success"),
         }
     }
@@ -290,7 +290,7 @@ mod tests {
 
                 assert_eq!(game_state.current_player_number, 1);
             },
-            Err(e) => assert!(false, e),
+            Err(e) => assert!(false, "{}", e),
         }
     }
 
@@ -311,7 +311,7 @@ mod tests {
                 }
                 assert_eq!(game_state.current_player_number, 2);
             },
-            Err(e) => assert!(false, e),
+            Err(e) => assert!(false, "{}", e),
         } 
     }
 
@@ -337,7 +337,7 @@ mod tests {
                     None => assert!(false, "square not found"),
                 }
             },
-            Err(e) => assert!(false, e),
+            Err(e) => assert!(false, "{}", e),
         }
     }
 
@@ -365,7 +365,7 @@ mod tests {
                     None => assert!(false, "square not found"),
                 }
             },
-            Err(e) => assert!(false, e)
+            Err(e) => assert!(false, "{}", e)
         }
     }
 }

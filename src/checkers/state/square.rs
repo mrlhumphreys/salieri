@@ -550,7 +550,7 @@ mod tests {
         let mut square = Square { id: 1, x: 4, y: 4, player_number: 1, king: false };
         match square.promote() {
             Ok(_) => assert!(square.king),
-            Err(e) => assert!(false, e),
+            Err(e) => assert!(false, "{}", e),
         }
     }
 
@@ -559,7 +559,7 @@ mod tests {
         let mut square = Square { id: 1, x: 4, y: 4, player_number: 1, king: true };
         match square.demote() {
             Ok(_) => assert_eq!(square.king, false),
-            Err(e) => assert!(false, e),
+            Err(e) => assert!(false, "{}", e),
         }
     }
 }

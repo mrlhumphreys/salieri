@@ -60,8 +60,7 @@ pub fn mcts(game_data: &String) -> HttpResponse {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use actix_web::body::ResponseBody;
-    use actix_web::dev::Body;
+    use actix_web::body::MessageBody;
 
     #[test]
     fn opening_valid_test() {
@@ -69,15 +68,10 @@ mod tests {
         let result = opening(&game_state); 
 
         assert_eq!(result.status(), 200); 
-        match result.body() {
-            ResponseBody::Body(body) => {
-                match body {
-                    Body::Bytes(bytes) => assert_eq!(bytes, "22-17\n"),
-                    _ => assert!(false, "unexpected body")
-                }
-            },
-            ResponseBody::Other(_) => assert!(false, "unexpected body")
-        }
+        match result.into_body().try_into_bytes() {
+           Ok(bytes) => assert_eq!(bytes, "22-17\n"),
+           Err(_) => assert!(false, "unexpected body")
+        };
     }
 
     #[test]
@@ -86,15 +80,10 @@ mod tests {
         let result = opening(&game_state); 
 
         assert_eq!(result.status(), 404); 
-        match result.body() {
-            ResponseBody::Body(body) => {
-                match body {
-                    Body::Bytes(bytes) => assert_eq!(bytes, "404 Not Found\n"),
-                    _ => assert!(false, "unexpected body")
-                }
-            },
-            ResponseBody::Other(_) => assert!(false, "unexpected body")
-        }
+        match result.into_body().try_into_bytes() {
+           Ok(bytes) => assert_eq!(bytes, "404 Not Found\n"),
+           Err(_) => assert!(false, "unexpected body")
+        };
     }
 
     #[test]
@@ -103,15 +92,10 @@ mod tests {
         let result = minimax(&game_state); 
 
         assert_eq!(result.status(), 200); 
-        match result.body() {
-            ResponseBody::Body(body) => {
-                match body {
-                    Body::Bytes(bytes) => assert_eq!(bytes, "21-17\n"),
-                    _ => assert!(false, "unexpected body")
-                }
-            },
-            ResponseBody::Other(_) => assert!(false, "unexpected body")
-        }
+        match result.into_body().try_into_bytes() {
+           Ok(bytes) => assert_eq!(bytes, "21-17\n"),
+           Err(_) => assert!(false, "unexpected body")
+        };
     }
 
     #[test]
@@ -120,15 +104,10 @@ mod tests {
         let result = minimax(&game_state); 
 
         assert_eq!(result.status(), 404); 
-        match result.body() {
-            ResponseBody::Body(body) => {
-                match body {
-                    Body::Bytes(bytes) => assert_eq!(bytes, "404 Not Found\n"),
-                    _ => assert!(false, "unexpected body")
-                }
-            },
-            ResponseBody::Other(_) => assert!(false, "unexpected body")
-        }
+        match result.into_body().try_into_bytes() {
+           Ok(bytes) => assert_eq!(bytes, "404 Not Found\n"),
+           Err(_) => assert!(false, "unexpected body")
+        };
     }
 
     #[test]
@@ -137,15 +116,10 @@ mod tests {
         let result = minimax(&game_state); 
 
         assert_eq!(result.status(), 404); 
-        match result.body() {
-            ResponseBody::Body(body) => {
-                match body {
-                    Body::Bytes(bytes) => assert_eq!(bytes, "404 Not Found\n"),
-                    _ => assert!(false, "unexpected body")
-                }
-            },
-            ResponseBody::Other(_) => assert!(false, "unexpected body")
-        }
+        match result.into_body().try_into_bytes() {
+           Ok(bytes) => assert_eq!(bytes, "404 Not Found\n"),
+           Err(_) => assert!(false, "unexpected body")
+        };
     }
 
     #[test]
@@ -154,15 +128,10 @@ mod tests {
         let result = mcts(&game_state); 
 
         assert_eq!(result.status(), 200); 
-        match result.body() {
-            ResponseBody::Body(body) => {
-                match body {
-                    Body::Bytes(bytes) => assert_eq!(bytes, "27-23\n"),
-                    _ => assert!(false, "unexpected body")
-                }
-            },
-            ResponseBody::Other(_) => assert!(false, "unexpected body")
-        }
+        match result.into_body().try_into_bytes() {
+           Ok(bytes) => assert_eq!(bytes, "27-23\n"),
+           Err(_) => assert!(false, "unexpected body")
+        };
     }
 
     #[test]
@@ -171,15 +140,10 @@ mod tests {
         let result = mcts(&game_state); 
 
         assert_eq!(result.status(), 404); 
-        match result.body() {
-            ResponseBody::Body(body) => {
-                match body {
-                    Body::Bytes(bytes) => assert_eq!(bytes, "404 Not Found\n"),
-                    _ => assert!(false, "unexpected body")
-                }
-            },
-            ResponseBody::Other(_) => assert!(false, "unexpected body")
-        }
+        match result.into_body().try_into_bytes() {
+           Ok(bytes) => assert_eq!(bytes, "404 Not Found\n"),
+           Err(_) => assert!(false, "unexpected body")
+        };
     }
 }
-    
+

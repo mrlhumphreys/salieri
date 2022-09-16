@@ -65,11 +65,10 @@ async fn main() -> std::io::Result<()> {
             .unwrap_or_else(|_| "http://127.0.0.1:5000".to_string());
         App::new()
             .wrap(
-                Cors::new()
+                Cors::default()
                     .allowed_origin(&allowed_origin)
                     .allowed_methods(vec!["GET"])
                     .max_age(3600)
-                    .finish()
             )
             .service(
                 web::resource("/api/v0/{game_type}/{state}")
@@ -92,22 +91,27 @@ async fn main() -> std::io::Result<()> {
 mod tests {
     use super::*;
     use actix_web::{test, web, App};
+    use actix_web::http::header::ContentType;
     use bytes::Bytes;
 
     // index page
     #[actix_rt::test]
     async fn test_index_status() {
-        let mut app = test::init_service(App::new().route("/", web::get().to(index))).await;
-        let req = test::TestRequest::with_header("content-type", "text/plain").to_request();
-        let res = test::call_service(&mut app, req).await;
+        let app = test::init_service(App::new().route("/", web::get().to(index))).await;
+        let req = test::TestRequest::default()
+            .insert_header(ContentType::plaintext())
+            .to_request();
+        let res = test::call_service(&app, req).await;
         assert!(res.status().is_success());
     }
 
     #[actix_rt::test]
     async fn test_index_body() {
-        let mut app = test::init_service(App::new().route("/", web::get().to(index))).await;
-        let req = test::TestRequest::with_header("content-type", "text/plain").to_request();
-        let res = test::read_response(&mut app, req).await;
+        let app = test::init_service(App::new().route("/", web::get().to(index))).await;
+        let req = test::TestRequest::default()
+            .insert_header(ContentType::plaintext())
+            .to_request();
+        let res = test::call_and_read_body(&app, req).await;
         assert_eq!(res, Bytes::from_static(b"200 OK\n"));
     }
 
@@ -115,16 +119,22 @@ mod tests {
     #[actix_rt::test]
     async fn test_checkers_status_with_valid_params() {
         let mut app = test::init_service(App::new().route("/api/v0/{game_type}/{state}", web::get().to(game_move))).await;
-        let req = test::TestRequest::with_header("content-type", "text/plain").uri("/api/v0/checkers/bbbbbbbbb-bb--b-----wwwwwwwwwwwww").to_request();
+        let req = test::TestRequest::default()
+            .insert_header(ContentType::plaintext())
+            .uri("/api/v0/checkers/bbbbbbbbb-bb--b-----wwwwwwwwwwwww")
+            .to_request();
         let res = test::call_service(&mut app, req).await;
         assert!(res.status().is_success());
     }
 
     #[actix_rt::test]
     async fn test_checkers_body_with_valid_params() {
-        let mut app = test::init_service(App::new().route("/api/v0/{game_type}/{state}", web::get().to(game_move))).await;
-        let req = test::TestRequest::with_header("content-type", "text/plain").uri("/api/v0/checkers/bbbbbbbbb-bb--b-----wwwwwwwwwwwww").to_request();
-        let res = test::read_response(&mut app, req).await;
+        let app = test::init_service(App::new().route("/api/v0/{game_type}/{state}", web::get().to(game_move))).await;
+        let req = test::TestRequest::default()
+            .insert_header(ContentType::plaintext())
+            .uri("/api/v0/checkers/bbbbbbbbb-bb--b-----wwwwwwwwwwwww")
+            .to_request();
+        let res = test::call_and_read_body(&app, req).await;
         assert_eq!(res, Bytes::from_static(b"24-20\n"));
     }
 
@@ -132,68 +142,92 @@ mod tests {
     #[actix_rt::test]
     async fn test_checkers_status_with_invalid_params() {
         let mut app = test::init_service(App::new().route("/api/v0/{game_type}/{state}", web::get().to(game_move))).await;
-        let req = test::TestRequest::with_header("content-type", "text/plain").uri("/api/v0/checkers/-bbbbbbbbb-bb--b-----wwwwwwwwwwwww").to_request();
+        let req = test::TestRequest::default()
+            .insert_header(ContentType::plaintext())
+            .uri("/api/v0/checkers/-bbbbbbbbb-bb--b-----wwwwwwwwwwwww")
+            .to_request();
         let res = test::call_service(&mut app, req).await;
         assert!(res.status().is_client_error());
     }
 
     #[actix_rt::test]
     async fn test_checkers_body_with_invalid_params() {
-        let mut app = test::init_service(App::new().route("/api/v0/{game_type}/{state}", web::get().to(game_move))).await;
-        let req = test::TestRequest::with_header("content-type", "text/plain").uri("/api/v0/checkers/-bbbbbbbbb-bb--b-----wwwwwwwwwwwww").to_request();
-        let res = test::read_response(&mut app, req).await;
+        let app = test::init_service(App::new().route("/api/v0/{game_type}/{state}", web::get().to(game_move))).await;
+        let req = test::TestRequest::default()
+            .insert_header(ContentType::plaintext())
+            .uri("/api/v0/checkers/-bbbbbbbbb-bb--b-----wwwwwwwwwwwww")
+            .to_request();
+        let res = test::call_and_read_body(&app, req).await;
         assert_eq!(res, Bytes::from_static(b"404 Not Found\n"));
     }
 
     // backgammon with valid params
     #[actix_rt::test]
     async fn test_backgammon_status_with_valid_params() {
-        let mut app = test::init_service(App::new().route("/api/v0/{game_type}/{state}", web::get().to(game_move))).await;
-        let req = test::TestRequest::with_header("content-type", "text/plain").uri("/api/v0/backgammon/0020000000000500300000005005000000030050000000000200121").to_request();
-        let res = test::call_service(&mut app, req).await;
+        let app = test::init_service(App::new().route("/api/v0/{game_type}/{state}", web::get().to(game_move))).await;
+        let req = test::TestRequest::default()
+            .insert_header(ContentType::plaintext())
+            .uri("/api/v0/backgammon/0020000000000500300000005005000000030050000000000200121")
+            .to_request();
+        let res = test::call_service(&app, req).await;
         assert!(res.status().is_success());
     }
 
     #[actix_rt::test]
     async fn test_backgammon_body_with_valid_params() {
-        let mut app = test::init_service(App::new().route("/api/v0/{game_type}/{state}", web::get().to(game_move))).await;
-        let req = test::TestRequest::with_header("content-type", "text/plain").uri("/api/v0/backgammon/0020000000000500300000005005000000030050000000000200121").to_request();
-        let res = test::read_response(&mut app, req).await;
+        let app = test::init_service(App::new().route("/api/v0/{game_type}/{state}", web::get().to(game_move))).await;
+        let req = test::TestRequest::default()
+            .insert_header(ContentType::plaintext())
+            .uri("/api/v0/backgammon/0020000000000500300000005005000000030050000000000200121")
+            .to_request();
+        let res = test::call_and_read_body(&app, req).await;
         assert_eq!(res, Bytes::from_static(b"2-1: 19/21 21/22\n"));
     }
 
     // backgammon invalid params
     #[actix_rt::test]
     async fn test_backgammon_status_with_invalid_params() {
-        let mut app = test::init_service(App::new().route("/api/v0/{game_type}/{state}", web::get().to(game_move))).await;
-        let req = test::TestRequest::with_header("content-type", "text/plain").uri("/api/v0/backgammon/002000000000050030000000500500000003005000000000020012n").to_request();
-        let res = test::call_service(&mut app, req).await;
+        let app = test::init_service(App::new().route("/api/v0/{game_type}/{state}", web::get().to(game_move))).await;
+        let req = test::TestRequest::default()
+            .insert_header(ContentType::plaintext())
+            .uri("/api/v0/backgammon/002000000000050030000000500500000003005000000000020012n")
+            .to_request();
+        let res = test::call_service(&app, req).await;
         assert!(res.status().is_client_error());
     }
 
     #[actix_rt::test]
     async fn test_backgammon_body_with_invalid_params() {
-        let mut app = test::init_service(App::new().route("/api/v0/{game_type}/{state}", web::get().to(game_move))).await;
-        let req = test::TestRequest::with_header("content-type", "text/plain").uri("/api/v0/backgammon/002000000000050030000000500500000003005000000000020012n").to_request();
-        let res = test::read_response(&mut app, req).await;
+        let app = test::init_service(App::new().route("/api/v0/{game_type}/{state}", web::get().to(game_move))).await;
+        let req = test::TestRequest::default()
+            .insert_header(ContentType::plaintext())
+            .uri("/api/v0/backgammon/002000000000050030000000500500000003005000000000020012n")
+            .to_request();
+        let res = test::call_and_read_body(&app, req).await;
         assert_eq!(res, Bytes::from_static(b"Invalid State\n"));
     }
 
     // invalid game type 
     #[actix_rt::test]
     async fn test_invalid_game_type_status() {
-        let mut app = test::init_service(App::new().route("/api/v0/{game_type}/{state}", web::get().to(game_move))).await;
-        let req = test::TestRequest::with_header("content-type", "text/plain").uri("/api/v0/mario/-bbbbbbbbb-bb--b-----wwwwwwwwwwwww").to_request();
-        let resp = test::call_service(&mut app, req).await;
+        let app = test::init_service(App::new().route("/api/v0/{game_type}/{state}", web::get().to(game_move))).await;
+        let req = test::TestRequest::default()
+            .insert_header(ContentType::plaintext())
+            .uri("/api/v0/mario/-bbbbbbbbb-bb--b-----wwwwwwwwwwwww")
+            .to_request();
+        let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_client_error());
     }
 
     #[actix_rt::test]
     async fn test_invalid_game_type_body() {
-        let mut app = test::init_service(App::new().route("/api/v0/{game_type}/{state}", web::get().to(game_move))).await;
-        let req = test::TestRequest::with_header("content-type", "text/plain").uri("/api/v0/mario/-bbbbbbbbb-bb--b-----wwwwwwwwwwwww").to_request();
+        let app = test::init_service(App::new().route("/api/v0/{game_type}/{state}", web::get().to(game_move))).await;
+        let req = test::TestRequest::default()
+            .insert_header(ContentType::plaintext())
+            .uri("/api/v0/mario/-bbbbbbbbb-bb--b-----wwwwwwwwwwwww")
+            .to_request();
 
-        let result = test::read_response(&mut app, req).await;
+        let result = test::call_and_read_body(&app, req).await;
 
         assert_eq!(result, Bytes::from_static(b"404 Not Found\n"));
     }

@@ -251,7 +251,7 @@ mod tests {
 
         match evaluate_move_phase(&mut game_state, 0, std::i32::MIN, std::i32::MAX, true) {
             Ok(result) => assert_eq!(result, 0),            
-            Err(e) => assert!(false, e)
+            Err(e) => assert!(false, "{}", e)
         }
     }
 

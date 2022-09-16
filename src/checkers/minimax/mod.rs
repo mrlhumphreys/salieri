@@ -181,7 +181,7 @@ mod tests {
 
         match evaluate(&mut game_state, 4, std::i32::MIN, std::i32::MAX, false) {
             Ok(result) => assert_eq!(result, 0),
-            Err(e) => assert!(false, e)
+            Err(e) => assert!(false, "{}", e)
         }
     }
 
