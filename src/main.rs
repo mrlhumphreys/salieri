@@ -24,7 +24,7 @@ async fn game_move(info: web::Path<(String, String)>) -> impl Responder {
                 None => checkers_controller::mcts(game_data) 
             }
         },
-        "backgammon" => backgammon_controller::minimax(game_data), 
+        "backgammon" => backgammon_controller::mcts(game_data),
         _ => HttpResponse::NotFound().body("404 Not Found\n")
     }
 }
@@ -46,6 +46,7 @@ async fn game_move_algorithm(info: web::Path<(String, String, String)>) -> impl 
         "backgammon" => {
             match algorithm.as_str() {
                 "minimax" => backgammon_controller::minimax(game_data),
+                "mcts" => backgammon_controller::mcts(game_data),
                 _ => HttpResponse::NotFound().body("404 Not Found\n"),
             }
         },
@@ -62,7 +63,7 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(|| {
         let allowed_origin = env::var("ALLOWED_ORIGIN")
-            .unwrap_or_else(|_| "http://127.0.0.1:5000".to_string());
+            .unwrap_or_else(|_| "http://127.0.0.1:8080".to_string());
         App::new()
             .wrap(
                 Cors::default()

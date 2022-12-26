@@ -23,6 +23,33 @@ pub fn minimax(game_data: &String) -> HttpResponse {
     }
 }
 
+pub fn mcts(game_data: &String) -> HttpResponse {
+    let game_state = match backgammon::state::game_state::parse(game_data) {
+        Ok(gs) => gs,
+        Err(_) => return HttpResponse::NotFound().body("404 Not Found\n"),
+    };
+
+    let mcts_simulation_count: i16 = env::var("BACKGAMMON_MCTS_SIMULATION_COUNT")
+        .unwrap_or_else(|_| "120".to_string())
+        .parse()
+        .expect("BACKGAMMON_MCTS_SIMULATION_COUNT must be a number");
+
+    let mcts_simulation_depth: i16 = env::var("BACKGAMMON_MCTS_SIMULATION_DEPTH")
+        .unwrap_or_else(|_| "40".to_string())
+        .parse()
+        .expect("BACKGAMMON_MCTS_SIMULATION_DEPTH must be a number");
+
+    let recommended_move = backgammon::mcts::recommended_move(game_state, mcts_simulation_count, mcts_simulation_depth);
+
+    match recommended_move {
+        Ok(m) => HttpResponse::Ok().body(format!("{}\n", m.format())),
+        Err(e) => {
+            println!("{}", e);
+            HttpResponse::NotFound().body("404 Not Found\n")
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -48,6 +75,30 @@ mod tests {
         assert_eq!(result.status(), 404);
         match result.into_body().try_into_bytes() {
            Ok(bytes) => assert_eq!(bytes, "Invalid State\n"),
+           Err(_) => assert!(false, "unexpected body")
+        };
+    }
+
+    #[test]
+    fn mcts_valid_test() {
+        let game_state = String::from("0020000000000500300000005002000000005000300000000500121");
+        let result = mcts(&game_state);
+
+        assert_eq!(result.status(), 200);
+        match result.into_body().try_into_bytes() {
+           Ok(bytes) => assert_eq!(bytes, "2-1: 20/22 22/23\n"),
+           Err(_) => assert!(false, "unexpected body")
+        };
+    }
+
+    #[test]
+    fn mcts_invalid_test() {
+        let game_state = String::from("x020000000000500300000005002000000005000300000000500121");
+        let result = mcts(&game_state);
+
+        assert_eq!(result.status(), 404);
+        match result.into_body().try_into_bytes() {
+           Ok(bytes) => assert_eq!(bytes, "404 Not Found\n"),
            Err(_) => assert!(false, "unexpected body")
         };
     }

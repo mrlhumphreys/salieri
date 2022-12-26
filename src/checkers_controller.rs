@@ -125,9 +125,9 @@ mod tests {
     #[test]
     fn mcts_valid_test() {
         let game_state = String::from("bbbbbbb-bbbb--b---w-ww-wwwwwwwwww");
-        let result = mcts(&game_state); 
+        let result = mcts(&game_state);
 
-        assert_eq!(result.status(), 200); 
+        assert_eq!(result.status(), 200);
         match result.into_body().try_into_bytes() {
            Ok(bytes) => assert_eq!(bytes, "27-23\n"),
            Err(_) => assert!(false, "unexpected body")
@@ -137,9 +137,9 @@ mod tests {
     #[test]
     fn mcts_invalid_game_state_test() {
         let game_state = String::from("bbbbbbb-bbbb--b---w-ww-wwwwwwwwwn");
-        let result = mcts(&game_state); 
+        let result = mcts(&game_state);
 
-        assert_eq!(result.status(), 404); 
+        assert_eq!(result.status(), 404);
         match result.into_body().try_into_bytes() {
            Ok(bytes) => assert_eq!(bytes, "404 Not Found\n"),
            Err(_) => assert!(false, "unexpected body")

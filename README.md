@@ -13,13 +13,15 @@ Board Game Move Recommender written in Rust.
 
 Application Environment Variables:
 
-* `ALLOWED_ORIGIN` - CORS allowed origins, default: `http://127.0.0.1:5000`.
+* `ALLOWED_ORIGIN` - CORS allowed origins, default: `http://127.0.0.1:8080`.
 * `PORT` - Port server runs on, default: `7878`.
 
 Game Environment Variables:
 
 * `BACKGAMMON_MINIMAX_DEPTH` - How many layers the backgammon minimax algorithm will search, default: `1`
 * `CHECKERS_MINIMAX_DEPTH` - How many layers the checkers minimax algorithm will search, default: `5`
+* `BACKGAMMON_MCTS_SIMULATION_COUNT` - How many simulations the Monte Carlo Tree Search algorithm will search, default: `120`
+* `BACKGAMMON_MCTS_SIMULATION_DEPTH` - How many moves deep in the Monte Carlo Tree Search algorithm will search for each simulation, default: `40`
 * `MCTS_SIMULATION_COUNT` - How many simulations the Monte Carlo Tree Search algorithm will search, default: `120`
 * `MCTS_SIMULATION_DEPTH` - How many moves deep in the Monte Carlo Tree Search algorithm will search for each simulation, default: `40`
 
