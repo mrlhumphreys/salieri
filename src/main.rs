@@ -205,7 +205,7 @@ mod tests {
             .uri("/api/v0/backgammon/002000000000050030000000500500000003005000000000020012n")
             .to_request();
         let res = test::call_and_read_body(&app, req).await;
-        assert_eq!(res, Bytes::from_static(b"Invalid State\n"));
+        assert_eq!(res, Bytes::from_static(b"404 Not Found\n"));
     }
 
     // invalid game type 
