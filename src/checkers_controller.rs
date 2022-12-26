@@ -36,15 +36,15 @@ pub fn mcts(game_data: &String) -> HttpResponse {
         Err(_) => return HttpResponse::NotFound().body("404 Not Found\n"),
     };
 
-    let mcts_simulation_count: i16 = env::var("MCTS_SIMULATION_COUNT")
+    let mcts_simulation_count: i16 = env::var("CHECKERS_MCTS_SIMULATION_COUNT")
         .unwrap_or_else(|_| "120".to_string())
         .parse()
-        .expect("MCTS_SIMULATION_COUNT must be a number");
+        .expect("CHECKERS_MCTS_SIMULATION_COUNT must be a number");
 
-    let mcts_simulation_depth: i16 = env::var("MCTS_SIMULATION_DEPTH")
+    let mcts_simulation_depth: i16 = env::var("CHECKERS_MCTS_SIMULATION_DEPTH")
         .unwrap_or_else(|_| "40".to_string())
         .parse()
-        .expect("MCTS_SIMULATION_DEPTH must be a number");
+        .expect("CHECKERS_MCTS_SIMULATION_DEPTH must be a number");
 
     let recommended_move = checkers::mcts::recommended_move(game_state, mcts_simulation_count, mcts_simulation_depth);
 
