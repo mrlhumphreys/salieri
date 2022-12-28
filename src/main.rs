@@ -24,7 +24,12 @@ async fn game_move(info: web::Path<(String, String)>) -> impl Responder {
                 None => checkers_controller::mcts(game_data) 
             }
         },
-        "backgammon" => backgammon_controller::mcts(game_data),
+        "backgammon" => {
+            match backgammon::openings::recommended_move(game_data) {
+                Some(m) => HttpResponse::Ok().body(m),
+                None => backgammon_controller::mcts(game_data)
+            }
+        },
         _ => HttpResponse::NotFound().body("404 Not Found\n")
     }
 }
@@ -37,7 +42,7 @@ async fn game_move_algorithm(info: web::Path<(String, String, String)>) -> impl 
     match game_type.as_str() {
         "checkers" => {
             match algorithm.as_str() {
-                "openings_db" => checkers_controller::opening(game_data), 
+                "openings_db" => checkers_controller::opening(game_data),
                 "minimax" => checkers_controller::minimax(game_data), 
                 "mcts" => checkers_controller::mcts(game_data),
                 _ => HttpResponse::NotFound().body("404 Not Found\n"),
@@ -45,6 +50,7 @@ async fn game_move_algorithm(info: web::Path<(String, String, String)>) -> impl 
         },
         "backgammon" => {
             match algorithm.as_str() {
+                "openings_db" => backgammon_controller::opening(game_data),
                 "minimax" => backgammon_controller::minimax(game_data),
                 "mcts" => backgammon_controller::mcts(game_data),
                 _ => HttpResponse::NotFound().body("404 Not Found\n"),

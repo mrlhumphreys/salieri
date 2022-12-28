@@ -4,6 +4,13 @@ use actix_web::HttpResponse;
 
 use super::backgammon;
 
+pub fn opening(game_data: &String) -> HttpResponse {
+    match backgammon::openings::recommended_move(game_data) {
+        Some(m) => HttpResponse::Ok().body(format!("{}\n", m)),
+        None => HttpResponse::NotFound().body("404 Not Found\n")
+    }
+}
+
 pub fn minimax(game_data: &String) -> HttpResponse {
     let game_state = match backgammon::state::game_state::parse(game_data) {
         Ok(gs) => gs,
@@ -54,6 +61,30 @@ pub fn mcts(game_data: &String) -> HttpResponse {
 mod tests {
     use super::*;
     use actix_web::body::MessageBody;
+
+    #[test]
+    fn opening_valid_test() {
+        let game_state = String::from("0020000000000500030000005005000000300050000000000200461");
+        let result = opening(&game_state);
+
+        assert_eq!(result.status(), 200);
+        match result.into_body().try_into_bytes() {
+           Ok(bytes) => assert_eq!(bytes, "4-6: 24/18 13/9\n"),
+           Err(_) => assert!(false, "unexpected body")
+        };
+    }
+
+    #[test]
+    fn opening_no_moves_test() {
+        let game_state = String::from("0020000000000500030000005005000000300050000000000200661");
+        let result = opening(&game_state);
+
+        assert_eq!(result.status(), 404);
+        match result.into_body().try_into_bytes() {
+           Ok(bytes) => assert_eq!(bytes, "404 Not Found\n"),
+           Err(_) => assert!(false, "unexpected body")
+        };
+    }
 
     #[test]
     fn minimax_valid_test() {
