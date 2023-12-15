@@ -581,7 +581,6 @@ mod tests {
     fn in_checkmate_test() {
         let encoded = String::from("4k2R/7R/8/8/8/8/8/4K3 b - - 0 1");
         let mut state = parse(&encoded).unwrap();
-        let old_squares = state.squares.clone();
         let result = state.in_checkmate(2);
 
         assert_eq!(result, true);

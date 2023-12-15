@@ -11,9 +11,9 @@ name = "salieri"
 path = "src/main.rs"
 
 [dependencies]
-actix-web = "4.2"
-actix-rt = "2.7"
-actix-cors = "0.6"
+actix-web = "4.4"
+actix-rt = "2.9"
+actix-cors = "0.6.5"
 rand = "0.8"
 bytes = "1.2"
 regex = "1.6"
