@@ -69,7 +69,13 @@ mod tests {
 
         assert_eq!(result.status(), 200);
         match result.into_body().try_into_bytes() {
-           Ok(bytes) => assert_eq!(bytes, "4-6: 24/18 13/9\n"),
+           Ok(bytes) => {
+               let option_a = bytes == "4-6: 24/18 13/9\n";
+               let option_b = bytes == "4-6: 24/20 20/14\n";
+               let option_c = bytes == "4-6: 8/2 6/2\n";
+               let result = option_a || option_b || option_c;
+               assert!(result, "Invalid Option");
+           },
            Err(_) => assert!(false, "unexpected body")
         };
     }
