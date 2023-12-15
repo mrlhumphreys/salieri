@@ -4,10 +4,13 @@ Board Game Move Recommender written in Rust.
 
 ## Games and Algorithms
 
+* Backgammon - Common openings db
 * Backgammon - Minimax algorithm with Alpha Beta Pruning
+* Backgammon - Monte-Carlo Tree Search
 * Checkers - Common openings db
 * Checkers - Minimax algorithm with Alpha Beta Pruning
 * Checkers - Monte-Carlo Tree Search
+* Chess - Minimax algorithm with Alpha Beta Pruning
 
 ## Config
 
@@ -19,13 +22,14 @@ Application Environment Variables:
 Game Environment Variables:
 
 * `BACKGAMMON_MINIMAX_DEPTH` - How many layers the backgammon minimax algorithm will search, default: `1`
-* `CHECKERS_MINIMAX_DEPTH` - How many layers the checkers minimax algorithm will search, default: `5`
 * `BACKGAMMON_MCTS_SIMULATION_COUNT` - How many simulations the Monte Carlo Tree Search algorithm will search, default: `120`
 * `BACKGAMMON_MCTS_SIMULATION_DEPTH` - How many moves deep in the Monte Carlo Tree Search algorithm will search for each simulation, default: `40`
+* `CHECKERS_MINIMAX_DEPTH` - How many layers the checkers minimax algorithm will search, default: `5`
 * `CHECKERS_MCTS_SIMULATION_COUNT` - How many simulations the Monte Carlo Tree Search algorithm will search, default: `120`
 * `CHECKERS_MCTS_SIMULATION_DEPTH` - How many moves deep in the Monte Carlo Tree Search algorithm will search for each simulation, default: `40`
+* `CHESS_MINIMAX_DEPTH` - How many layers the chess minimax algorithm will search, default: `2`
 
-## API reponse codes
+## API response codes
 
 * 200 - Recomended move was able to be generated using the algorithm 
 * 404 - No move was able to be generated using the algorithm. Possible causes include invalid game state or no move found in lookup (e.g. openings db)
@@ -38,11 +42,15 @@ Game Environment Variables:
   curl http://localhost:7878/api/v0/backgammon/0020000000000500300000005005000000030050000000000200121
 ```
 
+### Backgammon Algorithm - Openings DB
+
 ### Backgammon Algorithm - Minimax 
 
 ```
   curl http://localhost:7878/api/v0/backgammon/0020000000000500300000005005000000030050000000000200121/minimax
 ```
+
+### Backgammon Algorithm - Monte-Carlo Tree Search
 
 ## Backgammon State Argument Format
 
@@ -58,7 +66,7 @@ The following pair represents the number of pieces off the board for each player
 
 The last two numbers represent the dice roll, with each number being a value on a six-sided die. i.e. 1 to 6.
 
-## Backgammon Move Reponse Format
+## Backgammon Move Response Format
 
 This is standard backgammon notation consisting of the dice section and the movement section, separated by a colon and a space `: `.
 
@@ -125,7 +133,7 @@ The last (33rd) character represents the player who's turn it is. The recommende
 * `w`
 * `b`
 
-## Checkers Move Reponse Format
+## Checkers Move Response Format
 
 The response is in standard checkers notation:
 
@@ -141,8 +149,9 @@ Jumps are represented with crosses (x) between the numbers. There can be more th
 
 ## TODO
 
-* Extract checkers component
-* Extract backgammon component
-* Add Caching of Calculated Moves
-* Add Chess
-
+* Chess
+    * Performance - Move piece into square
+    * Performance - Move to Mailbox board implmentation
+* Move to Post requests
+* Add performance tests
+* Move API docs into docs folder

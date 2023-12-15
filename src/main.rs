@@ -9,8 +9,20 @@ mod checkers_controller;
 mod backgammon;
 mod backgammon_controller;
 
+mod chess;
+mod chess_controller;
+
 async fn index() -> impl Responder {
     HttpResponse::Ok().body("200 OK\n")
+}
+
+// web::resource("/api/v0/{game_type}/{state}/{algorithm}")
+async fn chess_minimax_move(req_body: String) -> impl Responder {
+    chess_controller::minimax(&req_body)
+}
+
+async fn chess_move(req_body: String) -> impl Responder {
+    chess_controller::minimax(&req_body)
 }
 
 async fn game_move(info: web::Path<(String, String)>) -> impl Responder {
@@ -56,6 +68,12 @@ async fn game_move_algorithm(info: web::Path<(String, String, String)>) -> impl 
                 _ => HttpResponse::NotFound().body("404 Not Found\n"),
             }
         },
+        "chess" => {
+            match algorithm.as_str() {
+                "minimax" => chess_controller::minimax(game_data),
+                _ => HttpResponse::NotFound().body("404 Not Found\n"),
+            }
+        },
         _ => HttpResponse::NotFound().body("404 Not Found\n")
     }
 }
@@ -76,6 +94,14 @@ async fn main() -> std::io::Result<()> {
                     .allowed_origin(&allowed_origin)
                     .allowed_methods(vec!["GET"])
                     .max_age(3600)
+            )
+            .service(
+                web::resource("/api/v0/chess")
+                    .route(web::post().to(chess_move))
+            )
+            .service(
+                web::resource("/api/v0/chess/minimax")
+                    .route(web::post().to(chess_minimax_move))
             )
             .service(
                 web::resource("/api/v0/{game_type}/{state}")
@@ -212,6 +238,60 @@ mod tests {
             .to_request();
         let res = test::call_and_read_body(&app, req).await;
         assert_eq!(res, Bytes::from_static(b"404 Not Found\n"));
+    }
+
+    // chess with valid params
+    #[actix_rt::test]
+    async fn test_chess_status_with_valid_params() {
+        let game_state = String::from("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+        let app = test::init_service(App::new().route("/api/v0/chess", web::post().to(chess_move))).await;
+        let req = test::TestRequest::post()
+            .insert_header(ContentType::plaintext())
+            .uri("/api/v0/chess")
+            .set_payload(game_state)
+            .to_request();
+        let res = test::call_service(&app, req).await;
+        assert!(res.status().is_success());
+    }
+
+    #[actix_rt::test]
+    async fn test_chess_body_with_valid_params() {
+        let game_state = String::from("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+        let app = test::init_service(App::new().route("/api/v0/chess", web::post().to(chess_move))).await;
+        let req = test::TestRequest::post()
+            .insert_header(ContentType::plaintext())
+            .uri("/api/v0/chess")
+            .set_payload(game_state)
+            .to_request();
+        let res = test::call_and_read_body(&app, req).await;
+        assert_eq!(res, Bytes::from_static(b"e4\n"));
+    }
+
+    // chess with invalid params
+    #[actix_rt::test]
+    async fn test_chess_status_with_invalid_params() {
+        let game_state = String::from("znbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+        let app = test::init_service(App::new().route("/api/v0/chess", web::post().to(chess_move))).await;
+        let req = test::TestRequest::post()
+            .insert_header(ContentType::plaintext())
+            .uri("/api/v0/chess")
+            .set_payload(game_state)
+            .to_request();
+        let res = test::call_service(&app, req).await;
+        assert!(res.status().is_client_error());
+    }
+
+    #[actix_rt::test]
+    async fn test_chess_body_with_invalid_params() {
+        let game_state = String::from("znbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+        let app = test::init_service(App::new().route("/api/v0/chess", web::post().to(chess_move))).await;
+        let req = test::TestRequest::post()
+            .insert_header(ContentType::plaintext())
+            .uri("/api/v0/chess")
+            .set_payload(game_state)
+            .to_request();
+        let res = test::call_and_read_body(&app, req).await;
+        assert_eq!(res, Bytes::from_static(b"422 Unprocessable Entity\n"));
     }
 
     // invalid game type 
