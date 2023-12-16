@@ -27,7 +27,7 @@ Game Environment Variables:
 * `CHECKERS_MINIMAX_DEPTH` - How many layers the checkers minimax algorithm will search, default: `5`
 * `CHECKERS_MCTS_SIMULATION_COUNT` - How many simulations the Monte Carlo Tree Search algorithm will search, default: `120`
 * `CHECKERS_MCTS_SIMULATION_DEPTH` - How many moves deep in the Monte Carlo Tree Search algorithm will search for each simulation, default: `40`
-* `CHESS_MINIMAX_DEPTH` - How many layers the chess minimax algorithm will search, default: `2`
+* `CHESS_MINIMAX_DEPTH` - How many layers the chess minimax algorithm will search, default: `3`
 
 ## TODO
 
