@@ -16,13 +16,57 @@ async fn index() -> impl Responder {
     HttpResponse::Ok().body("200 OK\n")
 }
 
-// web::resource("/api/v0/{game_type}/{state}/{algorithm}")
-async fn chess_minimax_move(req_body: String) -> impl Responder {
-    chess_controller::minimax(&req_body)
+async fn post_game_move(info: web::Path<String>, req_body: String) -> impl Responder {
+    let game_type = &info.into_inner();
+
+    match game_type.as_str() {
+        "checkers" => {
+            match checkers::openings::recommended_move(&req_body) {
+                Some(m) => HttpResponse::Ok().body(m),
+                None => checkers_controller::mcts(&req_body) 
+            }
+        },
+        "backgammon" => {
+            match backgammon::openings::recommended_move(&req_body) {
+                Some(m) => HttpResponse::Ok().body(m),
+                None => backgammon_controller::mcts(&req_body)
+            }
+        },
+        "chess" => {
+            chess_controller::minimax(&req_body)
+        },
+        _ => return HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n")
+    }
 }
 
-async fn chess_move(req_body: String) -> impl Responder {
-    chess_controller::minimax(&req_body)
+async fn post_game_algorithm_move(info: web::Path<(String, String)>, req_body: String) -> impl Responder {
+    let (game_type, algorithm) = &info.into_inner();
+
+    match game_type.as_str() {
+        "checkers" => {
+            match algorithm.as_str() {
+                "openings_db" => checkers_controller::opening(&req_body),
+                "minimax" => checkers_controller::minimax(&req_body), 
+                "mcts" => checkers_controller::mcts(&req_body),
+                _ => return HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n")
+            }
+        },
+        "backgammon" => {
+            match algorithm.as_str() {
+                "openings_db" => backgammon_controller::opening(&req_body),
+                "minimax" => backgammon_controller::minimax(&req_body),
+                "mcts" => backgammon_controller::mcts(&req_body),
+                _ => return HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n")
+            }
+        },
+        "chess" => {
+            match algorithm.as_str() {
+                "minimax" => chess_controller::minimax(&req_body),
+                _ => return HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n")
+            }
+        },
+        _ => return HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n")
+    }
 }
 
 async fn game_move(info: web::Path<(String, String)>) -> impl Responder {
@@ -92,20 +136,18 @@ async fn main() -> std::io::Result<()> {
             .wrap(
                 Cors::default()
                     .allowed_origin(&allowed_origin)
-                    .allowed_methods(vec!["GET"])
+                    .allowed_methods(vec!["GET","POST"])
                     .max_age(3600)
             )
             .service(
-                web::resource("/api/v0/chess")
-                    .route(web::post().to(chess_move))
-            )
-            .service(
-                web::resource("/api/v0/chess/minimax")
-                    .route(web::post().to(chess_minimax_move))
+                web::resource("/api/v0/{game_type}")
+                    .route(web::post().to(post_game_move))
             )
             .service(
                 web::resource("/api/v0/{game_type}/{state}")
                     .route(web::get().to(game_move))
+                    .route(web::post().to(post_game_algorithm_move)) // temporary path while get
+                                                                     // requests are still used
                     .route(web::head().to(|| HttpResponse::MethodNotAllowed()))
             ) 
             .service(
@@ -244,7 +286,7 @@ mod tests {
     #[actix_rt::test]
     async fn test_chess_status_with_valid_params() {
         let game_state = String::from("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-        let app = test::init_service(App::new().route("/api/v0/chess", web::post().to(chess_move))).await;
+        let app = test::init_service(App::new().route("/api/v0/{game_type}", web::post().to(post_game_move))).await;
         let req = test::TestRequest::post()
             .insert_header(ContentType::plaintext())
             .uri("/api/v0/chess")
@@ -257,7 +299,7 @@ mod tests {
     #[actix_rt::test]
     async fn test_chess_body_with_valid_params() {
         let game_state = String::from("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-        let app = test::init_service(App::new().route("/api/v0/chess", web::post().to(chess_move))).await;
+        let app = test::init_service(App::new().route("/api/v0/{game_type}", web::post().to(post_game_move))).await;
         let req = test::TestRequest::post()
             .insert_header(ContentType::plaintext())
             .uri("/api/v0/chess")
@@ -271,7 +313,7 @@ mod tests {
     #[actix_rt::test]
     async fn test_chess_status_with_invalid_params() {
         let game_state = String::from("znbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-        let app = test::init_service(App::new().route("/api/v0/chess", web::post().to(chess_move))).await;
+        let app = test::init_service(App::new().route("/api/v0/{game_type}", web::post().to(post_game_move))).await;
         let req = test::TestRequest::post()
             .insert_header(ContentType::plaintext())
             .uri("/api/v0/chess")
@@ -284,7 +326,7 @@ mod tests {
     #[actix_rt::test]
     async fn test_chess_body_with_invalid_params() {
         let game_state = String::from("znbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-        let app = test::init_service(App::new().route("/api/v0/chess", web::post().to(chess_move))).await;
+        let app = test::init_service(App::new().route("/api/v0/{game_type}", web::post().to(post_game_move))).await;
         let req = test::TestRequest::post()
             .insert_header(ContentType::plaintext())
             .uri("/api/v0/chess")
