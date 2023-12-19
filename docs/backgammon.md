@@ -10,25 +10,25 @@
 ### Backgammon Default Algorithm - Openings DB with Monte Carlo Tree Search 
 
 ```
-  curl http://localhost:7878/api/v0/backgammon/0020000000000500300000005005000000030050000000000200121
+  curl -X POST http://localhost:7878/api/v0/backgammon -d "0020000000000500300000005005000000030050000000000200121"
 ```
 
 ### Backgammon Algorithm - Openings DB
 
 ```
-  curl http://localhost:7878/api/v0/backgammon/0020000000000500300000005005000000030050000000000200121/openings_db
+  curl -X POST http://localhost:7878/api/v0/backgammon/openings_db -d "0020000000000500300000005005000000030050000000000200121"
 ```
 
 ### Backgammon Algorithm - Minimax 
 
 ```
-  curl http://localhost:7878/api/v0/backgammon/0020000000000500300000005005000000030050000000000200121/minimax
+  curl -X POST http://localhost:7878/api/v0/backgammon/minimax -d 0020000000000500300000005005000000030050000000000200121
 ```
 
 ### Backgammon Algorithm - Monte-Carlo Tree Search
 
 ```
-  curl http://localhost:7878/api/v0/backgammon/0020000000000500300000005005000000030050000000000200121/mcts
+  curl -X POST http://localhost:7878/api/v0/backgammon/mcts -d "0020000000000500300000005005000000030050000000000200121"
 ```
 
 ## Backgammon State Argument Format

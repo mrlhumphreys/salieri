@@ -10,25 +10,25 @@
 ### Checkers Default Algorithm - Openings DB with Monte Carlo Tree Search
 
 ```
-  curl http://localhost:7878/api/v0/checkers/bbbbbbbbb-bb--b-----wwwwwwwwwwwww
+  curl -x POST http://localhost:7878/api/v0/checkers -d "bbbbbbbbb-bb--b-----wwwwwwwwwwwww"
 ```
 
 ### Checkers Algorithm - Openings DB 
 
 ```
-  curl http://localhost:7878/api/v0/checkers/bbbbbbbbb-bb--b-----wwwwwwwwwwwww/openings_db
+  curl -x POST http://localhost:7878/api/v0/checkers/openings_db -d "bbbbbbbbb-bb--b-----wwwwwwwwwwwww"
 ```
 
 ### Checkers Algorithm - Minimax 
 
 ```
-  curl http://localhost:7878/api/v0/checkers/bbbbbbbbb-bb--b-----wwwwwwwwwwwww/minimax
+  curl -x POST http://localhost:7878/api/v0/checkers/minimax -d "bbbbbbbbb-bb--b-----wwwwwwwwwwwww"
 ```
 
 ### Checkers Algorithm - Monte-Carlo Tree Search 
 
 ```
-  curl http://localhost:7878/api/v0/checkers/bbbbbbbbb-bb--b-----wwwwwwwwwwwww/mcts
+  curl -x POST http://localhost:7878/api/v0/checkers/mcts -d "bbbbbbbbb-bb--b-----wwwwwwwwwwwww"
 ```
 
 ## Checkers State Argument Format

@@ -16,7 +16,7 @@ Board Game Move Recommender written in Rust.
 
 Application Environment Variables:
 
-* `ALLOWED_ORIGIN` - CORS allowed origins, default: `http://127.0.0.1:8080`.
+* `ALLOWED_ORIGIN` - CORS allowed origins, default: `http://127.0.0.1:5173`.
 * `PORT` - Port server runs on, default: `7878`.
 
 Game Environment Variables:

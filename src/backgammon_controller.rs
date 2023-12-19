@@ -7,14 +7,14 @@ use super::backgammon;
 pub fn opening(game_data: &String) -> HttpResponse {
     match backgammon::openings::recommended_move(game_data) {
         Some(m) => HttpResponse::Ok().body(format!("{}\n", m)),
-        None => HttpResponse::NotFound().body("404 Not Found\n")
+        None => HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n")
     }
 }
 
 pub fn minimax(game_data: &String) -> HttpResponse {
     let game_state = match backgammon::state::game_state::parse(game_data) {
         Ok(gs) => gs,
-        Err(_) => return HttpResponse::NotFound().body("404 Not Found\n"),
+        Err(_) => return HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n"),
     };
 
     let minimax_depth: i8 = env::var("BACKGAMMON_MINIMAX_DEPTH")
@@ -26,14 +26,14 @@ pub fn minimax(game_data: &String) -> HttpResponse {
 
     match recommended_move {
         Some(m) => HttpResponse::Ok().body(format!("{}\n", m.format())),
-        None => HttpResponse::NotFound().body("No Moves\n"),
+        None => HttpResponse::UnprocessableEntity().body("No Moves\n"),
     }
 }
 
 pub fn mcts(game_data: &String) -> HttpResponse {
     let game_state = match backgammon::state::game_state::parse(game_data) {
         Ok(gs) => gs,
-        Err(_) => return HttpResponse::NotFound().body("404 Not Found\n"),
+        Err(_) => return HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n"),
     };
 
     let mcts_simulation_count: i16 = env::var("BACKGAMMON_MCTS_SIMULATION_COUNT")
@@ -52,7 +52,7 @@ pub fn mcts(game_data: &String) -> HttpResponse {
         Ok(m) => HttpResponse::Ok().body(format!("{}\n", m.format())),
         Err(e) => {
             println!("{}", e);
-            HttpResponse::NotFound().body("404 Not Found\n")
+            HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n")
         }
     }
 }
@@ -85,9 +85,9 @@ mod tests {
         let game_state = String::from("0020000000000500030000005005000000300050000000000200661");
         let result = opening(&game_state);
 
-        assert_eq!(result.status(), 404);
+        assert_eq!(result.status(), 422);
         match result.into_body().try_into_bytes() {
-           Ok(bytes) => assert_eq!(bytes, "404 Not Found\n"),
+           Ok(bytes) => assert_eq!(bytes, "422 Unprocessable Entity\n"),
            Err(_) => assert!(false, "unexpected body")
         };
     }
@@ -109,9 +109,9 @@ mod tests {
         let game_state = String::from("002000000000050030000000500500000003005000000000020012n");
         let result = minimax(&game_state);
 
-        assert_eq!(result.status(), 404);
+        assert_eq!(result.status(), 422);
         match result.into_body().try_into_bytes() {
-           Ok(bytes) => assert_eq!(bytes, "404 Not Found\n"),
+           Ok(bytes) => assert_eq!(bytes, "422 Unprocessable Entity\n"),
            Err(_) => assert!(false, "unexpected body")
         };
     }
@@ -133,9 +133,9 @@ mod tests {
         let game_state = String::from("x020000000000500300000005002000000005000300000000500121");
         let result = mcts(&game_state);
 
-        assert_eq!(result.status(), 404);
+        assert_eq!(result.status(), 422);
         match result.into_body().try_into_bytes() {
-           Ok(bytes) => assert_eq!(bytes, "404 Not Found\n"),
+           Ok(bytes) => assert_eq!(bytes, "422 Unprocessable Entity\n"),
            Err(_) => assert!(false, "unexpected body")
         };
     }
