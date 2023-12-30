@@ -49,20 +49,20 @@ impl ExternalMove {
                 }
             },
             None => {
-                String::from(format!("{}{}{}{}{}{}{}", self.prefix(), self.piece_format(), self.from_format(), self.capture_format(), self.to_format(), self.en_passant_suffix(), self.check_and_mate_suffix()))
+                String::from(format!("{}{}{}{}{}{}", self.piece_format(), self.from_format(), self.capture_format(), self.to_format(), self.en_passant_suffix(), self.check_and_mate_suffix()))
             }
         }
     }
 
-    fn prefix(&self) -> String {
-        match self.en_passant_point {
-            Some(_) => {
-                let x = usize::try_from(self.from.x).unwrap_or(0); 
-                String::from(X_FORMAT[x])
-            },
-            None => String::from("")
-        }
-    }
+    // fn prefix(&self) -> String {
+    //     match self.en_passant_point {
+    //         Some(_) => {
+    //             let x = usize::try_from(self.from.x).unwrap_or(0); 
+    //             String::from(X_FORMAT[x])
+    //         },
+    //         None => String::from("")
+    //     }
+    // }
 
     fn piece_format(&self) -> String {
         let piece_letter = match self.moving_piece_kind {
@@ -233,7 +233,7 @@ mod tests {
             en_passant_point,
             en_passant_target: Some(Point { x: 3, y: 2 }),
             castle_move: None,
-            file_disambiguation: false,
+            file_disambiguation: true,
             rank_disambiguation: false,
             in_check: false,
             in_checkmate: false
