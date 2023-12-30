@@ -82,7 +82,7 @@ fn build_external_move(game_state: chess::state::game_state::GameState, mov: che
     };
 
     let rank_disambiguation = match mov.moving_piece_kind {
-        chess::state::piece::PieceKind::Pawn => false, 
+        chess::state::piece::PieceKind::Pawn => mov.capture_piece_kind.is_some(), 
         _ => {
             game_state.squares.squares.iter().filter(|s| {
                 let s_player_number = match s.piece {
@@ -236,6 +236,26 @@ mod tests {
             to: chess::state::point::Point { x: 0, y: 4 },
             moving_piece_kind: chess::state::piece::PieceKind::Rook,
             capture_piece_kind: None,
+            promote_piece_kind: None,
+            en_passant_point: None,
+            en_passant_target: None,
+            castle_move: None
+        };
+
+        let result = build_external_move(state, mov);
+
+        assert_eq!(result.rank_disambiguation, true);
+     }
+
+     #[test]
+     fn build_external_move_rank_disambiguation_pawn_capture_test() {
+        let encoded = String::from("4k3/p7/1P6/8/8/8/8/4K3 b - - 0 1");
+        let state = chess::state::game_state::parse(&encoded).unwrap();
+        let mov = chess::state::mov::Move {
+            from: chess::state::point::Point { x: 0, y: 1 },
+            to: chess::state::point::Point { x: 1, y: 2 },
+            moving_piece_kind: chess::state::piece::PieceKind::Pawn,
+            capture_piece_kind: Some(chess::state::piece::PieceKind::Pawn),
             promote_piece_kind: None,
             en_passant_point: None,
             en_passant_target: None,
