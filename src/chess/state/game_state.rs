@@ -133,7 +133,7 @@ impl GameState {
                         Some(p) => {
                             if p.kind == PieceKind::King {
                                  let vector = Vector { from: from.point(), to: to.point() };
-                                 if vector.length() == 2 {
+                                 if vector.length() == 2 && self.squares.between_unoccupied(&from, &to) {
                                      let side = vector.side();
                                      let cm = CastleMove { player_number: current_player_number, side };
                                      Some(cm)
@@ -699,6 +699,15 @@ mod tests {
         assert_eq!(result[5].promote_piece_kind, None); 
         assert_eq!(result[5].en_passant_point, None); 
         assert_eq!(result[5].castle_move, Some(CastleMove { player_number: 1, side: Side::King })); 
+    }
+
+    #[test]
+    fn possible_moves_castle_move_blocked_test() {
+        let encoded = String::from("4k3/8/8/8/8/8/8/4KN1R w K - 0 1");
+        let mut state = parse(&encoded).unwrap();
+        let result = state.possible_moves();
+        
+        assert_eq!(result.len(), 16);
     }
 
     #[test]
