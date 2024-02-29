@@ -75,6 +75,31 @@ impl Piece {
         }
     }
 
+    pub fn capture_squares<'a>(&'a self, from: &'a Square, game_state: &'a GameState) -> Vec<&Square> {
+        match self.kind {
+            PieceKind::Pawn => {
+                game_state.squares.squares.iter().filter(|s| {
+                    let vector = Vector { from: from.point(), to: s.point() };
+
+                    // Move
+                    vector.length() == 1 &&
+                     vector.direction_unit().y == self.forwards_direction() &&
+                     vector.diagonal() &&
+                     (s.occupied_by_opponent(self.player_number) || self.en_passant_condition(from, s, game_state)  )
+                }).collect()
+            },
+            PieceKind::King => {
+                game_state.squares.squares.iter().filter(|to| {
+                    let vector = Vector { from: from.point(), to: to.point() };
+                    vector.length() == 1 && to.unoccupied_or_occupied_by_opponent(self.player_number)
+                }).collect()
+            },
+            _ => {
+                self.destinations(from, game_state)
+            }
+        }
+    }
+
     fn castle_conditions(&self, from: &Square, to: &Square, game_state: &GameState) -> bool {
         match self.player_number {
             1 => {
@@ -429,6 +454,68 @@ mod tests {
                 let expected = vec![
                     &Square { x: 5, y: 7, piece: None },
                     &Square { x: 6, y: 7, piece: None }
+                ];
+                assert_eq!(result, expected);
+            },
+            Err(e) => assert!(false, "{}", e)
+        }
+    }
+
+    #[test]
+    fn pawn_capture_squares_test() {
+        let piece = Piece { kind: PieceKind::Pawn, player_number: 1 };
+        let from = Square { x: 4 , y: 6, piece: Some(piece) };
+        let encoded = String::from("rnbqkbnr/ppp1pppp/8/8/8/3p4/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+        let result = parse_game_state(&encoded);
+
+        match result {
+            Ok(game_state) => {
+                let result = piece.capture_squares(&from, &game_state);
+                let expected = vec![
+                    &Square { x: 3, y: 5, piece: Some(Piece { kind: PieceKind::Pawn, player_number: 2}) }
+                ];
+                assert_eq!(result, expected);
+            },
+            Err(e) => assert!(false, "{}", e)
+        }
+    }
+
+    #[test]
+    fn king_capture_squares_test() {
+        let piece = Piece { kind: PieceKind::King, player_number: 1 };
+        let from = Square { x: 4, y: 7, piece: Some(piece) };
+        let encoded = String::from("rnbqkbnr/pppppppp/8/8/8/5BN1/PPPPPPPP/RNBQK2R w KQkq - 0 1");
+        let result = parse_game_state(&encoded);
+
+        match result {
+            Ok(game_state) => {
+                let result = piece.capture_squares(&from, &game_state);
+                let expected = vec![
+                    &Square { x: 5, y: 7, piece: None }
+                ];
+                assert_eq!(result, expected);
+            },
+            Err(e) => assert!(false, "{}", e)
+        }
+    }
+
+    #[test]
+    fn other_capture_squares_test() {
+        let piece = Piece { kind: PieceKind::Rook, player_number: 1 };
+        let from = Square { x: 7, y: 7, piece: Some(piece) };
+        let encoded = String::from("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPP1/RNBQKBNR w KQkq - 0 1");
+        let result = parse_game_state(&encoded);
+
+        match result {
+            Ok(game_state) => {
+                let result = piece.capture_squares(&from, &game_state);
+                let expected = vec![
+                    &Square { x: 7, y: 1, piece: Some(Piece { kind: PieceKind::Pawn, player_number: 2 }) },
+                    &Square { x: 7, y: 2, piece: None },
+                    &Square { x: 7, y: 3, piece: None },
+                    &Square { x: 7, y: 4, piece: None },
+                    &Square { x: 7, y: 5, piece: None },
+                    &Square { x: 7, y: 6, piece: None }
                 ];
                 assert_eq!(result, expected);
             },

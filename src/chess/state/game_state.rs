@@ -47,8 +47,8 @@ impl GameState {
                    break;
                } else {
                    if let Some(piece) = square.piece { 
-                       // if any destinations match king square
-                       if piece.destinations(&square, self).iter().any(|s| *s == king_square) {
+                       // if any capture square match king square
+                       if piece.capture_squares(&square, self).iter().any(|s| *s == king_square) {
                            check = true;
                        }
                    }
