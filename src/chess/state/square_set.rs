@@ -16,7 +16,7 @@ impl Clone for SquareSet {
 
 impl SquareSet {
     pub fn find_by_x_and_y(&self, x: i8, y: i8) -> Option<&Square> {
-        self.squares.iter().find(|s| s.x == x && s.y == y) 
+        self.squares.iter().find(|s| s.x == x && s.y == y)
     }
 
     pub fn between_unoccupied(&self, from: &Square, to: &Square) -> bool {
@@ -26,7 +26,7 @@ impl SquareSet {
         if vector.length() > 1 && (vector.diagonal() || vector.orthogonal()) {
             let direction_unit = vector.direction_unit();
             let end = to.point();
-            let mut counter = from.point() + direction_unit; 
+            let mut counter = from.point() + direction_unit;
             while counter != end {
                 let square = self.find_by_x_and_y(counter.x, counter.y);
                 match square {
@@ -35,7 +35,7 @@ impl SquareSet {
                             result = false;
                         }
                     },
-                    None => (), 
+                    None => (),
                 }
                 counter = counter + direction_unit;
             }
@@ -56,7 +56,7 @@ mod tests {
         let square_a = Square { x: 1, y: 0, piece: None };
         let square_b = Square { x: 1, y: 1, piece: None };
         let squares = vec![square_a, square_b];
-        let square_set = SquareSet { squares };   
+        let square_set = SquareSet { squares };
 
         let result = square_set.find_by_x_and_y(1, 1);
         match result {
@@ -75,7 +75,7 @@ mod tests {
         let destination = Square { x: 1, y: 3, piece: None };
         let beyond = Square { x: 1, y: 4, piece: None };
         let squares = vec![origin, between, destination, beyond];
-        let square_set = SquareSet { squares };   
+        let square_set = SquareSet { squares };
 
         let result = square_set.between_unoccupied(&origin, &destination);
         assert_eq!(result, true);
@@ -85,10 +85,11 @@ mod tests {
     fn between_unoccupied_false_test() {
         let origin = Square { x: 1, y: 1, piece: None };
         let between = Square { x: 1, y: 2, piece: Some(Piece { player_number: 1, kind: PieceKind::Pawn })};
-        let destination = Square { x: 1, y: 3, piece: None };
-        let beyond = Square { x: 1, y: 4, piece: None };
-        let squares = vec![origin, between, destination, beyond];
-        let square_set = SquareSet { squares };   
+        let gap = Square { x: 1, y: 3, piece: None };
+        let destination = Square { x: 1, y: 4, piece: None };
+        let beyond = Square { x: 1, y: 5, piece: None };
+        let squares = vec![origin, between, gap, destination, beyond];
+        let square_set = SquareSet { squares };
 
         let result = square_set.between_unoccupied(&origin, &destination);
         assert_eq!(result, false);

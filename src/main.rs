@@ -23,7 +23,7 @@ async fn post_game_move(info: web::Path<String>, req_body: String) -> impl Respo
         "checkers" => {
             match checkers::openings::recommended_move(&req_body) {
                 Some(m) => HttpResponse::Ok().body(m),
-                None => checkers_controller::mcts(&req_body) 
+                None => checkers_controller::mcts(&req_body)
             }
         },
         "backgammon" => {
@@ -46,7 +46,7 @@ async fn post_game_algorithm_move(info: web::Path<(String, String)>, req_body: S
         "checkers" => {
             match algorithm.as_str() {
                 "openings_db" => checkers_controller::opening(&req_body),
-                "minimax" => checkers_controller::minimax(&req_body), 
+                "minimax" => checkers_controller::minimax(&req_body),
                 "mcts" => checkers_controller::mcts(&req_body),
                 _ => return HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n")
             }
@@ -93,7 +93,7 @@ async fn main() -> std::io::Result<()> {
             .service(
                 web::resource("/api/v0/{game_type}/{algorithm}")
                     .route(web::post().to(post_game_algorithm_move))
-            ) 
+            )
             .route("/", web::get().to(index))
     })
     .bind(("0.0.0.0", port))?
@@ -261,7 +261,7 @@ mod tests {
             .set_payload(game_state)
             .to_request();
         let res = test::call_and_read_body(&app, req).await;
-        assert_eq!(res, Bytes::from_static(b"e4\n"));
+        assert_eq!(res, Bytes::from_static(b"d4\n"));
     }
 
     // chess with invalid params
@@ -291,7 +291,7 @@ mod tests {
         assert_eq!(res, Bytes::from_static(b"422 Unprocessable Entity\n"));
     }
 
-    // invalid game type 
+    // invalid game type
     #[actix_rt::test]
     async fn test_invalid_game_type_status() {
         let game_state = String::from("-bbbbbbbbb-bb--b-----wwwwwwwwwwwww");

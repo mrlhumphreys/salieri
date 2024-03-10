@@ -38,19 +38,19 @@ pub fn minimax(game_data: &String) -> HttpResponse {
 //         Ok(gs) => gs,
 //         Err(_) => return HttpResponse::NotFound().body("404 Not Found\n"),
 //     };
-// 
+//
 //     let mcts_simulation_count: i16 = env::var("CHESS_MCTS_SIMULATION_COUNT")
 //         .unwrap_or_else(|_| "120".to_string())
 //         .parse()
 //         .expect("CHESS_MCTS_SIMULATION_COUNT must be a number");
-// 
+//
 //     let mcts_simulation_depth: i16 = env::var("CHESS_MCTS_SIMULATION_DEPTH")
 //         .unwrap_or_else(|_| "40".to_string())
 //         .parse()
 //         .expect("CHESS_MCTS_SIMULATION_DEPTH must be a number");
-// 
+//
 //     let recommended_move = chess::mcts::recommended_move(game_state, mcts_simulation_count, mcts_simulation_depth);
-// 
+//
 //     match recommended_move {
 //         Ok(m) => HttpResponse::Ok().body(format!("{}\n", m.format())),
 //         Err(e) => {
@@ -65,7 +65,7 @@ fn build_external_move(game_state: chess::state::game_state::GameState, mov: che
     let _result = new_state.perform_move(&mov);
 
     let file_disambiguation = match mov.moving_piece_kind {
-        chess::state::piece::PieceKind::Pawn => mov.capture_piece_kind.is_some(), 
+        chess::state::piece::PieceKind::Pawn => mov.capture_piece_kind.is_some(),
         _ => {
             game_state.squares.squares.iter().filter(|s| {
                 let s_player_number = match s.piece {
@@ -74,15 +74,15 @@ fn build_external_move(game_state: chess::state::game_state::GameState, mov: che
                 };
                 let s_kind = match s.piece {
                     Some(p) => p.kind,
-                    None => chess::state::piece::PieceKind::Pawn 
+                    None => chess::state::piece::PieceKind::Pawn
                 };
-                s_kind == mov.moving_piece_kind && s.y == mov.from.y && s_player_number == game_state.current_player_number 
+                s_kind == mov.moving_piece_kind && s.y == mov.from.y && s_player_number == game_state.current_player_number
             }).collect::<Vec<&chess::state::square::Square>>().len() > 1
         }
     };
 
     let rank_disambiguation = match mov.moving_piece_kind {
-        chess::state::piece::PieceKind::Pawn => false, 
+        chess::state::piece::PieceKind::Pawn => false,
         _ => {
             game_state.squares.squares.iter().filter(|s| {
                 let s_player_number = match s.piece {
@@ -91,9 +91,9 @@ fn build_external_move(game_state: chess::state::game_state::GameState, mov: che
                 };
                 let s_kind = match s.piece {
                     Some(p) => p.kind,
-                    None => chess::state::piece::PieceKind::Pawn 
+                    None => chess::state::piece::PieceKind::Pawn
                 };
-                s_kind == mov.moving_piece_kind && s.x == mov.from.x && s_player_number == game_state.current_player_number 
+                s_kind == mov.moving_piece_kind && s.x == mov.from.x && s_player_number == game_state.current_player_number
             }).collect::<Vec<&chess::state::square::Square>>().len() > 1
         }
     };
@@ -101,15 +101,15 @@ fn build_external_move(game_state: chess::state::game_state::GameState, mov: che
     let in_check = new_state.in_check(new_state.current_player_number);
     let in_checkmate = new_state.in_checkmate(new_state.current_player_number);
 
-    let external_mov = chess::state::external_mov::ExternalMove { 
-        from: mov.from, 
-        to: mov.to, 
-        moving_piece_kind: mov.moving_piece_kind, 
-        capture_piece_kind: mov.capture_piece_kind, 
-        promote_piece_kind: mov.promote_piece_kind, 
-        en_passant_point: mov.en_passant_point, 
+    let external_mov = chess::state::external_mov::ExternalMove {
+        from: mov.from,
+        to: mov.to,
+        moving_piece_kind: mov.moving_piece_kind,
+        capture_piece_kind: mov.capture_piece_kind,
+        promote_piece_kind: mov.promote_piece_kind,
+        en_passant_point: mov.en_passant_point,
         en_passant_target: mov.en_passant_target,
-        castle_move: mov.castle_move, 
+        castle_move: mov.castle_move,
         file_disambiguation,
         rank_disambiguation,
         in_check,
@@ -127,9 +127,9 @@ mod tests {
 //    #[test]
 //    fn opening_valid_test() {
 //        let game_state = String::from("bbbbbbb-bbbb--b---w-ww-wwwwwwwwww");
-//        let result = opening(&game_state); 
+//        let result = opening(&game_state);
 //
-//        assert_eq!(result.status(), 200); 
+//        assert_eq!(result.status(), 200);
 //        match result.into_body().try_into_bytes() {
 //           Ok(bytes) => assert_eq!(bytes, "22-17\n"),
 //           Err(_) => assert!(false, "unexpected body")
@@ -139,9 +139,9 @@ mod tests {
 //    #[test]
 //    fn opening_no_moves_test() {
 //        let game_state = String::from("----bbb-bbbb--b---w-ww-wwwwwwwwww");
-//        let result = opening(&game_state); 
+//        let result = opening(&game_state);
 //
-//        assert_eq!(result.status(), 404); 
+//        assert_eq!(result.status(), 404);
 //        match result.into_body().try_into_bytes() {
 //           Ok(bytes) => assert_eq!(bytes, "404 Not Found\n"),
 //           Err(_) => assert!(false, "unexpected body")
@@ -151,33 +151,33 @@ mod tests {
      #[test]
      fn minimax_valid_test() {
          let game_state = String::from("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-         let result = minimax(&game_state); 
- 
-         assert_eq!(result.status(), 200); 
+         let result = minimax(&game_state);
+
+         assert_eq!(result.status(), 200);
          match result.into_body().try_into_bytes() {
-            Ok(bytes) => assert_eq!(bytes, "e4\n"),
+            Ok(bytes) => assert_eq!(bytes, "d4\n"),
             Err(_) => assert!(false, "unexpected body")
          };
      }
- 
+
      #[test]
      fn minimax_invalid_game_state_test() {
          let game_state = String::from("znbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-         let result = minimax(&game_state); 
- 
-         assert_eq!(result.status(), 422); 
+         let result = minimax(&game_state);
+
+         assert_eq!(result.status(), 422);
          match result.into_body().try_into_bytes() {
             Ok(bytes) => assert_eq!(bytes, "422 Unprocessable Entity\n"),
             Err(_) => assert!(false, "unexpected body")
          };
      }
- 
+
 //     #[test]
 //     fn minimax_no_moves_test() {
 //         let game_state = String::from("bbbbbbb-bbbb--b-----------------w");
-//         let result = minimax(&game_state); 
-// 
-//         assert_eq!(result.status(), 404); 
+//         let result = minimax(&game_state);
+//
+//         assert_eq!(result.status(), 404);
 //         match result.into_body().try_into_bytes() {
 //            Ok(bytes) => assert_eq!(bytes, "404 Not Found\n"),
 //            Err(_) => assert!(false, "unexpected body")
@@ -223,7 +223,7 @@ mod tests {
             castle_move: None
         };
         let result = build_external_move(state, mov);
-         
+
         assert_eq!(result.file_disambiguation, true);
      }
 
