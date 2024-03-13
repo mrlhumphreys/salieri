@@ -1,18 +1,22 @@
 use crate::chess::state::square::Square;
 use crate::chess::state::game_state::GameState;
 use crate::chess::state::castle_move::Side;
-use crate::chess::state::vector::Vector;
-use crate::chess::state::point::Point;
+use crate::chess::state::vector::length;
+use crate::chess::state::vector::direction_unit_y;
+use crate::chess::state::vector::orthogonal;
+use crate::chess::state::vector::diagonal;
+use crate::chess::state::vector::orthogonal_or_diagonal;
+use crate::chess::state::vector::knight_jump;
 
-const PLAYER_ONE_CASTLE_KING_SIDE_POINT: Point = Point { x: 6, y: 7 };
-const PLAYER_ONE_CASTLE_QUEEN_SIDE_POINT: Point = Point { x: 2, y: 7 };
-const PLAYER_TWO_CASTLE_KING_SIDE_POINT: Point = Point { x: 6, y: 0 };
-const PLAYER_TWO_CASTLE_QUEEN_SIDE_POINT: Point = Point { x: 2, y: 0 };
+const PLAYER_ONE_CASTLE_KING_SIDE: (i8, i8) = (6, 7);
+const PLAYER_ONE_CASTLE_QUEEN_SIDE: (i8, i8) = (2, 7);
+const PLAYER_TWO_CASTLE_KING_SIDE: (i8, i8) = (6, 0);
+const PLAYER_TWO_CASTLE_QUEEN_SIDE: (i8, i8) =  (2, 0);
 
-const PLAYER_ONE_KING_SIDE_ROOK_POINT: Point = Point { x: 7, y: 7 };
-const PLAYER_ONE_QUEEN_SIDE_ROOK_POINT: Point = Point { x: 0, y: 7 };
-const PLAYER_TWO_KING_SIDE_ROOK_POINT: Point = Point { x: 7, y: 0 };
-const PLAYER_TWO_QUEEN_SIDE_ROOK_POINT: Point = Point { x: 0, y: 0 };
+const PLAYER_ONE_KING_SIDE_ROOK: (i8, i8) = (7, 7);
+const PLAYER_ONE_QUEEN_SIDE_ROOK: (i8, i8) = (0, 7);
+const PLAYER_TWO_KING_SIDE_ROOK: (i8, i8) = (7, 0);
+const PLAYER_TWO_QUEEN_SIDE_ROOK: (i8, i8) = (0, 0);
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum PieceKind {
@@ -38,43 +42,37 @@ impl Piece {
             },
             PieceKind::Rook => {
                 game_state.squares.squares.iter().filter(|to| {
-                    let vector = Vector { from: from.point(), to: to.point() };
-                    vector.orthogonal() &&
+                    orthogonal(from.x, from.y, to.x, to.y) &&
                         to.unoccupied_or_occupied_by_opponent(self.player_number) &&
                         game_state.squares.between_unoccupied(from, &to)
                 }).collect()
             },
             PieceKind::Knight => {
                 game_state.squares.squares.iter().filter(|to| {
-                    let vector = Vector { from: from.point(), to: to.point() };
-                    vector.not_orthogonal_or_diagonal() &&
-                        vector.length() == 2 &&
+                    knight_jump(from.x, from.y, to.x, to.y) &&
                         to.unoccupied_or_occupied_by_opponent(self.player_number)
                 }).collect()
             },
             PieceKind::Bishop => {
                 game_state.squares.squares.iter().filter(|to| {
-                    let vector = Vector { from: from.point(), to: to.point() };
-                    vector.diagonal() &&
+                    diagonal(from.x, from.y, to.x, to.y) &&
                         to.unoccupied_or_occupied_by_opponent(self.player_number) &&
                         game_state.squares.between_unoccupied(from, &to)
                 }).collect()
             },
             PieceKind::Queen => {
                 game_state.squares.squares.iter().filter(|to| {
-                    let vector = Vector { from: from.point(), to: to.point() };
-                    vector.orthogonal_or_diagonal() &&
+                    orthogonal_or_diagonal(from.x, from.y, to.x, to.y) &&
                         to.unoccupied_or_occupied_by_opponent(self.player_number) &&
                         game_state.squares.between_unoccupied(from, &to)
                 }).collect()
             },
             PieceKind::King => {
                 game_state.squares.squares.iter().filter(|to| {
-                    let vector = Vector { from: from.point(), to: to.point() };
-                    (vector.length() == 1 &&
+                    (length(from.x, from.y, to.x, to.y) == 1 &&
                         to.unoccupied_or_occupied_by_opponent(self.player_number)
                     ) ||
-                    (vector.length() == 2 && self.castle_conditions(from, to, game_state))
+                    (length(from.x, from.y, to.x, to.y) == 2 && self.castle_conditions(from, to, game_state))
                 }).collect()
             }
         }
@@ -84,19 +82,18 @@ impl Piece {
         match self.kind {
             PieceKind::Pawn => {
                 game_state.squares.squares.iter().filter(|s| {
-                    let vector = Vector { from: from.point(), to: s.point() };
 
                     // Move
-                    vector.length() == 1 &&
-                     vector.direction_unit().y == self.forwards_direction() &&
-                     vector.diagonal() &&
-                     (s.occupied_by_opponent(self.player_number) || self.en_passant_condition(from, s, game_state)  )
+                    length(from.x, from.y, s.x, s.y) == 1 &&
+                        direction_unit_y(from.y, s.y) == self.forwards_direction() &&
+                        diagonal(from.x, from.y, s.x, s.y) &&
+                        (s.occupied_by_opponent(self.player_number) || self.en_passant_condition(from, s, game_state))
                 }).collect()
             },
             PieceKind::King => {
                 game_state.squares.squares.iter().filter(|to| {
-                    let vector = Vector { from: from.point(), to: to.point() };
-                    vector.length() == 1 && to.unoccupied_or_occupied_by_opponent(self.player_number)
+                    length(from.x, from.y, to.x, to.y) == 1 &&
+                        to.unoccupied_or_occupied_by_opponent(self.player_number)
                 }).collect()
             },
             _ => {
@@ -108,9 +105,9 @@ impl Piece {
     fn castle_conditions(&self, from: &Square, to: &Square, game_state: &GameState) -> bool {
         match self.player_number {
             1 => {
-                match to.point() {
-                    PLAYER_ONE_CASTLE_KING_SIDE_POINT => {
-                        let rook_square = game_state.squares.find_by_x_and_y(PLAYER_ONE_KING_SIDE_ROOK_POINT.x, PLAYER_ONE_KING_SIDE_ROOK_POINT.y);
+                match (to.x, to.y) {
+                    PLAYER_ONE_CASTLE_KING_SIDE => {
+                        let rook_square = game_state.squares.find_by_x_and_y(PLAYER_ONE_KING_SIDE_ROOK.0, PLAYER_ONE_KING_SIDE_ROOK.1);
                         match rook_square {
                             Some(rs) => {
                                 game_state.castle_moves.iter().any(|cm| cm.player_number == 1 && cm.side == Side::King ) &&
@@ -119,8 +116,8 @@ impl Piece {
                             None => false
                         }
                     },
-                    PLAYER_ONE_CASTLE_QUEEN_SIDE_POINT => {
-                        let rook_square = game_state.squares.find_by_x_and_y(PLAYER_ONE_QUEEN_SIDE_ROOK_POINT.x, PLAYER_ONE_QUEEN_SIDE_ROOK_POINT.y);
+                    PLAYER_ONE_CASTLE_QUEEN_SIDE => {
+                        let rook_square = game_state.squares.find_by_x_and_y(PLAYER_ONE_QUEEN_SIDE_ROOK.0, PLAYER_ONE_QUEEN_SIDE_ROOK.1);
                         match rook_square {
                             Some(rs) => {
                                 game_state.castle_moves.iter().any(|cm| cm.player_number == 1 && cm.side == Side::Queen ) &&
@@ -133,9 +130,9 @@ impl Piece {
                 }
             },
             2 => {
-                match to.point() {
-                    PLAYER_TWO_CASTLE_KING_SIDE_POINT => {
-                        let rook_square = game_state.squares.find_by_x_and_y(PLAYER_TWO_KING_SIDE_ROOK_POINT.x, PLAYER_TWO_KING_SIDE_ROOK_POINT.y);
+                match (to.x, to.y) {
+                    PLAYER_TWO_CASTLE_KING_SIDE => {
+                        let rook_square = game_state.squares.find_by_x_and_y(PLAYER_TWO_KING_SIDE_ROOK.0, PLAYER_TWO_KING_SIDE_ROOK.1);
                         match rook_square {
                             Some(rs) => {
                                 game_state.castle_moves.iter().any(|cm| cm.player_number == 2 && cm.side == Side::King ) &&
@@ -144,8 +141,8 @@ impl Piece {
                             None => false
                         }
                     },
-                    PLAYER_TWO_CASTLE_QUEEN_SIDE_POINT => {
-                        let rook_square = game_state.squares.find_by_x_and_y(PLAYER_TWO_QUEEN_SIDE_ROOK_POINT.x, PLAYER_TWO_QUEEN_SIDE_ROOK_POINT.y);
+                    PLAYER_TWO_CASTLE_QUEEN_SIDE => {
+                        let rook_square = game_state.squares.find_by_x_and_y(PLAYER_TWO_QUEEN_SIDE_ROOK.0, PLAYER_TWO_QUEEN_SIDE_ROOK.1);
                         match rook_square {
                             Some(rs) => {
                                 game_state.castle_moves.iter().any(|cm| cm.player_number == 2 && cm.side == Side::Queen ) &&
@@ -165,17 +162,16 @@ impl Piece {
         match self.kind {
             PieceKind::Pawn => {
                 game_state.squares.squares.iter().filter(|s| {
-                    let vector = Vector { from: from.point(), to: s.point() };
-
                     // Move
-                    (vector.length() <= self.range(from) &&
-                     vector.direction_unit().y == self.forwards_direction() &&
-                     vector.orthogonal() && s.unoccupied() &&
+                    (length(from.x, from.y, s.x, s.y) <= self.range(from) &&
+                     direction_unit_y(from.y, s.y) == self.forwards_direction() &&
+                     orthogonal(from.x, from.y, s.x, s.y) &&
+                     s.unoccupied() &&
                      game_state.squares.between_unoccupied(from, &s)
                      ) ||
-                    (vector.length() == 1 &&
-                     vector.direction_unit().y == self.forwards_direction() &&
-                     vector.diagonal() &&
+                    (length(from.x, from.y, s.x, s.y) == 1 &&
+                     direction_unit_y(from.y, s.y) == self.forwards_direction() &&
+                     diagonal(from.x, from.y, s.x, s.y) &&
                      (s.occupied_by_opponent(self.player_number) || self.en_passant_condition(from, s, game_state)  )
                      )
                 }).collect()
@@ -188,8 +184,7 @@ impl Piece {
         match game_state.en_passant_target {
             Some(target) => {
                 if to.x == target.x {
-                    let capture_point = Point { x: target.x, y: from.y };
-                    if let Some(capture_square) = game_state.squares.squares.iter().find(|s| s.point() == capture_point) {
+                    if let Some(capture_square) = game_state.squares.squares.iter().find(|s| s.x == target.x && s.y == from.y) {
                         capture_square.occupied_by_opponent(self.player_number)
                     } else {
                         false

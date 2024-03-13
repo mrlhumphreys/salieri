@@ -7,12 +7,53 @@ pub struct Vector {
     pub to: Point,
 }
 
-// #[derive(PartialEq)]
-// pub enum Direction {
-//     Diagonal,
-//     Orthogonal,
-//     Other,
-// }
+pub fn length(from_x: i8, from_y: i8, to_x: i8, to_y: i8) -> i8 {
+    let dx = (to_x - from_x).abs();
+    let dy = (to_y - from_y).abs();
+    if dx > dy {
+        dx
+    } else {
+        dy
+    }
+}
+
+pub fn direction_unit_y(from_y: i8, to_y: i8) -> i8 {
+    let dy = to_y - from_y;
+    return match dy.partial_cmp(&0) {
+        Some(c) => {
+            match c {
+                Ordering::Less => -1,
+                Ordering::Greater => 1,
+                Ordering::Equal => 0,
+            }
+        },
+        None => 0,
+    };
+}
+
+pub fn orthogonal(from_x: i8, from_y: i8, to_x: i8, to_y: i8) -> bool {
+    let same_x = to_x == from_x;
+    let same_y = to_y == from_y;
+    same_x ^ same_y
+}
+
+pub fn diagonal(from_x: i8, from_y: i8, to_x: i8, to_y: i8) -> bool {
+    let abs_dx = (to_x - from_x).abs();
+    let abs_dy = (to_y - from_y).abs();
+    abs_dx != 0 && abs_dx == abs_dy
+}
+
+pub fn orthogonal_or_diagonal(from_x: i8, from_y: i8, to_x: i8, to_y: i8) -> bool {
+    let abs_dx = (to_x - from_x).abs();
+    let abs_dy = (to_y - from_y).abs();
+    (abs_dx == 0 || abs_dy == 0) || (abs_dx != 0 && abs_dx == abs_dy)
+}
+
+pub fn knight_jump(from_x: i8, from_y: i8, to_x: i8, to_y: i8) -> bool {
+    let abs_dx = (to_x - from_x).abs();
+    let abs_dy = (to_y - from_y).abs();
+    (abs_dx == 2 && abs_dy == 1) || (abs_dx == 1 && abs_dy == 2)
+}
 
 impl Vector {
     // pub fn direction(&self) -> Direction {
@@ -24,71 +65,57 @@ impl Vector {
     //         Direction::Other
     //     }
     // }
+    pub fn direction_unit_x(&self) -> i8 {
+        let dx = self.to.x - self.from.x;
+        return match dx.partial_cmp(&0) {
+            Some(c) => {
+                match c {
+                    Ordering::Less => -1,
+                    Ordering::Greater => 1,
+                    Ordering::Equal => 0,
+                }
+            },
+            None => 0,
+        };
+    }
+
+    pub fn direction_unit_y(&self) -> i8 {
+        let dy = self.to.y - self.from.y;
+        return match dy.partial_cmp(&0) {
+            Some(c) => {
+                match c {
+                    Ordering::Less => -1,
+                    Ordering::Greater => 1,
+                    Ordering::Equal => 0,
+                }
+            },
+            None => 0,
+        };
+    }
 
     pub fn direction_unit(&self) -> Point {
-        let dx = self.to.x - self.from.x;
-        let dy = self.to.y - self.from.y;
-        let ux = match dx.partial_cmp(&0) {
-            Some(c) => {
-                match c {
-                    Ordering::Less => -1,
-                    Ordering::Greater => 1,
-                    Ordering::Equal => 0,
-                }
-            },
-            None => 0,
-        };
-        let uy = match dy.partial_cmp(&0) {
-            Some(c) => {
-                match c {
-                    Ordering::Less => -1,
-                    Ordering::Greater => 1,
-                    Ordering::Equal => 0,
-                }
-            },
-            None => 0,
-        };
-
-        Point { x: ux, y: uy }
+        Point { x: self.direction_unit_x(), y: self.direction_unit_y() }
     }
 
     pub fn diagonal(&self) -> bool {
         let abs_dx = (self.to.x - self.from.x).abs();
         let abs_dy = (self.to.y - self.from.y).abs();
-        self.from != self.to && abs_dx == abs_dy
+        abs_dx != 0 && abs_dx == abs_dy
     }
 
     pub fn orthogonal(&self) -> bool {
         let same_x = self.to.x == self.from.x;
         let same_y = self.to.y == self.from.y;
-        (self.from != self.to) && (same_x || same_y)
-    }
-
-    pub fn orthogonal_or_diagonal(&self) -> bool {
-        self.orthogonal() || self.diagonal()
-    }
-
-    pub fn not_orthogonal_or_diagonal(&self) -> bool {
-        !self.orthogonal() && !self.diagonal()
+        same_x ^ same_y
     }
 
     pub fn length(&self) -> i8 {
-        if self.diagonal() {
-            (self.to.x - self.from.x).abs()
-        } else if self.orthogonal() {
-            if self.to.x == self.from.x {
-                 (self.to.y - self.from.y).abs()
-            } else {
-                 (self.to.x - self.from.x).abs()
-            }
+        let dx = (self.to.x - self.from.x).abs();
+        let dy = (self.to.y - self.from.y).abs();
+        if dx > dy {
+            dx
         } else {
-            let dx = (self.to.x - self.from.x).abs();
-            let dy = (self.to.y - self.from.y).abs();
-            if dx > dy {
-                dx
-            } else {
-                dy
-            }
+            dy
         }
     }
 
@@ -106,31 +133,131 @@ impl Vector {
 mod tests {
     use super::*;
 
-    // #[test]
-    // fn direction_diagonal() {
-    //     let from = Point { x: 4, y: 4 };
-    //     let to = Point { x: 2, y: 6 };
-    //     let vector = Vector { from, to };
-    //     let result = vector.direction();
-    //     assert_eq!(result, Direction::Diagonal);
-    // }
+    #[test]
+    fn vector_length_test() {
+        let from_x = 1;
+        let from_y = 1;
+        let to_x = 2;
+        let to_y = 4;
+        let result = length(from_x, from_y, to_x, to_y);
+        assert_eq!(result, 3);
+    }
 
-    // #[test]
-    // fn direction_orthogonal() {
-    //     let from = Point { x: 4, y: 4 };
-    //     let to = Point { x: 4, y: 6 };
-    //     let vector = Vector { from, to };
-    //     let result = vector.direction();
-    //     assert_eq!(result, Direction::Orthogonal);
-    // }
+    #[test]
+    fn vector_direction_unit_y_test() {
+        let from_y = 4;
+        let to_y = 6;
+        let result = direction_unit_y(from_y, to_y);
+        assert_eq!(result, 1);
+    }
 
-    // #[test]
-    // fn direction_other() {
-    //     let from = Point { x: 5, y: 4 };
-    //     let to = Point { x: 4, y: 6 };
-    //     let vector = Vector { from, to };
-    //     let result = vector.direction();
-    // }
+    #[test]
+    fn vector_orthogonal_true_test() {
+        let from_x = 4;
+        let from_y = 6;
+        let to_x = 2;
+        let to_y = 6;
+        let result = orthogonal(from_x, from_y, to_x, to_y);
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    fn vector_orthogonal_false_test() {
+        let from_x = 4;
+        let from_y = 5;
+        let to_x = 2;
+        let to_y = 6;
+        let result = orthogonal(from_x, from_y, to_x, to_y);
+        assert_eq!(result, false);
+    }
+
+    #[test]
+    fn vector_diagonal_true_test() {
+        let from_x = 4;
+        let from_y = 4;
+        let to_x = 2;
+        let to_y = 6;
+        let result = diagonal(from_x, from_y, to_x, to_y);
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    fn vector_diagonal_false_test() {
+        let from_x = 4;
+        let from_y = 6;
+        let to_x = 2;
+        let to_y = 6;
+        let result = diagonal(from_x, from_y, to_x, to_y);
+        assert_eq!(result, false);
+    }
+
+    #[test]
+    fn vector_orthogonal_or_diagonal_diagonal_true_test() {
+        let from_x = 4;
+        let from_y = 4;
+        let to_x = 2;
+        let to_y = 6;
+        let result = orthogonal_or_diagonal(from_x, from_y, to_x, to_y);
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    fn vector_orthogonal_or_diagonal_orthogonal_true_test() {
+        let from_x = 4;
+        let from_y = 6;
+        let to_x = 2;
+        let to_y = 6;
+        let result = orthogonal_or_diagonal(from_x, from_y, to_x, to_y);
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    fn vector_orthogonal_or_diagonal_false_test() {
+        let from_x = 4;
+        let from_y = 4;
+        let to_x = 5;
+        let to_y = 6;
+        let result = orthogonal_or_diagonal(from_x, from_y, to_x, to_y);
+        assert_eq!(result, false);
+    }
+
+    #[test]
+    fn vector_knight_jump_true_test() {
+        let from_x = 4;
+        let from_y = 4;
+        let to_x = 5;
+        let to_y = 6;
+        let result = knight_jump(from_x, from_y, to_x, to_y);
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    fn vector_knight_jump_false_test() {
+        let from_x = 4;
+        let from_y = 4;
+        let to_x = 6;
+        let to_y = 6;
+        let result = knight_jump(from_x, from_y, to_x, to_y);
+        assert_eq!(result, false);
+    }
+
+    #[test]
+    fn direction_unit_x_test() {
+        let from = Point { x: 5, y: 4 };
+        let to = Point { x: 4, y: 6 };
+        let vector = Vector { from, to };
+        let result = vector.direction_unit_x();
+        assert_eq!(result, -1);
+    }
+
+    #[test]
+    fn direction_unit_y_test() {
+        let from = Point { x: 5, y: 4 };
+        let to = Point { x: 4, y: 6 };
+        let vector = Vector { from, to };
+        let result = vector.direction_unit_y();
+        assert_eq!(result, 1);
+    }
 
     #[test]
     fn direction_unit_test() {
