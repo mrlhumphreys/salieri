@@ -1,4 +1,6 @@
-use crate::chess::state::vector::Vector;
+use crate::chess::state::vector::direction_unit_n;
+use crate::chess::state::vector::length;
+use crate::chess::state::vector::orthogonal_or_diagonal;
 use crate::chess::state::square::Square;
 
 #[derive(PartialEq, Debug)]
@@ -20,15 +22,17 @@ impl SquareSet {
     }
 
     pub fn between_unoccupied(&self, from: &Square, to: &Square) -> bool {
-        let vector = Vector { from: from.point(), to: to.point() };
         let mut result = true;
 
-        if vector.length() > 1 && (vector.diagonal() || vector.orthogonal()) {
-            let direction_unit = vector.direction_unit();
-            let end = to.point();
-            let mut counter = from.point() + direction_unit;
-            while counter != end {
-                let square = self.find_by_x_and_y(counter.x, counter.y);
+        if length(from.x, from.y, to.x, to.y) > 1 && orthogonal_or_diagonal(from.x, from.y, to.x, to.y) {
+            let direction_unit_x = direction_unit_n(from.x, to.x);
+            let direction_unit_y = direction_unit_n(from.y, to.y);
+            let end_x = to.x;
+            let end_y = to.y;
+            let mut counter_x = from.x + direction_unit_x;
+            let mut counter_y = from.y + direction_unit_y;
+            while counter_x != end_x || counter_y != end_y {
+                let square = self.find_by_x_and_y(counter_x, counter_y);
                 match square {
                     Some(s) => {
                         if s.occupied() {
@@ -37,7 +41,8 @@ impl SquareSet {
                     },
                     None => (),
                 }
-                counter = counter + direction_unit;
+                counter_x = counter_x + direction_unit_x;
+                counter_y = counter_y + direction_unit_y;
             }
         }
 

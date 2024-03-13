@@ -2,7 +2,7 @@ use crate::chess::state::square::Square;
 use crate::chess::state::game_state::GameState;
 use crate::chess::state::castle_move::Side;
 use crate::chess::state::vector::length;
-use crate::chess::state::vector::direction_unit_y;
+use crate::chess::state::vector::direction_unit_n;
 use crate::chess::state::vector::orthogonal;
 use crate::chess::state::vector::diagonal;
 use crate::chess::state::vector::orthogonal_or_diagonal;
@@ -85,7 +85,7 @@ impl Piece {
 
                     // Move
                     length(from.x, from.y, s.x, s.y) == 1 &&
-                        direction_unit_y(from.y, s.y) == self.forwards_direction() &&
+                        direction_unit_n(from.y, s.y) == self.forwards_direction() &&
                         diagonal(from.x, from.y, s.x, s.y) &&
                         (s.occupied_by_opponent(self.player_number) || self.en_passant_condition(from, s, game_state))
                 }).collect()
@@ -164,13 +164,13 @@ impl Piece {
                 game_state.squares.squares.iter().filter(|s| {
                     // Move
                     (length(from.x, from.y, s.x, s.y) <= self.range(from) &&
-                     direction_unit_y(from.y, s.y) == self.forwards_direction() &&
+                     direction_unit_n(from.y, s.y) == self.forwards_direction() &&
                      orthogonal(from.x, from.y, s.x, s.y) &&
                      s.unoccupied() &&
                      game_state.squares.between_unoccupied(from, &s)
                      ) ||
                     (length(from.x, from.y, s.x, s.y) == 1 &&
-                     direction_unit_y(from.y, s.y) == self.forwards_direction() &&
+                     direction_unit_n(from.y, s.y) == self.forwards_direction() &&
                      diagonal(from.x, from.y, s.x, s.y) &&
                      (s.occupied_by_opponent(self.player_number) || self.en_passant_condition(from, s, game_state)  )
                      )

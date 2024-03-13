@@ -17,9 +17,9 @@ pub fn length(from_x: i8, from_y: i8, to_x: i8, to_y: i8) -> i8 {
     }
 }
 
-pub fn direction_unit_y(from_y: i8, to_y: i8) -> i8 {
-    let dy = to_y - from_y;
-    return match dy.partial_cmp(&0) {
+pub fn direction_unit_n(from_n: i8, to_n: i8) -> i8 {
+    let dn = to_n - from_n;
+    return match dn.partial_cmp(&0) {
         Some(c) => {
             match c {
                 Ordering::Less => -1,
@@ -46,7 +46,9 @@ pub fn diagonal(from_x: i8, from_y: i8, to_x: i8, to_y: i8) -> bool {
 pub fn orthogonal_or_diagonal(from_x: i8, from_y: i8, to_x: i8, to_y: i8) -> bool {
     let abs_dx = (to_x - from_x).abs();
     let abs_dy = (to_y - from_y).abs();
-    (abs_dx == 0 || abs_dy == 0) || (abs_dx != 0 && abs_dx == abs_dy)
+    let same_x = to_x == from_x;
+    let same_y = to_y == from_y;
+    (same_x ^ same_y) || (abs_dx != 0 && abs_dx == abs_dy)
 }
 
 pub fn knight_jump(from_x: i8, from_y: i8, to_x: i8, to_y: i8) -> bool {
@@ -103,12 +105,6 @@ impl Vector {
         abs_dx != 0 && abs_dx == abs_dy
     }
 
-    pub fn orthogonal(&self) -> bool {
-        let same_x = self.to.x == self.from.x;
-        let same_y = self.to.y == self.from.y;
-        same_x ^ same_y
-    }
-
     pub fn length(&self) -> i8 {
         let dx = (self.to.x - self.from.x).abs();
         let dy = (self.to.y - self.from.y).abs();
@@ -147,7 +143,7 @@ mod tests {
     fn vector_direction_unit_y_test() {
         let from_y = 4;
         let to_y = 6;
-        let result = direction_unit_y(from_y, to_y);
+        let result = direction_unit_n(from_y, to_y);
         assert_eq!(result, 1);
     }
 
@@ -275,7 +271,6 @@ mod tests {
         let to = Point { x: 2, y: 6 };
         let vector = Vector { from, to };
         assert_eq!(vector.diagonal(), true);
-        assert_eq!(vector.orthogonal(), false);
     }
 
     #[test]
@@ -284,7 +279,6 @@ mod tests {
         let to = Point { x: 4, y: 6 };
         let vector = Vector { from, to };
         assert_eq!(vector.diagonal(), false);
-        assert_eq!(vector.orthogonal(), true);
     }
 
     #[test]
@@ -293,7 +287,6 @@ mod tests {
         let to = Point { x: 4, y: 6 };
         let vector = Vector { from, to };
         assert_eq!(vector.diagonal(), false);
-        assert_eq!(vector.orthogonal(), false);
     }
 
     #[test]
@@ -302,6 +295,5 @@ mod tests {
         let to = Point { x: 5, y: 4 };
         let vector = Vector { from, to };
         assert_eq!(vector.diagonal(), false);
-        assert_eq!(vector.orthogonal(), false);
     }
 }
