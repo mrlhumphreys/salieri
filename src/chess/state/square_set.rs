@@ -16,11 +16,11 @@ impl Clone for SquareSet {
     }
 }
 
-impl SquareSet {
-    pub fn find_by_x_and_y(&self, x: i8, y: i8) -> Option<&Square> {
-        self.squares.iter().find(|s| s.x == x && s.y == y)
-    }
+pub fn find_by_x_and_y(squares: &Vec<Square>, x: i8, y: i8) -> Option<&Square> {
+    squares.iter().find(|s| s.x == x && s.y == y)
+}
 
+impl SquareSet {
     pub fn between_unoccupied(&self, from: &Square, to: &Square) -> bool {
         let mut result = true;
 
@@ -32,7 +32,7 @@ impl SquareSet {
             let mut counter_x = from.x + direction_unit_x;
             let mut counter_y = from.y + direction_unit_y;
             while counter_x != end_x || counter_y != end_y {
-                let square = self.find_by_x_and_y(counter_x, counter_y);
+                let square = find_by_x_and_y(&self.squares, counter_x, counter_y);
                 match square {
                     Some(s) => {
                         if s.occupied() {
@@ -57,13 +57,12 @@ mod tests {
     use crate::chess::state::piece::PieceKind;
 
     #[test]
-    fn find_by_x_and_y_test() {
+    fn squares_set_find_by_x_and_y_test() {
         let square_a = Square { x: 1, y: 0, piece: None };
         let square_b = Square { x: 1, y: 1, piece: None };
         let squares = vec![square_a, square_b];
-        let square_set = SquareSet { squares };
 
-        let result = square_set.find_by_x_and_y(1, 1);
+        let result = find_by_x_and_y(&squares, 1, 1);
         match result {
             Some(s) => {
                 assert_eq!(s.x, 1);

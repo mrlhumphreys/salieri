@@ -1,4 +1,5 @@
 use crate::chess::state::square::Square;
+use crate::chess::state::square_set::find_by_x_and_y;
 use crate::chess::state::game_state::GameState;
 use crate::chess::state::castle_move::Side;
 use crate::chess::state::vector::length;
@@ -107,7 +108,7 @@ impl Piece {
             1 => {
                 match (to.x, to.y) {
                     PLAYER_ONE_CASTLE_KING_SIDE => {
-                        let rook_square = game_state.squares.find_by_x_and_y(PLAYER_ONE_KING_SIDE_ROOK.0, PLAYER_ONE_KING_SIDE_ROOK.1);
+                        let rook_square = find_by_x_and_y(&game_state.squares.squares, PLAYER_ONE_KING_SIDE_ROOK.0, PLAYER_ONE_KING_SIDE_ROOK.1);
                         match rook_square {
                             Some(rs) => {
                                 game_state.castle_moves.iter().any(|cm| cm.player_number == 1 && cm.side == Side::King ) &&
@@ -117,7 +118,7 @@ impl Piece {
                         }
                     },
                     PLAYER_ONE_CASTLE_QUEEN_SIDE => {
-                        let rook_square = game_state.squares.find_by_x_and_y(PLAYER_ONE_QUEEN_SIDE_ROOK.0, PLAYER_ONE_QUEEN_SIDE_ROOK.1);
+                        let rook_square = find_by_x_and_y(&game_state.squares.squares, PLAYER_ONE_QUEEN_SIDE_ROOK.0, PLAYER_ONE_QUEEN_SIDE_ROOK.1);
                         match rook_square {
                             Some(rs) => {
                                 game_state.castle_moves.iter().any(|cm| cm.player_number == 1 && cm.side == Side::Queen ) &&
@@ -132,7 +133,7 @@ impl Piece {
             2 => {
                 match (to.x, to.y) {
                     PLAYER_TWO_CASTLE_KING_SIDE => {
-                        let rook_square = game_state.squares.find_by_x_and_y(PLAYER_TWO_KING_SIDE_ROOK.0, PLAYER_TWO_KING_SIDE_ROOK.1);
+                        let rook_square = find_by_x_and_y(&game_state.squares.squares, PLAYER_TWO_KING_SIDE_ROOK.0, PLAYER_TWO_KING_SIDE_ROOK.1);
                         match rook_square {
                             Some(rs) => {
                                 game_state.castle_moves.iter().any(|cm| cm.player_number == 2 && cm.side == Side::King ) &&
@@ -142,7 +143,7 @@ impl Piece {
                         }
                     },
                     PLAYER_TWO_CASTLE_QUEEN_SIDE => {
-                        let rook_square = game_state.squares.find_by_x_and_y(PLAYER_TWO_QUEEN_SIDE_ROOK.0, PLAYER_TWO_QUEEN_SIDE_ROOK.1);
+                        let rook_square = find_by_x_and_y(&game_state.squares.squares, PLAYER_TWO_QUEEN_SIDE_ROOK.0, PLAYER_TWO_QUEEN_SIDE_ROOK.1);
                         match rook_square {
                             Some(rs) => {
                                 game_state.castle_moves.iter().any(|cm| cm.player_number == 2 && cm.side == Side::Queen ) &&
