@@ -40,9 +40,7 @@ pub fn diagonal(from_x: i8, from_y: i8, to_x: i8, to_y: i8) -> bool {
 pub fn orthogonal_or_diagonal(from_x: i8, from_y: i8, to_x: i8, to_y: i8) -> bool {
     let abs_dx = (to_x - from_x).abs();
     let abs_dy = (to_y - from_y).abs();
-    let same_x = to_x == from_x;
-    let same_y = to_y == from_y;
-    (same_x ^ same_y) || (abs_dx != 0 && abs_dx == abs_dy)
+    (abs_dx == 0 || abs_dy == 0) || (abs_dx != 0 && abs_dx == abs_dy)
 }
 
 pub fn knight_jump(from_x: i8, from_y: i8, to_x: i8, to_y: i8) -> bool {
