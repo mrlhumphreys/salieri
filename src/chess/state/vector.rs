@@ -1,11 +1,5 @@
 use std::cmp::Ordering;
-use crate::chess::state::point::Point;
 use crate::chess::state::castle_move::Side;
-
-pub struct Vector {
-    pub from: Point,
-    pub to: Point,
-}
 
 pub fn length(from_x: i8, from_y: i8, to_x: i8, to_y: i8) -> i8 {
     let dx = (to_x - from_x).abs();
@@ -57,71 +51,12 @@ pub fn knight_jump(from_x: i8, from_y: i8, to_x: i8, to_y: i8) -> bool {
     (abs_dx == 2 && abs_dy == 1) || (abs_dx == 1 && abs_dy == 2)
 }
 
-impl Vector {
-    // pub fn direction(&self) -> Direction {
-    //     if self.diagonal() {
-    //         Direction::Diagonal
-    //     } else if self.orthogonal() {
-    //         Direction::Orthogonal
-    //     } else {
-    //         Direction::Other
-    //     }
-    // }
-    pub fn direction_unit_x(&self) -> i8 {
-        let dx = self.to.x - self.from.x;
-        return match dx.partial_cmp(&0) {
-            Some(c) => {
-                match c {
-                    Ordering::Less => -1,
-                    Ordering::Greater => 1,
-                    Ordering::Equal => 0,
-                }
-            },
-            None => 0,
-        };
-    }
-
-    pub fn direction_unit_y(&self) -> i8 {
-        let dy = self.to.y - self.from.y;
-        return match dy.partial_cmp(&0) {
-            Some(c) => {
-                match c {
-                    Ordering::Less => -1,
-                    Ordering::Greater => 1,
-                    Ordering::Equal => 0,
-                }
-            },
-            None => 0,
-        };
-    }
-
-    pub fn direction_unit(&self) -> Point {
-        Point { x: self.direction_unit_x(), y: self.direction_unit_y() }
-    }
-
-    pub fn diagonal(&self) -> bool {
-        let abs_dx = (self.to.x - self.from.x).abs();
-        let abs_dy = (self.to.y - self.from.y).abs();
-        abs_dx != 0 && abs_dx == abs_dy
-    }
-
-    pub fn length(&self) -> i8 {
-        let dx = (self.to.x - self.from.x).abs();
-        let dy = (self.to.y - self.from.y).abs();
-        if dx > dy {
-            dx
-        } else {
-            dy
-        }
-    }
-
-    pub fn side(&self) -> Side {
-        let dx = self.to.x - self.from.x;
-        if dx > 0 {
-            Side::King
-        } else {
-            Side::Queen
-        }
+pub fn side(from_x: i8, to_x: i8) -> Side {
+    let dx = to_x - from_x;
+    if dx > 0 {
+        Side::King
+    } else {
+        Side::Queen
     }
 }
 
@@ -238,62 +173,18 @@ mod tests {
     }
 
     #[test]
-    fn direction_unit_x_test() {
-        let from = Point { x: 5, y: 4 };
-        let to = Point { x: 4, y: 6 };
-        let vector = Vector { from, to };
-        let result = vector.direction_unit_x();
-        assert_eq!(result, -1);
+    fn vector_side_king_test() {
+        let from_x = 5;
+        let to_x = 7;
+        let result = side(from_x, to_x);
+        assert_eq!(result, Side::King);
     }
 
     #[test]
-    fn direction_unit_y_test() {
-        let from = Point { x: 5, y: 4 };
-        let to = Point { x: 4, y: 6 };
-        let vector = Vector { from, to };
-        let result = vector.direction_unit_y();
-        assert_eq!(result, 1);
-    }
-
-    #[test]
-    fn direction_unit_test() {
-        let from = Point { x: 5, y: 4 };
-        let to = Point { x: 4, y: 6 };
-        let vector = Vector { from, to };
-        let result = vector.direction_unit();
-        assert_eq!(result.x, -1);
-        assert_eq!(result.y, 1);
-    }
-
-    #[test]
-    fn same_dx_and_dy() {
-        let from = Point { x: 4, y: 4 };
-        let to = Point { x: 2, y: 6 };
-        let vector = Vector { from, to };
-        assert_eq!(vector.diagonal(), true);
-    }
-
-    #[test]
-    fn same_y_or_x() {
-        let from = Point { x: 4, y: 4 };
-        let to = Point { x: 4, y: 6 };
-        let vector = Vector { from, to };
-        assert_eq!(vector.diagonal(), false);
-    }
-
-    #[test]
-    fn different_dx_and_dy_and_x_and_y() {
-        let from = Point { x: 5, y: 4 };
-        let to = Point { x: 4, y: 6 };
-        let vector = Vector { from, to };
-        assert_eq!(vector.diagonal(), false);
-    }
-
-    #[test]
-    fn same_points() {
-        let from = Point { x: 5, y: 4 };
-        let to = Point { x: 5, y: 4 };
-        let vector = Vector { from, to };
-        assert_eq!(vector.diagonal(), false);
+    fn vector_side_false_test() {
+        let from_x = 5;
+        let to_x = 3;
+        let result = side(from_x, to_x);
+        assert_eq!(result, Side::Queen);
     }
 }

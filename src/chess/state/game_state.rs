@@ -1,5 +1,8 @@
 use std::convert::TryFrom;
-use crate::chess::state::vector::Vector;
+use crate::chess::state::vector::diagonal;
+use crate::chess::state::vector::direction_unit_n;
+use crate::chess::state::vector::length;
+use crate::chess::state::vector::side;
 use crate::chess::state::point::Point;
 use crate::chess::state::mov::Move;
 use crate::chess::state::piece_factory::parse as parse_piece;
@@ -102,8 +105,7 @@ impl GameState {
                         if let Some(p) = from.piece {
                             if p.kind == PieceKind::Pawn {
                                 // is from and to diagonal, forward and one square apart
-                                let vector = Vector { from: from.point(), to: to.point() };
-                                if  vector.diagonal() && vector.direction_unit().y == p.forwards_direction() {
+                                if  diagonal(from.x, from.y, to.x, to.y) && direction_unit_n(from.y, to.y) == p.forwards_direction() {
                                     if let Some(eps) = self.squares.find_by_x_and_y(to.x, from.y) {
                                         if eps.occupied_by_opponent(player_number) {
                                             capture_piece_kind = Some(PieceKind::Pawn);
@@ -120,10 +122,9 @@ impl GameState {
                          if p.kind == PieceKind::King {
                              // exclude castle move if in check
                              if !self.in_check(self.current_player_number) {
-                                 let vector = Vector { from: from.point(), to: to.point() };
-                                 if vector.length() == 2 && self.squares.between_unoccupied(&from, &to) {
-                                     let side = vector.side();
-                                     let cm = CastleMove { player_number: current_player_number, side };
+                                 if length(from.x, from.y, to.x, to.y) == 2 && self.squares.between_unoccupied(&from, &to) {
+                                     let s = side(from.x, to.x);
+                                     let cm = CastleMove { player_number: current_player_number, side: s };
                                      castle_move = Some(cm);
                                  }
                              }
@@ -255,9 +256,8 @@ impl GameState {
 
         // set en passant target
         if mov.moving_piece_kind == PieceKind::Pawn {
-            let vector = Vector { from: mov.from, to: mov.to };
-            if vector.length() == 2 {
-                let backwards = vector.direction_unit().y*-1;
+            if length(mov.from.x, mov.from.y, mov.to.x, mov.to.y) == 2 {
+                let backwards = direction_unit_n(mov.from.y, mov.to.y)*-1;
                 let x = mov.to.x;
                 let y = mov.to.y + backwards; // 3: 4 -1 or 2 + 1
                 self.en_passant_target = Some(Point { x, y });
