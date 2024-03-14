@@ -43,34 +43,34 @@ impl Piece {
                 self.pawn_destinations(from, game_state)
             },
             PieceKind::Rook => {
-                game_state.squares.squares.iter().filter(|to| {
+                game_state.squares.iter().filter(|to| {
                     orthogonal(from.x, from.y, to.x, to.y) &&
                         to.unoccupied_or_occupied_by_opponent(self.player_number) &&
-                        between_unoccupied(&game_state.squares.squares, from, &to)
+                        between_unoccupied(&game_state.squares, from, &to)
                 }).collect()
             },
             PieceKind::Knight => {
-                game_state.squares.squares.iter().filter(|to| {
+                game_state.squares.iter().filter(|to| {
                     knight_jump(from.x, from.y, to.x, to.y) &&
                         to.unoccupied_or_occupied_by_opponent(self.player_number)
                 }).collect()
             },
             PieceKind::Bishop => {
-                game_state.squares.squares.iter().filter(|to| {
+                game_state.squares.iter().filter(|to| {
                     diagonal(from.x, from.y, to.x, to.y) &&
                         to.unoccupied_or_occupied_by_opponent(self.player_number) &&
-                        between_unoccupied(&game_state.squares.squares, from, &to)
+                        between_unoccupied(&game_state.squares, from, &to)
                 }).collect()
             },
             PieceKind::Queen => {
-                game_state.squares.squares.iter().filter(|to| {
+                game_state.squares.iter().filter(|to| {
                     orthogonal_or_diagonal(from.x, from.y, to.x, to.y) &&
                         to.unoccupied_or_occupied_by_opponent(self.player_number) &&
-                        between_unoccupied(&game_state.squares.squares, from, &to)
+                        between_unoccupied(&game_state.squares, from, &to)
                 }).collect()
             },
             PieceKind::King => {
-                game_state.squares.squares.iter().filter(|to| {
+                game_state.squares.iter().filter(|to| {
                     (length(from.x, from.y, to.x, to.y) == 1 &&
                         to.unoccupied_or_occupied_by_opponent(self.player_number)
                     ) ||
@@ -83,7 +83,7 @@ impl Piece {
     pub fn capture_squares<'a>(&'a self, from: &'a Square, game_state: &'a GameState) -> Vec<&Square> {
         match self.kind {
             PieceKind::Pawn => {
-                game_state.squares.squares.iter().filter(|s| {
+                game_state.squares.iter().filter(|s| {
 
                     // Move
                     length(from.x, from.y, s.x, s.y) == 1 &&
@@ -93,7 +93,7 @@ impl Piece {
                 }).collect()
             },
             PieceKind::King => {
-                game_state.squares.squares.iter().filter(|to| {
+                game_state.squares.iter().filter(|to| {
                     length(from.x, from.y, to.x, to.y) == 1 &&
                         to.unoccupied_or_occupied_by_opponent(self.player_number)
                 }).collect()
@@ -109,21 +109,21 @@ impl Piece {
             1 => {
                 match (to.x, to.y) {
                     PLAYER_ONE_CASTLE_KING_SIDE => {
-                        let rook_square = find_by_x_and_y(&game_state.squares.squares, PLAYER_ONE_KING_SIDE_ROOK.0, PLAYER_ONE_KING_SIDE_ROOK.1);
+                        let rook_square = find_by_x_and_y(&game_state.squares, PLAYER_ONE_KING_SIDE_ROOK.0, PLAYER_ONE_KING_SIDE_ROOK.1);
                         match rook_square {
                             Some(rs) => {
                                 game_state.castle_moves.iter().any(|cm| cm.player_number == 1 && cm.side == Side::King ) &&
-                                between_unoccupied(&game_state.squares.squares, from, rs)
+                                between_unoccupied(&game_state.squares, from, rs)
                             },
                             None => false
                         }
                     },
                     PLAYER_ONE_CASTLE_QUEEN_SIDE => {
-                        let rook_square = find_by_x_and_y(&game_state.squares.squares, PLAYER_ONE_QUEEN_SIDE_ROOK.0, PLAYER_ONE_QUEEN_SIDE_ROOK.1);
+                        let rook_square = find_by_x_and_y(&game_state.squares, PLAYER_ONE_QUEEN_SIDE_ROOK.0, PLAYER_ONE_QUEEN_SIDE_ROOK.1);
                         match rook_square {
                             Some(rs) => {
                                 game_state.castle_moves.iter().any(|cm| cm.player_number == 1 && cm.side == Side::Queen ) &&
-                                between_unoccupied(&game_state.squares.squares, from, rs)
+                                between_unoccupied(&game_state.squares, from, rs)
                             },
                             None => false
                         }
@@ -134,21 +134,21 @@ impl Piece {
             2 => {
                 match (to.x, to.y) {
                     PLAYER_TWO_CASTLE_KING_SIDE => {
-                        let rook_square = find_by_x_and_y(&game_state.squares.squares, PLAYER_TWO_KING_SIDE_ROOK.0, PLAYER_TWO_KING_SIDE_ROOK.1);
+                        let rook_square = find_by_x_and_y(&game_state.squares, PLAYER_TWO_KING_SIDE_ROOK.0, PLAYER_TWO_KING_SIDE_ROOK.1);
                         match rook_square {
                             Some(rs) => {
                                 game_state.castle_moves.iter().any(|cm| cm.player_number == 2 && cm.side == Side::King ) &&
-                                between_unoccupied(&game_state.squares.squares, from, rs)
+                                between_unoccupied(&game_state.squares, from, rs)
                             },
                             None => false
                         }
                     },
                     PLAYER_TWO_CASTLE_QUEEN_SIDE => {
-                        let rook_square = find_by_x_and_y(&game_state.squares.squares, PLAYER_TWO_QUEEN_SIDE_ROOK.0, PLAYER_TWO_QUEEN_SIDE_ROOK.1);
+                        let rook_square = find_by_x_and_y(&game_state.squares, PLAYER_TWO_QUEEN_SIDE_ROOK.0, PLAYER_TWO_QUEEN_SIDE_ROOK.1);
                         match rook_square {
                             Some(rs) => {
                                 game_state.castle_moves.iter().any(|cm| cm.player_number == 2 && cm.side == Side::Queen ) &&
-                                between_unoccupied(&game_state.squares.squares, from, rs)
+                                between_unoccupied(&game_state.squares, from, rs)
                             },
                             None => false
                         }
@@ -163,13 +163,13 @@ impl Piece {
     fn pawn_destinations<'a>(&'a self, from: &'a Square, game_state: &'a GameState) -> Vec<&Square> {
         match self.kind {
             PieceKind::Pawn => {
-                game_state.squares.squares.iter().filter(|s| {
+                game_state.squares.iter().filter(|s| {
                     // Move
                     (length(from.x, from.y, s.x, s.y) <= self.range(from) &&
                      direction_unit_n(from.y, s.y) == self.forwards_direction() &&
                      orthogonal(from.x, from.y, s.x, s.y) &&
                      s.unoccupied() &&
-                     between_unoccupied(&game_state.squares.squares, from, &s)
+                     between_unoccupied(&game_state.squares, from, &s)
                      ) ||
                     (length(from.x, from.y, s.x, s.y) == 1 &&
                      direction_unit_n(from.y, s.y) == self.forwards_direction() &&
@@ -186,7 +186,7 @@ impl Piece {
         match game_state.en_passant_target {
             Some(target) => {
                 if to.x == target.x {
-                    if let Some(capture_square) = game_state.squares.squares.iter().find(|s| s.x == target.x && s.y == from.y) {
+                    if let Some(capture_square) = game_state.squares.iter().find(|s| s.x == target.x && s.y == from.y) {
                         capture_square.occupied_by_opponent(self.player_number)
                     } else {
                         false

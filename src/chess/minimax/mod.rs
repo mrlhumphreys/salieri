@@ -150,7 +150,7 @@ fn lose_value(game_state: &mut chess::state::game_state::GameState) -> i32 {
 }
 
 fn center_squares_count(game_state: &chess::state::game_state::GameState, player_number: i8) -> usize {
-    game_state.squares.squares.iter().filter(|s| {
+    game_state.squares.iter().filter(|s| {
         match &s.piece {
             Some(p) => {
                 p.player_number == player_number && CENTER_SQUARE_COORDINATES.iter().any(|c| s.x == c[0] && s.y == c[1] )
@@ -162,7 +162,7 @@ fn center_squares_count(game_state: &chess::state::game_state::GameState, player
 
 // p: 1, n: 3, b: 3, r: 5, q: 9, k: 200
 fn player_pieces_count(game_state: &chess::state::game_state::GameState, player_number: i8) -> usize {
-    game_state.squares.squares.iter().filter(|s| {
+    game_state.squares.iter().filter(|s| {
         match &s.piece {
             Some(p) => p.player_number == player_number,
             None => false

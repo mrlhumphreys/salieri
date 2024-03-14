@@ -67,7 +67,7 @@ fn build_external_move(game_state: chess::state::game_state::GameState, mov: che
     let file_disambiguation = match mov.moving_piece_kind {
         chess::state::piece::PieceKind::Pawn => mov.capture_piece_kind.is_some(),
         _ => {
-            game_state.squares.squares.iter().filter(|s| {
+            game_state.squares.iter().filter(|s| {
                 let s_player_number = match s.piece {
                     Some(p) => p.player_number,
                     None => 0
@@ -84,7 +84,7 @@ fn build_external_move(game_state: chess::state::game_state::GameState, mov: che
     let rank_disambiguation = match mov.moving_piece_kind {
         chess::state::piece::PieceKind::Pawn => false,
         _ => {
-            game_state.squares.squares.iter().filter(|s| {
+            game_state.squares.iter().filter(|s| {
                 let s_player_number = match s.piece {
                     Some(p) => p.player_number,
                     None => 0
