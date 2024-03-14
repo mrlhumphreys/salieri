@@ -10,6 +10,7 @@ use crate::chess::state::castle_move::parse as parse_castle_move;
 use crate::chess::state::castle_move::CastleMove;
 use crate::chess::state::square_set::SquareSet;
 use crate::chess::state::square_set::find_by_x_and_y;
+use crate::chess::state::square_set::between_unoccupied;
 use crate::chess::state::square::Square;
 use crate::chess::state::piece::PieceKind;
 use crate::chess::state::piece::Piece;
@@ -123,7 +124,7 @@ impl GameState {
                          if p.kind == PieceKind::King {
                              // exclude castle move if in check
                              if !self.in_check(self.current_player_number) {
-                                 if length(from.x, from.y, to.x, to.y) == 2 && self.squares.between_unoccupied(&from, &to) {
+                                 if length(from.x, from.y, to.x, to.y) == 2 && between_unoccupied(&self.squares.squares, &from, &to) {
                                      let s = side(from.x, to.x);
                                      let cm = CastleMove { player_number: current_player_number, side: s };
                                      castle_move = Some(cm);

@@ -1,5 +1,6 @@
 use crate::chess::state::square::Square;
 use crate::chess::state::square_set::find_by_x_and_y;
+use crate::chess::state::square_set::between_unoccupied;
 use crate::chess::state::game_state::GameState;
 use crate::chess::state::castle_move::Side;
 use crate::chess::state::vector::length;
@@ -45,7 +46,7 @@ impl Piece {
                 game_state.squares.squares.iter().filter(|to| {
                     orthogonal(from.x, from.y, to.x, to.y) &&
                         to.unoccupied_or_occupied_by_opponent(self.player_number) &&
-                        game_state.squares.between_unoccupied(from, &to)
+                        between_unoccupied(&game_state.squares.squares, from, &to)
                 }).collect()
             },
             PieceKind::Knight => {
@@ -58,14 +59,14 @@ impl Piece {
                 game_state.squares.squares.iter().filter(|to| {
                     diagonal(from.x, from.y, to.x, to.y) &&
                         to.unoccupied_or_occupied_by_opponent(self.player_number) &&
-                        game_state.squares.between_unoccupied(from, &to)
+                        between_unoccupied(&game_state.squares.squares, from, &to)
                 }).collect()
             },
             PieceKind::Queen => {
                 game_state.squares.squares.iter().filter(|to| {
                     orthogonal_or_diagonal(from.x, from.y, to.x, to.y) &&
                         to.unoccupied_or_occupied_by_opponent(self.player_number) &&
-                        game_state.squares.between_unoccupied(from, &to)
+                        between_unoccupied(&game_state.squares.squares, from, &to)
                 }).collect()
             },
             PieceKind::King => {
@@ -112,7 +113,7 @@ impl Piece {
                         match rook_square {
                             Some(rs) => {
                                 game_state.castle_moves.iter().any(|cm| cm.player_number == 1 && cm.side == Side::King ) &&
-                                game_state.squares.between_unoccupied(from, rs)
+                                between_unoccupied(&game_state.squares.squares, from, rs)
                             },
                             None => false
                         }
@@ -122,7 +123,7 @@ impl Piece {
                         match rook_square {
                             Some(rs) => {
                                 game_state.castle_moves.iter().any(|cm| cm.player_number == 1 && cm.side == Side::Queen ) &&
-                                game_state.squares.between_unoccupied(from, rs)
+                                between_unoccupied(&game_state.squares.squares, from, rs)
                             },
                             None => false
                         }
@@ -137,7 +138,7 @@ impl Piece {
                         match rook_square {
                             Some(rs) => {
                                 game_state.castle_moves.iter().any(|cm| cm.player_number == 2 && cm.side == Side::King ) &&
-                                game_state.squares.between_unoccupied(from, rs)
+                                between_unoccupied(&game_state.squares.squares, from, rs)
                             },
                             None => false
                         }
@@ -147,7 +148,7 @@ impl Piece {
                         match rook_square {
                             Some(rs) => {
                                 game_state.castle_moves.iter().any(|cm| cm.player_number == 2 && cm.side == Side::Queen ) &&
-                                game_state.squares.between_unoccupied(from, rs)
+                                between_unoccupied(&game_state.squares.squares, from, rs)
                             },
                             None => false
                         }
@@ -168,7 +169,7 @@ impl Piece {
                      direction_unit_n(from.y, s.y) == self.forwards_direction() &&
                      orthogonal(from.x, from.y, s.x, s.y) &&
                      s.unoccupied() &&
-                     game_state.squares.between_unoccupied(from, &s)
+                     between_unoccupied(&game_state.squares.squares, from, &s)
                      ) ||
                     (length(from.x, from.y, s.x, s.y) == 1 &&
                      direction_unit_n(from.y, s.y) == self.forwards_direction() &&
