@@ -41,19 +41,21 @@ impl GameState {
 
         let mut check = false;
 
-        if let Some(king_square) = self.squares.squares.iter().find(|s| s.piece == Some(Piece {player_number: player_number, kind: PieceKind::King})) {
-           for square in self.squares.squares.iter().filter(|s| s.occupied_by_player(other_player_number)) {
-               if check {
-                   break;
-               } else {
-                   if let Some(piece) = square.piece {
-                       // if any capture square match king square
-                       if piece.capture_squares(&square, self).iter().any(|s| *s == king_square) {
-                           check = true;
-                       }
-                   }
-               }
-           }
+        let Some(king_square) = self.squares.squares.iter().find(|s| s.piece == Some(Piece {player_number, kind: PieceKind::King})) else {
+           return false;
+        };
+
+        for square in self.squares.squares.iter().filter(|s| s.occupied_by_player(other_player_number)) {
+            if check {
+                break;
+            } else {
+                if let Some(piece) = square.piece {
+                    // if any capture square match king square
+                    if piece.capture_squares(&square, self).iter().any(|s| *s == king_square) {
+                        check = true;
+                    }
+                }
+            }
         }
 
         check
@@ -81,16 +83,12 @@ impl GameState {
                 let moving_piece = &from.piece;
 
                 for to in from.destinations(&self) {
-                    let mut capture_piece_kind = match to.piece {
-                        Some(p) => {
-                            if player_number != p.player_number {
-                                Some(p.kind)
-                            } else {
-                                None
-                            }
-                        },
-                        None => None
-                    };
+                    let mut capture_piece_kind: Option<PieceKind> = None;
+                    if let Some(p) = to.piece {
+                       if player_number != p.player_number {
+                           capture_piece_kind = Some(p.kind);
+                       }
+                    }
 
                     // move: en_passant_point
                     //     - indicates that the move is en_passant
@@ -99,58 +97,38 @@ impl GameState {
                     // state: en_passant_target
                     //     - indicates that the previous move was a pawn that jumped previously
                     //     - contains the jumped over square of the pawn that jumped previously.
-                    let en_passant_point = match self.en_passant_target {
-                        Some(_target) => {
-                            if let Some(p) = from.piece {
-                                if p.kind == PieceKind::Pawn {
-                                    // is from and to diagonal, forward and one square apart
-                                    let vector = Vector { from: from.point(), to: to.point() };
-                                    if  vector.diagonal() && vector.direction_unit().y == p.forwards_direction() {
-                                        if let Some(eps) = self.squares.find_by_x_and_y(to.x, from.y) {
-                                            if eps.occupied_by_opponent(player_number) {
-                                                capture_piece_kind = Some(PieceKind::Pawn);
-                                                Some(Point { y: from.y, x: to.x })
-                                            } else {
-                                                None
-                                            }
-                                        } else {
-                                            None
+                    let mut en_passant_point: Option<Point> = None;
+                    if self.en_passant_target.is_some() {
+                        if let Some(p) = from.piece {
+                            if p.kind == PieceKind::Pawn {
+                                // is from and to diagonal, forward and one square apart
+                                let vector = Vector { from: from.point(), to: to.point() };
+                                if  vector.diagonal() && vector.direction_unit().y == p.forwards_direction() {
+                                    if let Some(eps) = self.squares.find_by_x_and_y(to.x, from.y) {
+                                        if eps.occupied_by_opponent(player_number) {
+                                            capture_piece_kind = Some(PieceKind::Pawn);
+                                            en_passant_point = Some(Point { y: from.y, x: to.x });
                                         }
-                                    } else {
-                                        None
                                     }
-                                } else {
-                                   None
                                 }
-                            } else {
-                                None
                             }
-                        },
-                        None => None
-                    };
+                        }
+                    }
 
-                    let castle_move = match &from.piece {
-                        Some(p) => {
-                            if p.kind == PieceKind::King {
-                                // exclude castle move if in check
-                                if self.in_check(self.current_player_number) {
-                                    None
-                                } else {
-                                    let vector = Vector { from: from.point(), to: to.point() };
-                                    if vector.length() == 2 && self.squares.between_unoccupied(&from, &to) {
-                                        let side = vector.side();
-                                        let cm = CastleMove { player_number: current_player_number, side };
-                                        Some(cm)
-                                    } else {
-                                        None
-                                    }
-                                }
-                            } else {
-                                None
-                            }
-                        },
-                        None => None
-                    };
+                    let mut castle_move: Option<CastleMove> = None;
+                    if let Some(p) = &from.piece {
+                         if p.kind == PieceKind::King {
+                             // exclude castle move if in check
+                             if !self.in_check(self.current_player_number) {
+                                 let vector = Vector { from: from.point(), to: to.point() };
+                                 if vector.length() == 2 && self.squares.between_unoccupied(&from, &to) {
+                                     let side = vector.side();
+                                     let cm = CastleMove { player_number: current_player_number, side };
+                                     castle_move = Some(cm);
+                                 }
+                             }
+                         }
+                     }
 
                     let promote = match from.piece {
                         Some(p) => p.kind == PieceKind::Pawn && to.y == p.promotion_rank(),
