@@ -261,7 +261,7 @@ mod tests {
             .set_payload(game_state)
             .to_request();
         let res = test::call_and_read_body(&app, req).await;
-        assert_eq!(res, Bytes::from_static(b"d4\n"));
+        assert_eq!(res, Bytes::from_static(b"Ngh3\n"));
     }
 
     // chess with invalid params

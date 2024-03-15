@@ -26,15 +26,12 @@ pub fn direction_unit_n(from_n: i8, to_n: i8) -> i8 {
 }
 
 pub fn orthogonal(from_x: i8, from_y: i8, to_x: i8, to_y: i8) -> bool {
-    let same_x = to_x == from_x;
-    let same_y = to_y == from_y;
-    same_x ^ same_y
+    (to_x == from_x) ^ (to_y == from_y)
 }
 
 pub fn diagonal(from_x: i8, from_y: i8, to_x: i8, to_y: i8) -> bool {
     let abs_dx = (to_x - from_x).abs();
-    let abs_dy = (to_y - from_y).abs();
-    abs_dx != 0 && abs_dx == abs_dy
+    abs_dx != 0 && abs_dx == (to_y - from_y).abs()
 }
 
 pub fn orthogonal_or_diagonal(from_x: i8, from_y: i8, to_x: i8, to_y: i8) -> bool {
@@ -50,8 +47,7 @@ pub fn knight_jump(from_x: i8, from_y: i8, to_x: i8, to_y: i8) -> bool {
 }
 
 pub fn side(from_x: i8, to_x: i8) -> Side {
-    let dx = to_x - from_x;
-    if dx > 0 {
+    if to_x > from_x {
         Side::King
     } else {
         Side::Queen
