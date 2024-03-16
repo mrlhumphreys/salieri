@@ -517,7 +517,7 @@ pub fn parse(encoded: &String) -> Result<GameState, &'static str> {
                     en_passant_target = None;
                 }
             }
-            '0' => {
+            '0' | '9' => {
                 () //ignore for now
             }
             _ => {
@@ -1178,6 +1178,23 @@ mod tests {
     fn parse_test() {
         // rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
         let encoded = String::from("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+        let result = parse(&encoded).unwrap();
+        assert_eq!(result.current_player_number, 1);
+
+        assert_eq!(result.squares.len(), 64);
+        assert_eq!(result.squares[0].piece.unwrap().kind, PieceKind::Rook);
+        assert_eq!(result.squares[16].piece, None);
+
+        assert_eq!(result.castle_moves.len(), 4);
+        assert_eq!(result.castle_moves[0].player_number, 1);
+        assert_eq!(result.castle_moves[0].side, Side::King);
+
+        assert_eq!(result.en_passant_target, None);
+    }
+
+    #[test]
+    fn ninth_turn_test_test() {
+        let encoded = String::from("rnb1kb1r/ppp2ppp/3q4/4p3/2PP4/PP6/4PnPP/RNB1KBR1 w KQkq - 0 9");
         let result = parse(&encoded).unwrap();
         assert_eq!(result.current_player_number, 1);
 
