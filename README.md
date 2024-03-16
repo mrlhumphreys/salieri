@@ -10,6 +10,7 @@ Board Game Move Recommender written in Rust.
 * Checkers - Common openings db
 * Checkers - Minimax algorithm with Alpha Beta Pruning
 * Checkers - Monte-Carlo Tree Search
+* Chess - Common openings db 
 * Chess - Minimax algorithm with Alpha Beta Pruning
 
 ## Config
@@ -31,7 +32,4 @@ Game Environment Variables:
 
 ## TODO
 
-* Chess
-    * Performance - Move piece into square
-    * Performance - Move to Mailbox board implmentation
 * Add performance tests

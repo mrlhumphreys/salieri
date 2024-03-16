@@ -22,18 +22,21 @@ async fn post_game_move(info: web::Path<String>, req_body: String) -> impl Respo
     match game_type.as_str() {
         "checkers" => {
             match checkers::openings::recommended_move(&req_body) {
-                Some(m) => HttpResponse::Ok().body(m),
+                Some(m) => HttpResponse::Ok().body(format!("{}\n", m)),
                 None => checkers_controller::mcts(&req_body)
             }
         },
         "backgammon" => {
             match backgammon::openings::recommended_move(&req_body) {
-                Some(m) => HttpResponse::Ok().body(m),
+                Some(m) => HttpResponse::Ok().body(format!("{}\n", m)),
                 None => backgammon_controller::mcts(&req_body)
             }
         },
         "chess" => {
-            chess_controller::minimax(&req_body)
+            match chess::openings::recommended_move(&req_body) {
+                Some(m) => HttpResponse::Ok().body(format!("{}\n", m)),
+                None => chess_controller::minimax(&req_body)
+            }
         },
         _ => return HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n")
     }
@@ -61,6 +64,7 @@ async fn post_game_algorithm_move(info: web::Path<(String, String)>, req_body: S
         },
         "chess" => {
             match algorithm.as_str() {
+                "openings_db" => chess_controller::opening(&req_body),
                 "minimax" => chess_controller::minimax(&req_body),
                 _ => return HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n")
             }
@@ -253,7 +257,7 @@ mod tests {
 
     #[actix_rt::test]
     async fn test_chess_body_with_valid_params() {
-        let game_state = String::from("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+        let game_state = String::from("rnbqkbnr/ppp1pppp/3p4/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2");
         let app = test::init_service(App::new().route("/api/v0/{game_type}", web::post().to(post_game_move))).await;
         let req = test::TestRequest::post()
             .insert_header(ContentType::plaintext())
@@ -261,7 +265,7 @@ mod tests {
             .set_payload(game_state)
             .to_request();
         let res = test::call_and_read_body(&app, req).await;
-        assert_eq!(res, Bytes::from_static(b"Ngh3\n"));
+        assert_eq!(res, Bytes::from_static(b"d4\n"));
     }
 
     // chess with invalid params

@@ -4,12 +4,12 @@ use actix_web::HttpResponse;
 
 use super::chess;
 
-// pub fn opening(game_data: &String) -> HttpResponse {
-//     match chess::openings::recommended_move(game_data) {
-//         Some(m) => HttpResponse::Ok().body(format!("{}\n", m)),
-//         None => HttpResponse::NotFound().body("404 Not Found\n")
-//     }
-// }
+pub fn opening(game_data: &String) -> HttpResponse {
+   match chess::openings::recommended_move(game_data) {
+        Some(m) => HttpResponse::Ok().body(format!("{}\n", m)),
+        None => HttpResponse::NotFound().body("404 Not Found\n")
+    }
+}
 
 pub fn minimax(game_data: &String) -> HttpResponse {
     let mut game_state = match chess::state::game_state::parse(game_data) {
@@ -124,29 +124,29 @@ mod tests {
     use super::*;
     use actix_web::body::MessageBody;
 
-//    #[test]
-//    fn opening_valid_test() {
-//        let game_state = String::from("bbbbbbb-bbbb--b---w-ww-wwwwwwwwww");
-//        let result = opening(&game_state);
-//
-//        assert_eq!(result.status(), 200);
-//        match result.into_body().try_into_bytes() {
-//           Ok(bytes) => assert_eq!(bytes, "22-17\n"),
-//           Err(_) => assert!(false, "unexpected body")
-//        };
-//    }
-//
-//    #[test]
-//    fn opening_no_moves_test() {
-//        let game_state = String::from("----bbb-bbbb--b---w-ww-wwwwwwwwww");
-//        let result = opening(&game_state);
-//
-//        assert_eq!(result.status(), 404);
-//        match result.into_body().try_into_bytes() {
-//           Ok(bytes) => assert_eq!(bytes, "404 Not Found\n"),
-//           Err(_) => assert!(false, "unexpected body")
-//        };
-//    }
+    #[test]
+    fn opening_valid_test() {
+        let game_state = String::from("rnbqkbnr/ppp1pppp/3p4/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2");
+        let result = opening(&game_state);
+
+        assert_eq!(result.status(), 200);
+        match result.into_body().try_into_bytes() {
+           Ok(bytes) => assert_eq!(bytes, "d4\n"),
+           Err(_) => assert!(false, "unexpected body")
+        };
+    }
+
+     #[test]
+     fn opening_no_moves_test() {
+         let game_state = String::from("rnbqkbnr/8/8/8/8/8/8/RNBQKBNR w KQkq - 0 16");
+         let result = opening(&game_state);
+
+         assert_eq!(result.status(), 404);
+         match result.into_body().try_into_bytes() {
+            Ok(bytes) => assert_eq!(bytes, "404 Not Found\n"),
+            Err(_) => assert!(false, "unexpected body")
+         };
+     }
 
      #[test]
      fn minimax_valid_test() {
