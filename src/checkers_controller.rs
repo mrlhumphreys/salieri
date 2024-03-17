@@ -14,7 +14,14 @@ pub fn opening(game_data: &String) -> HttpResponse {
 pub fn minimax(game_data: &String) -> HttpResponse {
     let game_state = match checkers::state::game_state::parse(game_data) {
         Ok(gs) => gs,
-        Err(_) => return HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n")
+        Err(_) => {
+            match checkers::state::game_state::parse_fen(game_data) {
+                Ok(gs_fen) => gs_fen,
+                Err(_) => {
+                    return HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n")
+                }
+            }
+        }
     };
 
     let minimax_depth: i8 = env::var("CHECKERS_MINIMAX_DEPTH")
@@ -33,7 +40,14 @@ pub fn minimax(game_data: &String) -> HttpResponse {
 pub fn mcts(game_data: &String) -> HttpResponse {
     let game_state = match checkers::state::game_state::parse(game_data) {
         Ok(gs) => gs,
-        Err(_) => return HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n"),
+        Err(_) => {
+            match checkers::state::game_state::parse_fen(game_data) {
+                Ok(gs_fen) => gs_fen,
+                Err(_) => {
+                    return HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n")
+                }
+            }
+        }
     };
 
     let mcts_simulation_count: i16 = env::var("CHECKERS_MCTS_SIMULATION_COUNT")
