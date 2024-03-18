@@ -39,7 +39,7 @@ mod tests {
 
     #[test]
     fn add_result_win_test() {
-        let node_state = game_state::parse(&String::from("bbbbbbbbbbbb--------wwwwwwwwwwwwb")).unwrap();
+        let node_state = game_state::parse(&String::from("B:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,11,12")).unwrap();
         let mut node = Node {
             id: 1,
             parent_id: None,
@@ -57,7 +57,7 @@ mod tests {
 
     #[test]
     fn add_result_not_win_test() {
-        let node_state = game_state::parse(&String::from("bbbbbbbbbbbb--------wwwwwwwwwwwwb")).unwrap();
+        let node_state = game_state::parse(&String::from("B:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,11,12")).unwrap(); 
         let mut node = Node {
             id: 1,
             parent_id: None,

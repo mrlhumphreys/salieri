@@ -136,7 +136,7 @@ mod tests {
     // checkers with valid params
     #[actix_rt::test]
     async fn test_checkers_status_with_valid_params() {
-        let game_state = String::from("bbbbbbbbb-bb--b-----wwwwwwwwwwwww");
+        let game_state = String::from("B:W19,21,22,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,12,15");
         let mut app = test::init_service(App::new().route("/api/v0/{game_type}", web::post().to(post_game_move))).await;
         let req = test::TestRequest::post()
             .insert_header(ContentType::plaintext())
@@ -149,7 +149,7 @@ mod tests {
 
     #[actix_rt::test]
     async fn test_checkers_body_with_valid_params() {
-        let game_state = String::from("bbbbbbbbb-bb--b-----wwwwwwwwwwwww");
+        let game_state = String::from("B:W18,21,22,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,12,15");
         let app = test::init_service(App::new().route("/api/v0/{game_type}", web::post().to(post_game_move))).await;
         let req = test::TestRequest::post()
             .insert_header(ContentType::plaintext())
@@ -157,13 +157,13 @@ mod tests {
             .set_payload(game_state)
             .to_request();
         let res = test::call_and_read_body(&app, req).await;
-        assert_eq!(res, Bytes::from_static(b"24-20\n"));
+        assert_eq!(res, Bytes::from_static(b"8-11\n"));
     }
 
     // checkers with invalid params
     #[actix_rt::test]
     async fn test_checkers_status_with_invalid_params() {
-        let game_state = String::from("-bbbbbbbbb-bb--b-----wwwwwwwwwwwww");
+        let game_state = String::from("X:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,11,12");
         let mut app = test::init_service(App::new().route("/api/v0/{game_type}", web::post().to(post_game_move))).await;
         let req = test::TestRequest::post()
             .insert_header(ContentType::plaintext())
@@ -176,7 +176,7 @@ mod tests {
 
     #[actix_rt::test]
     async fn test_checkers_body_with_invalid_params() {
-        let game_state = String::from("-bbbbbbbbb-bb--b-----wwwwwwwwwwwww");
+        let game_state = String::from("X:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,11,12");
         let app = test::init_service(App::new().route("/api/v0/{game_type}", web::post().to(post_game_move))).await;
         let req = test::TestRequest::post()
             .insert_header(ContentType::plaintext())
@@ -298,7 +298,7 @@ mod tests {
     // invalid game type
     #[actix_rt::test]
     async fn test_invalid_game_type_status() {
-        let game_state = String::from("-bbbbbbbbb-bb--b-----wwwwwwwwwwwww");
+        let game_state = String::from("B:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,11,12");
         let app = test::init_service(App::new().route("/api/v0/{game_type}", web::post().to(post_game_move))).await;
         let req = test::TestRequest::post()
             .insert_header(ContentType::plaintext())
@@ -311,7 +311,7 @@ mod tests {
 
     #[actix_rt::test]
     async fn test_invalid_game_type_body() {
-        let game_state = String::from("-bbbbbbbbb-bb--b-----wwwwwwwwwwwww");
+        let game_state = String::from("B:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,11,12");
         let app = test::init_service(App::new().route("/api/v0/{game_type}", web::post().to(post_game_move))).await;
         let req = test::TestRequest::post()
             .insert_header(ContentType::plaintext())

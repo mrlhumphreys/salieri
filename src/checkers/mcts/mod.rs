@@ -221,7 +221,7 @@ mod tests {
 
     #[test]
     fn recommended_move_test() {
-        let game_state = game_state::parse(&String::from("bbbbbbbbbb-b--b-----wwwwwwwwwwwww")).unwrap();
+        let game_state = game_state::parse(&String::from("W:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,12,15")).unwrap();
         let simulation_count: i16 = 10;
         let max_simulation_depth: i16 = 30;
 
@@ -236,7 +236,7 @@ mod tests {
 
     #[test]
     fn selection_test() {
-        let child_node_a_state = game_state::parse(&String::from("bbbbbbbbb-bb--b-----wwwwwwwwwwwww")).unwrap();
+        let child_node_a_state = game_state::parse(&String::from("W:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,12,15")).unwrap();
         let mov_a = Move {
             kind: MoveKind::Mov,
             from: 10,
@@ -252,7 +252,7 @@ mod tests {
             simulations: 10
         };
 
-        let child_node_b_state = game_state::parse(&String::from("bbbbbbbbbb-b---b----wwwwwwwwwwwww")).unwrap();
+        let child_node_b_state = game_state::parse(&String::from("W:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,12,16")).unwrap();
         let mov_b = Move {
             kind: MoveKind::Mov,
             from: 11,
@@ -268,7 +268,7 @@ mod tests {
             simulations: 30
         };
 
-        let parent_node_state = game_state::parse(&String::from("bbbbbbbbbbbb--------wwwwwwwwwwwwb")).unwrap();
+        let parent_node_state = game_state::parse(&String::from("B:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,11,12")).unwrap();
 
         let parent_node = Node {
             id: 1,
@@ -291,7 +291,7 @@ mod tests {
 
     #[test]
     fn upper_confidence_bound_test() {
-        let node_state = game_state::parse(&String::from("bbbbbbbbb-bb--b-----wwwwwwwwwwwww")).unwrap();
+        let node_state = game_state::parse(&String::from("W:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,12,15")).unwrap();
         let mov = Move {
             kind: MoveKind::Mov,
             from: 10,
@@ -307,7 +307,7 @@ mod tests {
             simulations: 21
         };
 
-        let parent_node_state = game_state::parse(&String::from("bbbbbbbbbbbb--------wwwwwwwwwwwwb")).unwrap();
+        let parent_node_state = game_state::parse(&String::from("B:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,11,12")).unwrap();
                                                                    
         let parent_node = Node {
             id: 1,
@@ -325,7 +325,8 @@ mod tests {
 
     #[test]
     fn expansion_test() {
-        let node_state = game_state::parse(&String::from("bbbbbbbbbbbb--------wwwwwwwwwwwwb")).unwrap();
+        // let node_state = game_state::parse(&String::from("bbbbbbbbbbbb--------wwwwwwwwwwwwb")).unwrap();
+        let node_state = game_state::parse(&String::from("B:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,11,12")).unwrap();
         let node = Node {
             id: 1,
             parent_id: None,
@@ -347,7 +348,7 @@ mod tests {
 
     #[test]
     fn simulate_test() {
-        let node_state = game_state::parse(&String::from("bbbbbbbbbbbb--------wwwwwwwwwwwwb")).unwrap();
+        let node_state = game_state::parse(&String::from("B:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,11,12")).unwrap();
         let node = Node {
             id: 1,
             parent_id: None,
@@ -367,7 +368,7 @@ mod tests {
 
     #[test]
     fn backpropagation_test() {
-        let node_state = game_state::parse(&String::from("bbbbbbbbb-bb--b-----wwwwwwwwwwwww")).unwrap();
+        let node_state = game_state::parse(&String::from("W:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,12,15")).unwrap();
         let mov = Move {
             kind: MoveKind::Mov,
             from: 10,
@@ -383,7 +384,7 @@ mod tests {
             simulations: 21
         };
 
-        let parent_node_state = game_state::parse(&String::from("bbbbbbbbbbbb--------wwwwwwwwwwwwb")).unwrap();
+        let parent_node_state = game_state::parse(&String::from("B:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,11,12")).unwrap();
                                                                    
         let parent_node = Node {
             id: 1,

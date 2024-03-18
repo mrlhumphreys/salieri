@@ -1,6 +1,5 @@
 use crate::checkers::state::square::Square;
 use crate::checkers::state::square_set::SquareSet;
-use crate::checkers::state::square_set::parse_square_set;
 use crate::checkers::state::mov::Move;
 
 const ID_COORDINATE_MAP: [(i8, i8); 33] = [
@@ -99,8 +98,8 @@ impl GameState {
         }
 
         let (next_player_number, promotion_row) = match self.current_player_number {
-            1 => (2, 7),
-            2 => (1, 0),
+            1 => (2, 0),
+            2 => (1, 7),
             _ => return Err("invalid player number"),
         };
 
@@ -129,8 +128,8 @@ impl GameState {
     pub fn undo_move(&mut self, mov: &Move) -> Result<(), &'static str> {
 
         let (previous_player_number, promotion_row) = match self.current_player_number {
-            1 => (2, 7),
-            2 => (1, 0),
+            1 => (2, 0),
+            2 => (1, 7),
             _ => return Err("invalid player number"),
         };
 
@@ -168,32 +167,8 @@ impl GameState {
     }
 }
 
-pub fn parse(encoded: &String) -> Result<GameState, &'static str> {
-    if encoded.len() != 33 {
-        return Err("Invalid State");
-    }
-
-    let squares_component = &encoded[0..32];
-    let player_component = &encoded[32..33];
-
-    let current_player_number = match player_component {
-      "b" => 1,
-      "w" => 2,
-      _ => return Err("Invalid State"),
-    };
-
-    let squares = match parse_square_set(squares_component) {
-        Ok(s) => s,
-        Err(e) => return Err(e),
-    };
-
-    let game_state = GameState { current_player_number, squares };
-
-    Ok(game_state)
-}
-
 // B:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,11,12
-pub fn parse_fen(encoded: &String) -> Result<GameState, &'static str> {
+pub fn parse(encoded: &String) -> Result<GameState, &'static str> {
     let mut read_player = true;
     let mut read_white_pieces = false;
     let mut read_black_pieces = false;
@@ -209,6 +184,7 @@ pub fn parse_fen(encoded: &String) -> Result<GameState, &'static str> {
                 if read_player {
                    current_player_number = 1;
                 } else {
+                    read_white_pieces = false;
                     read_black_pieces = true;
                 }
             },
@@ -223,6 +199,17 @@ pub fn parse_fen(encoded: &String) -> Result<GameState, &'static str> {
                 if read_player {
                     read_player = false;
                 } else if read_white_pieces || read_black_pieces {
+                    if current_square_id != String::from("") {
+                        let player_number = if read_white_pieces {
+                            2
+                        } else {
+                            1
+                        };
+                        match parse_square(&current_square_id, current_piece_king, player_number) {
+                            Ok(square) => squares.push(square),
+                            Err(_) => parse_error = true
+                        }
+                    }
                     current_square_id = String::from("");
                     current_piece_king = false;
                     read_white_pieces = false;
@@ -241,41 +228,17 @@ pub fn parse_fen(encoded: &String) -> Result<GameState, &'static str> {
             },
             ',' => {
                 if read_white_pieces {
-                    match current_square_id.parse::<usize>() {
-                        Ok(parsed_id) => {
-                            let id = parsed_id as i8;
-                            let x = ID_COORDINATE_MAP[parsed_id].0;
-                            let y = ID_COORDINATE_MAP[parsed_id].1;
-                            let player_number = 2;
-                            let king = current_piece_king;
-                            let square = Square { id, x, y, player_number, king };
-                            squares.push(square);
-                            ()
-                        },
-                        Err(_) => {
-                            parse_error = false;
-                            ()
-                        }
+                    match parse_square(&current_square_id, current_piece_king, 2) {
+                        Ok(square) => squares.push(square),
+                        Err(_) => parse_error = true
                     }
 
                     current_square_id = String::from("");
                     current_piece_king = false;
                 } else if read_black_pieces {
-                    match current_square_id.parse::<usize>() {
-                        Ok(parsed_id) => {
-                            let id = parsed_id as i8;
-                            let x = ID_COORDINATE_MAP[parsed_id].0;
-                            let y = ID_COORDINATE_MAP[parsed_id].1;
-                            let player_number = 1;
-                            let king = current_piece_king;
-                            let square = Square { id, x, y, player_number, king };
-                            squares.push(square);
-                            ()
-                        },
-                        Err(_) => {
-                            parse_error = false;
-                            ()
-                        }
+                    match parse_square(&current_square_id, current_piece_king, 1) {
+                        Ok(square) => squares.push(square),
+                        Err(_) => parse_error = true
                     }
 
                     current_square_id = String::from("");
@@ -284,6 +247,21 @@ pub fn parse_fen(encoded: &String) -> Result<GameState, &'static str> {
             }
             _ => {
                 parse_error = true;
+            }
+        }
+    }
+
+    // end of game state string, make a piece for the last one
+    if current_square_id != String::from("") {
+        if read_white_pieces {
+            match parse_square(&current_square_id, current_piece_king, 2) {
+                Ok(square) => squares.push(square),
+                Err(_) => parse_error = true
+            }
+        } else if read_black_pieces {
+            match parse_square(&current_square_id, current_piece_king, 1) {
+                Ok(square) => squares.push(square),
+                Err(_) => parse_error = true
             }
         }
     }
@@ -319,23 +297,32 @@ pub fn parse_fen(encoded: &String) -> Result<GameState, &'static str> {
     }
 }
 
+fn parse_square(current_square_id: &String, current_piece_king: bool, player_number: i8) -> Result<Square, &'static str> {
+    match current_square_id.parse::<usize>() {
+        Ok(parsed_id) => {
+            let id = parsed_id as i8;
+            let x = ID_COORDINATE_MAP[parsed_id].0;
+            let y = ID_COORDINATE_MAP[parsed_id].1;
+            let player_number = player_number;
+            let king = current_piece_king;
+            let square = Square { id, x, y, player_number, king };
+            Ok(square)
+        },
+        Err(_) => {
+            Err("Parse Square Error")
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::checkers::state::mov::MoveKind;
 
     #[test]
-    fn parsing() {
-        let encoded = String::from("bbbbbbbbbbbb--------wwwwwwwwwwwwb");
-        let result = parse(&encoded).unwrap();
-        assert_eq!(result.current_player_number, 1);
-        assert_eq!(result.squares.squares.len(), 32);
-    }
-
-    #[test]
-    fn parse_fen_test() {
+    fn parse_test() {
         let encoded = String::from("B:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,11,12");
-        let result = parse_fen(&encoded).unwrap();
+        let result = parse(&encoded).unwrap();
         assert_eq!(result.current_player_number, 1);
         let expected = vec![
             Square { id: 1, x: 6, y: 7, player_number: 1, king: false },
@@ -376,7 +363,7 @@ mod tests {
 
     #[test]
     fn parsing_example_b() {
-        let encoded = String::from("bbbbbbbbb-bb--b-----wwwwwwwwwwwww");
+        let encoded = String::from("W:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,11,12,15");
         let result = parse(&encoded);
         match result {
             Err(e) => assert!(false, "{}", e),
@@ -386,7 +373,7 @@ mod tests {
 
     #[test]
     fn parsing_invalid() {
-        let encoded = String::from("bbbbbbbbbbbb--------wwwwwwwwwwww");
+        let encoded = String::from("X:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,11,12");
         let result = parse(&encoded);
         match result {
             Ok(_) => assert!(false, "Expected Error"),
@@ -396,21 +383,21 @@ mod tests {
 
     #[test]
     fn winner_none_test() {
-        let encoded = String::from("bbbbbbbbbbbb--------wwwwwwwwwwwwb");
+        let encoded = String::from("B:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,11,12");
         let game_state = parse(&encoded).unwrap();
         assert_eq!(None, game_state.winner());
     }
 
     #[test]
     fn winner_some_test() {
-        let encoded = String::from("bbbbbbbbbbbb--------------------b");
+        let encoded = String::from("W:W21,22,23,24,25,26,27,28,29,30,31,32:B");
         let game_state = parse(&encoded).unwrap();
-        assert_eq!(Some(1), game_state.winner());
+        assert_eq!(Some(2), game_state.winner());
     }
 
     #[test]
     fn possible_moves_test() {
-        let encoded = String::from("bbbbbbbbbbbb--------wwwwwwwwwwwwb");
+        let encoded = String::from("B:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,11,12");
         let game_state = parse(&encoded).unwrap();
         let result = game_state.possible_moves();
         assert_eq!(result.len(), 7);
@@ -439,7 +426,7 @@ mod tests {
 
     #[test]
     fn possible_moves_for_player_test() {
-        let encoded = String::from("bbbbbbbbbbbb--------wwwwwwwwwwwwb");
+        let encoded = String::from("B:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,11,12");
         let game_state = parse(&encoded).unwrap();
         let result = game_state.possible_moves_for_player(2);
         assert_eq!(result.len(), 7);
@@ -468,7 +455,7 @@ mod tests {
 
     #[test]
     fn possible_moves_b_test() {
-        let encoded = String::from("bbbbb-b--bb-b--ww-bwww-wwww-w--ww");
+        let encoded = String::from("W:W16,17,20,21,22,24,25,26,27,29,32:B1,2,3,4,5,7,10,11,13,19");
         let game_state = parse(&encoded).unwrap();
         let result = game_state.possible_moves_for_player(2);
         assert_eq!(result.len(), 2);
@@ -482,7 +469,7 @@ mod tests {
 
     #[test]
     fn perform_move_test() {
-        let encoded = String::from("wwwwwwwwwwww--------bbbbbbbbbbbbw");
+        let encoded = String::from("B:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,11,12");
         let mut game_state = parse(&encoded).unwrap();
         let mov = Move {
             kind: MoveKind::Mov,
@@ -502,7 +489,7 @@ mod tests {
                     None => assert!(false, "square not found"),
                 }
 
-                assert_eq!(game_state.current_player_number, 1);
+                assert_eq!(game_state.current_player_number, 2);
             },
             Err(e) => assert!(false, "{}", e),
         }
@@ -510,7 +497,7 @@ mod tests {
 
     #[test]
     fn perform_move_with_promote() {
-        let encoded = String::from("bbbbbbbbbbb---------------wb----b");
+        let encoded = String::from("B:W27:B1,2,3,4,5,6,7,8,9,10,11,28");
         let mut game_state = parse(&encoded).unwrap();
         let mov = Move {
             kind: MoveKind::Mov,
@@ -531,7 +518,7 @@ mod tests {
 
     #[test]
     fn perform_undo() {
-        let encoded = String::from("wwwwwwww-wwww-------bbbbbbbbbbbbw");
+        let encoded = String::from("W:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,10,11,12,13");
         let mut game_state = parse(&encoded).unwrap();
         let mov = Move {
             kind: MoveKind::Mov,
@@ -557,8 +544,9 @@ mod tests {
 
     #[test]
     fn perform_undo_with_demote() {
-        let encoded = String::from("bbbbbbbbbbb----------------b---Wb");
+        let encoded = String::from("B:WK32:B1,2,3,4,5,6,7,8,9,10,11,28");
         let mut game_state = parse(&encoded).unwrap();
+        println!("{}", game_state.squares.squares[27].player_number);
         let mov = Move {
             kind: MoveKind::Mov,
             from: 28,

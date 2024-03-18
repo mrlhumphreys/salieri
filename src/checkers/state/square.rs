@@ -1,5 +1,4 @@
 use std::cmp;
-use std::convert::TryFrom;
 use crate::checkers::state::point::Point;
 use crate::checkers::state::square_set::SquareSet;
 use crate::checkers::state::mov::Move;
@@ -66,8 +65,8 @@ impl Square {
         let direction = match king {
             true => 0,
             false => match player_number {
-                1 => 1,
-                2 => -1,
+                1 => -1,
+                2 => 1,
                 _ => 0
             }
         };
@@ -184,79 +183,9 @@ impl Square {
     }
 }
 
-pub fn parse(index: usize, encoded: char) -> Result<Square, &'static str> {
-    let i = match i8::try_from(index) {
-        Ok(num) => num,
-        Err(_) => return Err("Invalid Board Length"),
-    };
-
-    let id = i + 1;
-
-    let y = i / 4;
-
-    let offset = if y % 2 == 0 {
-       1
-    } else {
-       0 
-    };
-
-    let x = ((i % 4) * 2 ) + offset;
-
-    let (player_number, king) = match encoded {
-        'w' => (2, false),
-        'W' => (2, true),
-        'b' => (1, false),
-        'B' => (1, true),
-        '-' => (0, false),
-        _ => return Err("Invalid Piece")
-    };
-    let square = Square { id, x, y, player_number, king };
-    Ok(square)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn parsing_square_with_index() {
-        let index = 11;
-        let encoded = 'w';
-        let square = parse(index, encoded).unwrap();
-        assert_eq!(square.id, 12);
-        assert_eq!(square.x, 7);
-        assert_eq!(square.y, 2);
-        assert_eq!(square.occupied(), true);
-        assert_eq!(square.player_number, 2);
-        assert_eq!(square.king, false);
-    }
-
-    #[test]
-    fn parsing_square_occupied() {
-        let index = 1;
-        let encoded = 'w';
-        let square = parse(index, encoded).unwrap();
-        assert_eq!(square.occupied(), true);
-    }
-
-    #[test]
-    fn parsing_square_unoccupied() {
-        let index = 1;
-        let encoded = '-';
-        let square = parse(index, encoded).unwrap();
-        assert_eq!(square.occupied(), false);
-    }
-
-    #[test]
-    fn parsing_square_invalid() {
-        let index = 1;
-        let encoded = 'a';
-        let result = parse(index, encoded);
-        match result {
-            Ok(_) => assert!(false, "Expected Error"),
-            Err(_) => assert!(true),
-        }
-    }
 
     #[test]
     fn occupied_by_player_own_player() {
@@ -286,7 +215,7 @@ mod tests {
     fn moving_up_and_square_is_up_from_origin() {
         let square = Square { id: 1, x: 4, y: 3, player_number: 0, king: false };
         let from = Square { id: 2, x: 4, y: 4, player_number: 0, king: false };
-        let (player_number, king) = (2, false);
+        let (player_number, king) = (1, false);
         let result = square.in_direction(&from, player_number, king);
         assert_eq!(result, true);
     }
@@ -295,7 +224,7 @@ mod tests {
     fn moving_up_and_square_is_down_from_origin() {
         let square = Square { id: 1, x: 4, y: 5, player_number: 0, king: false };
         let from = Square { id: 2, x: 4, y: 4, player_number: 0, king: false };
-        let (player_number, king) = (2, false);
+        let (player_number, king) = (1, false);
         let result = square.in_direction(&from, player_number, king);
         assert_eq!(result, false);
     }
@@ -313,7 +242,7 @@ mod tests {
     fn moving_down_and_square_is_up_from_origin() {
         let square = Square { id: 1, x: 4, y: 3, player_number: 0, king: false };
         let from = Square { id: 2, x: 4, y: 4, player_number: 0, king: false };
-        let (player_number, king) = (1, false);
+        let (player_number, king) = (2, false);
         let result = square.in_direction(&from, player_number, king);
         assert_eq!(result, false);
     }
@@ -322,7 +251,7 @@ mod tests {
     fn moving_down_and_square_is_down_from_origin() {
         let square = Square { id: 1, x: 4, y: 5, player_number: 0, king: false };
         let from = Square { id: 2, x: 4, y: 4, player_number: 0, king: false };
-        let (player_number, king) = (1, false);
+        let (player_number, king) = (2, false);
         let result = square.in_direction(&from, player_number, king);
         assert_eq!(result, true);
     }
@@ -365,9 +294,9 @@ mod tests {
 
     #[test]
     fn pieces_can_jump() {
-        let (player_number, king) = (1, false);
+        let (player_number, king) = (2, false);
         let from = Square { id: 1, x: 4, y: 4, player_number: 0, king: false };
-        let between = Square { id: 2, x: 3, y: 5, player_number: 2, king: false };
+        let between = Square { id: 2, x: 3, y: 5, player_number: 1, king: false };
         let to = Square { id: 3, x: 2, y: 6, player_number: 0, king: false };
         let board = SquareSet { squares: vec![from, between, to] };
 
@@ -384,10 +313,10 @@ mod tests {
 
     #[test]
     fn pieces_can_move() {
-        let (player_number, king) = (1, false);
-        let from = Square { id: 1, x: 4, y: 4, player_number: 1, king: false };
+        let (player_number, king) = (2, false);
+        let from = Square { id: 1, x: 4, y: 4, player_number: 2, king: false };
         let to = Square { id: 2, x: 5, y: 5, player_number: 0, king: false };
-        let cant_to = Square { id: 4, x: 3, y: 5, player_number: 2, king: false };
+        let cant_to = Square { id: 4, x: 3, y: 5, player_number: 1, king: false };
         let board = SquareSet { squares: vec![from, to, cant_to] };
 
         let result = from.can_move(player_number, king, &board);
@@ -435,7 +364,7 @@ mod tests {
     fn pieces_cannot_jump_backwards() {
         let (player_number, king) = (1, false);
         let from = Square { id: 1, x: 4, y: 4, player_number: 0, king: false };
-        let between = Square { id: 2, x: 3, y: 3, player_number: 2, king: false };
+        let between = Square { id: 2, x: 3, y: 3, player_number: 1, king: false };
         let to = Square { id: 3, x: 2, y: 2, player_number: 0, king: false };
         let board = SquareSet { squares: vec![from, between, to] };
 
@@ -448,14 +377,14 @@ mod tests {
 
     #[test]
     fn fetch_jump_legs() {
-        let (player_number, king) = (1, false);
-        let from = Square { id: 1, x: 3, y: 3, player_number: 1, king: false };
-        let over_a = Square { id: 2, x: 4, y: 4, player_number: 2, king: false };
+        let (player_number, king) = (2, false);
+        let from = Square { id: 1, x: 3, y: 3, player_number: 2, king: false };
+        let over_a = Square { id: 2, x: 4, y: 4, player_number: 1, king: false };
         let to_a = Square { id: 3, x: 5, y: 5, player_number: 0, king: false };
-        let over_aa = Square { id: 4, x: 6, y: 6, player_number: 2, king: false };
+        let over_aa = Square { id: 4, x: 6, y: 6, player_number: 1, king: false };
         let to_aa = Square { id: 5, x: 7, y: 7, player_number: 0, king: false };
 
-        let over_b = Square { id: 6, x: 2, y: 4, player_number: 2, king: false };
+        let over_b = Square { id: 6, x: 2, y: 4, player_number: 1, king: false };
         let to_b = Square { id: 7, x: 1, y: 5, player_number: 0, king: false };
         let square_set = SquareSet { squares: vec![from, over_a, to_a, over_aa, to_aa, over_b, to_b] };
         let mut accumulator = vec![];
@@ -468,14 +397,14 @@ mod tests {
 
     #[test]
     fn fetch_branching_jump_legs() {
-        let (player_number, king) = (1, false);
-        let from = Square { id: 1, x: 3, y: 3, player_number: 1, king: false };
-        let over_a = Square { id: 2, x: 4, y: 4, player_number: 2, king: false };
+        let (player_number, king) = (2, false);
+        let from = Square { id: 1, x: 3, y: 3, player_number: 2, king: false };
+        let over_a = Square { id: 2, x: 4, y: 4, player_number: 1, king: false };
         let to_a = Square { id: 3, x: 5, y: 5, player_number: 0, king: false };
-        let over_aa = Square { id: 4, x: 6, y: 6, player_number: 2, king: false };
+        let over_aa = Square { id: 4, x: 6, y: 6, player_number: 1, king: false };
         let to_aa = Square { id: 5, x: 7, y: 7, player_number: 0, king: false };
 
-        let over_b = Square { id: 6, x: 4, y: 6, player_number: 2, king: false };
+        let over_b = Square { id: 6, x: 4, y: 6, player_number: 1, king: false };
         let to_b = Square { id: 7, x: 3, y: 7, player_number: 0, king: false };
         let square_set = SquareSet { squares: vec![from, over_a, to_a, over_aa, to_aa, over_b, to_b] };
         let mut accumulator = vec![];
@@ -488,14 +417,14 @@ mod tests {
 
     #[test]
     fn fetch_jumps_test() {
-        let (player_number, king) = (1, false);
-        let from = Square { id: 1, x: 3, y: 3, player_number: 1, king: false };
-        let over_a = Square { id: 2, x: 4, y: 4, player_number: 2, king: false };
+        let (player_number, king) = (2, false);
+        let from = Square { id: 1, x: 3, y: 3, player_number: 2, king: false };
+        let over_a = Square { id: 2, x: 4, y: 4, player_number: 1, king: false };
         let to_a = Square { id: 3, x: 5, y: 5, player_number: 0, king: false };
-        let over_aa = Square { id: 4, x: 6, y: 6, player_number: 2, king: false };
+        let over_aa = Square { id: 4, x: 6, y: 6, player_number: 1, king: false };
         let to_aa = Square { id: 5, x: 7, y: 7, player_number: 0, king: false };
 
-        let over_b = Square { id: 6, x: 2, y: 4, player_number: 2, king: false };
+        let over_b = Square { id: 6, x: 2, y: 4, player_number: 1, king: false };
         let to_b = Square { id: 7, x: 1, y: 5, player_number: 0, king: false };
         let square_set = SquareSet { squares: vec![from, over_a, to_a, over_aa, to_aa, over_b, to_b] };
         let result = from.jumps(player_number, king, &square_set);
@@ -509,14 +438,14 @@ mod tests {
 
     #[test]
     fn fetch_branching_jumps_test() {
-        let (player_number, king) = (1, false);
-        let from = Square { id: 1, x: 3, y: 3, player_number: 1, king: false };
-        let over_a = Square { id: 2, x: 4, y: 4, player_number: 2, king: false };
+        let (player_number, king) = (2, false);
+        let from = Square { id: 1, x: 3, y: 3, player_number: 2, king: false };
+        let over_a = Square { id: 2, x: 4, y: 4, player_number: 1, king: false };
         let to_a = Square { id: 3, x: 5, y: 5, player_number: 0, king: false };
-        let over_aa = Square { id: 4, x: 6, y: 6, player_number: 2, king: false };
+        let over_aa = Square { id: 4, x: 6, y: 6, player_number: 1, king: false };
         let to_aa = Square { id: 5, x: 7, y: 7, player_number: 0, king: false };
 
-        let over_b = Square { id: 6, x: 4, y: 6, player_number: 2, king: false };
+        let over_b = Square { id: 6, x: 4, y: 6, player_number: 1, king: false };
         let to_b = Square { id: 7, x: 3, y: 7, player_number: 0, king: false };
         let square_set = SquareSet { squares: vec![from, over_a, to_a, over_aa, to_aa, over_b, to_b] };
         let result = from.jumps(player_number, king, &square_set);
@@ -532,10 +461,10 @@ mod tests {
 
     #[test]
     fn fetch_moves() {
-        let (player_number, king) = (1, false);
-        let from = Square { id: 1, x: 4, y: 4, player_number: 1, king: false };
+        let (player_number, king) = (2, false);
+        let from = Square { id: 1, x: 4, y: 4, player_number: 2, king: false };
         let to = Square { id: 2, x: 5, y: 5, player_number: 0, king: false };
-        let cant_to = Square { id: 4, x: 3, y: 5, player_number: 2, king: false };
+        let cant_to = Square { id: 4, x: 3, y: 5, player_number: 1, king: false };
         let board = SquareSet { squares: vec![from, to, cant_to] };
 
         let result = from.moves(player_number, king, &board);

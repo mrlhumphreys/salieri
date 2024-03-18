@@ -4,7 +4,6 @@ use crate::checkers::state::vector::Vector;
 use crate::checkers::state::vector::Direction;
 use crate::checkers::state::square::Square;
 use crate::checkers::state::mov::Move;
-use crate::checkers::state::square::parse as parse_square;
 
 #[derive(PartialEq, Debug)]
 pub struct SquareSet {
@@ -226,34 +225,9 @@ impl SquareSet {
     }
 }
 
-pub fn parse_square_set(encoded: &str) -> Result<SquareSet, &'static str> {
-    let mut squares = Vec::new();
-
-    // add index, pass vars to parse square
-    for (i, c) in encoded.char_indices() {
-        match parse_square(i, c) {
-            Ok(s) => squares.push(s),
-            Err(e) => return Err(e),
-        }
-    }
-
-    let square_set = SquareSet { squares };
-    Ok(square_set)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn parsing_square_set() {
-        let encoded = "bbbbbbbbbbbb--------wwwwwwwwwwww";
-        let square_set = parse_square_set(encoded).unwrap();
-        let squares = square_set.squares;
-        assert_eq!(squares.len(), 32);
-        let square = &squares[0];
-        assert_eq!(square.player_number, 1);
-    }
 
     #[test]
     fn fetching_first() {
@@ -439,13 +413,13 @@ mod tests {
 
     #[test]
     fn fetch_moves() {
-        let from = Square { id: 1, x: 4, y: 4, player_number: 1, king: false };
+        let from = Square { id: 1, x: 4, y: 4, player_number: 2, king: false };
         let to = Square { id: 2, x: 5, y: 5, player_number: 0, king: false };
-        let cant_to = Square { id: 3, x: 3, y: 5, player_number: 2, king: false };
+        let cant_to = Square { id: 3, x: 3, y: 5, player_number: 1, king: false };
         let square_set = SquareSet { squares: vec![from] };
         let board = SquareSet { squares: vec![from, cant_to, to] };
 
-        let result = square_set.moves_for_player(1, &board);
+        let result = square_set.moves_for_player(2, &board);
 
         assert_eq!(result.len(), 1);
 
@@ -461,15 +435,15 @@ mod tests {
 
     #[test]
     fn fetch_jumps() {
-        let from = Square { id: 1, x: 4, y: 4, player_number: 1, king: false };
-        let over = Square { id: 2, x: 5, y: 5, player_number: 2, king: false };
+        let from = Square { id: 1, x: 4, y: 4, player_number: 2, king: false };
+        let over = Square { id: 2, x: 5, y: 5, player_number: 1, king: false };
         let to = Square { id: 3, x: 6, y: 6, player_number: 0, king: false };
-        let cant_over = Square { id: 4, x: 3, y: 5, player_number: 2, king: false };
-        let cant_to = Square { id: 5, x: 2, y: 6, player_number: 1, king: false };
+        let cant_over = Square { id: 4, x: 3, y: 5, player_number: 1, king: false };
+        let cant_to = Square { id: 5, x: 2, y: 6, player_number: 2, king: false };
         let square_set = SquareSet { squares: vec![from] };
         let board = SquareSet { squares: vec![from, over, to, cant_over, cant_to] };
 
-        let result = square_set.jumps_for_player(1, &board);
+        let result = square_set.jumps_for_player(2, &board);
 
         assert_eq!(result.len(), 1);
 

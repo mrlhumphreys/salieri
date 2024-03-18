@@ -176,7 +176,7 @@ mod tests {
 
     #[test]
     fn evaluate_test() {
-        let encoded = String::from("bbbbbbbbbb-b--b-----wwwwwwwwwwwww");
+        let encoded = String::from("W:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,12,15");
         let mut game_state = checkers::state::game_state::parse(&encoded).unwrap();
 
         match evaluate(&mut game_state, 4, std::i32::MIN, std::i32::MAX, false) {
@@ -187,7 +187,7 @@ mod tests {
 
     #[test]
     fn recommended_move_test() {
-        let encoded = String::from("bbbbbbbbbb-b--b-----wwwwwwwwwwwww");
+        let encoded = String::from("W:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,12,15");
         let game_state = checkers::state::game_state::parse(&encoded).unwrap();
         let mov = recommended_move(game_state, 5); 
 

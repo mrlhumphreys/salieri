@@ -14,14 +14,7 @@ pub fn opening(game_data: &String) -> HttpResponse {
 pub fn minimax(game_data: &String) -> HttpResponse {
     let game_state = match checkers::state::game_state::parse(game_data) {
         Ok(gs) => gs,
-        Err(_) => {
-            match checkers::state::game_state::parse_fen(game_data) {
-                Ok(gs_fen) => gs_fen,
-                Err(_) => {
-                    return HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n")
-                }
-            }
-        }
+        Err(_) => return HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n")
     };
 
     let minimax_depth: i8 = env::var("CHECKERS_MINIMAX_DEPTH")
@@ -40,14 +33,7 @@ pub fn minimax(game_data: &String) -> HttpResponse {
 pub fn mcts(game_data: &String) -> HttpResponse {
     let game_state = match checkers::state::game_state::parse(game_data) {
         Ok(gs) => gs,
-        Err(_) => {
-            match checkers::state::game_state::parse_fen(game_data) {
-                Ok(gs_fen) => gs_fen,
-                Err(_) => {
-                    return HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n")
-                }
-            }
-        }
+        Err(_) => return HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n")
     };
 
     let mcts_simulation_count: i16 = env::var("CHECKERS_MCTS_SIMULATION_COUNT")
@@ -78,19 +64,19 @@ mod tests {
 
     #[test]
     fn opening_valid_test() {
-        let game_state = String::from("bbbbbbb-bbbb--b---w-ww-wwwwwwwwww");
+        let game_state = String::from("B:W18,21,22,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,12,15");
         let result = opening(&game_state); 
 
         assert_eq!(result.status(), 200); 
         match result.into_body().try_into_bytes() {
-           Ok(bytes) => assert_eq!(bytes, "22-17\n"),
+           Ok(bytes) => assert_eq!(bytes, "8-11\n"),
            Err(_) => assert!(false, "unexpected body")
         };
     }
 
     #[test]
     fn opening_no_moves_test() {
-        let game_state = String::from("----bbb-bbbb--b---w-ww-wwwwwwwwww");
+        let game_state = String::from("W:W:B1,2,3,4,5,6,7,8,9,10,12,15");
         let result = opening(&game_state); 
 
         assert_eq!(result.status(), 422); 
@@ -102,19 +88,19 @@ mod tests {
 
     #[test]
     fn minimax_valid_test() {
-        let game_state = String::from("bbbbbbb-bbbb--b---w-ww-wwwwwwwwww");
+        let game_state = String::from("B:W19,21,22,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,12,15");
         let result = minimax(&game_state); 
 
         assert_eq!(result.status(), 200); 
         match result.into_body().try_into_bytes() {
-           Ok(bytes) => assert_eq!(bytes, "21-17\n"),
+           Ok(bytes) => assert_eq!(bytes, "9-14\n"),
            Err(_) => assert!(false, "unexpected body")
         };
     }
 
     #[test]
     fn minimax_invalid_game_state_test() {
-        let game_state = String::from("bbbbbbb-bbbb--b---w-ww-wwwwwwwwwn");
+        let game_state = String::from("X:W19,21,22,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,12,15");
         let result = minimax(&game_state); 
 
         assert_eq!(result.status(), 422); 
@@ -126,7 +112,7 @@ mod tests {
 
     #[test]
     fn minimax_no_moves_test() {
-        let game_state = String::from("bbbbbbb-bbbb--b-----------------w");
+        let game_state = String::from("W:W:B1,2,3,4,5,6,7,8,9,10,12,15");
         let result = minimax(&game_state); 
 
         assert_eq!(result.status(), 422); 
@@ -138,19 +124,19 @@ mod tests {
 
     #[test]
     fn mcts_valid_test() {
-        let game_state = String::from("bbbbbbb-bbbb--b---w-ww-wwwwwwwwww");
+        let game_state = String::from("B:W19,21,22,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,12,15");
         let result = mcts(&game_state);
 
         assert_eq!(result.status(), 200);
         match result.into_body().try_into_bytes() {
-           Ok(bytes) => assert_eq!(bytes, "27-23\n"),
+           Ok(bytes) => assert_eq!(bytes, "15-18\n"),
            Err(_) => assert!(false, "unexpected body")
         };
     }
 
     #[test]
     fn mcts_invalid_game_state_test() {
-        let game_state = String::from("bbbbbbb-bbbb--b---w-ww-wwwwwwwwwn");
+        let game_state = String::from("X:W19,21,22,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,12,15");
         let result = mcts(&game_state);
 
         assert_eq!(result.status(), 422);
