@@ -155,7 +155,7 @@ mod tests {
 
          assert_eq!(result.status(), 200);
          match result.into_body().try_into_bytes() {
-            Ok(bytes) => assert_eq!(bytes, "Ngh3\n"),
+            Ok(bytes) => assert_eq!(bytes, "a4\n"),
             Err(_) => assert!(false, "unexpected body")
          };
      }

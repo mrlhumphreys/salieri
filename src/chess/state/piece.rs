@@ -168,7 +168,7 @@ impl Piece {
     fn en_passant_condition(&self, from: &Square, to: &Square, game_state: &GameState) -> bool {
         match game_state.en_passant_target {
             Some(target) => {
-                if to.x == target.x {
+                if to.x == target.x && to.y == target.y {
                     if let Some(capture_square) = game_state.squares.iter().find(|s| s.x == target.x && s.y == from.y) {
                         capture_square.occupied_by_opponent(self.player_number)
                     } else {
@@ -338,6 +338,21 @@ mod tests {
         let result = piece.destinations(&from, &game_state);
         let expected = vec![
             &Square { x: 0, y: 3, piece: None }
+        ];
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn destinations_pawn_en_passant_same_column_test() {
+        let piece = Piece { kind: PieceKind::Pawn, player_number: 1 };
+        let from = Square { x: 1, y: 6, piece: Some(piece) };
+        let encoded = String::from("4k3/8/8/1Pp4/8/8/1Pp4/4K3 w - c2 0 1");
+        let game_state = parse_game_state(&encoded).unwrap();
+
+        let result = piece.destinations(&from, &game_state);
+        let expected = vec![
+            &Square { x: 1, y: 4, piece: None },
+            &Square { x: 1, y: 5, piece: None }
         ];
         assert_eq!(result, expected);
     }

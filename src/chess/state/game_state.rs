@@ -1,5 +1,4 @@
 use std::convert::TryFrom;
-use crate::chess::state::vector::diagonal;
 use crate::chess::state::vector::direction_unit_n;
 use crate::chess::state::vector::length;
 use crate::chess::state::vector::side;
@@ -9,7 +8,6 @@ use crate::chess::state::piece_factory::parse as parse_piece;
 use crate::chess::state::castle_move::parse as parse_castle_move;
 use crate::chess::state::castle_move::CastleMove;
 use crate::chess::state::square_set::find_by_x_and_y;
-use crate::chess::state::square_set::between_unoccupied;
 use crate::chess::state::square::Square;
 use crate::chess::state::piece::PieceKind;
 use crate::chess::state::piece::Piece;
@@ -18,6 +16,7 @@ const PROMOTE_PIECE_KINDS: [PieceKind; 4] = [
   PieceKind::Queen, PieceKind::Bishop, PieceKind::Knight, PieceKind::Rook
 ];
 
+// TODO: Bug in certain combinations of possible_moves perform_move or undo_move where pieces change player number
 pub struct GameState {
     pub current_player_number: i8,
     pub squares: Vec<Square>,
@@ -102,16 +101,19 @@ impl GameState {
                     //     - indicates that the previous move was a pawn that jumped previously
                     //     - contains the jumped over square of the pawn that jumped previously.
                     let mut en_passant_point: Option<Point> = None;
-                    if self.en_passant_target.is_some() {
+                    if let Some(target) =  self.en_passant_target {
                         if let Some(p) = from.piece {
-                            if p.kind == PieceKind::Pawn {
-                                // is from and to diagonal, forward and one square apart
-                                if  diagonal(from.x, from.y, to.x, to.y) && direction_unit_n(from.y, to.y) == p.forwards_direction() {
-                                    if let Some(eps) = find_by_x_and_y(&self.squares, to.x, from.y) {
-                                        if eps.occupied_by_opponent(player_number) {
-                                            capture_piece_kind = Some(PieceKind::Pawn);
-                                            en_passant_point = Some(Point { y: from.y, x: to.x });
-                                        }
+                            if p.kind == PieceKind::Pawn &&
+                                (to.x == target.x && to.y == target.y) &&
+                                (from.x == target.x + 1 || from.x == target.x - 1) &&
+                                from.y + p.forwards_direction() == target.y {
+
+                                let capture_x = target.x;
+                                let capture_y = target.y - p.forwards_direction();
+                                if let Some(capture_square) = find_by_x_and_y(&self.squares, capture_x, capture_y) {
+                                    if capture_square.occupied_by_opponent(p.player_number) {
+                                        capture_piece_kind = Some(PieceKind::Pawn);
+                                        en_passant_point = Some(Point { x: capture_x, y: capture_y });
                                     }
                                 }
                             }
@@ -120,17 +122,17 @@ impl GameState {
 
                     let mut castle_move: Option<CastleMove> = None;
                     if let Some(p) = &from.piece {
-                         if p.kind == PieceKind::King {
-                             // exclude castle move if in check
-                             if !self.in_check(self.current_player_number) {
-                                 if length(from.x, from.y, to.x, to.y) == 2 && between_unoccupied(&self.squares, &from, &to) {
-                                     let s = side(from.x, to.x);
-                                     let cm = CastleMove { player_number: current_player_number, side: s };
-                                     castle_move = Some(cm);
-                                 }
-                             }
-                         }
-                     }
+                        if p.kind == PieceKind::King {
+                            // exclude castle move if in check
+                            if !self.in_check(self.current_player_number) {
+                                if from.y == to.y && length(from.x, from.y, to.x, to.y) == 2 {
+                                    let s = side(from.x, to.x);
+                                    let cm = CastleMove { player_number: current_player_number, side: s };
+                                    castle_move = Some(cm);
+                                }
+                            }
+                        }
+                    }
 
                     let promote = match from.piece {
                         Some(p) => p.kind == PieceKind::Pawn && to.y == p.promotion_rank(),
@@ -285,7 +287,7 @@ impl GameState {
 
         match &mov.promote_piece_kind {
             Some(_) => {
-                let unpromote_piece = Piece { kind: PieceKind::Pawn,  player_number: other_player_number };
+                let unpromote_piece = Piece { kind: PieceKind::Pawn, player_number: other_player_number };
 
                 match self.squares.iter_mut().find(|s| s.x == mov.to.x && s.y == mov.to.y) {
                     Some(s) => s.piece = Some(unpromote_piece),
@@ -592,12 +594,12 @@ mod tests {
         assert_eq!(result[0].capture_piece_kind, None);
         assert_eq!(result[0].promote_piece_kind, None);
         assert_eq!(result[0].en_passant_point, None);
+        assert_eq!(result[0].en_passant_target, None);
         assert_eq!(result[0].castle_move, None);
     }
 
     #[test]
     fn possible_moves_two_space_pawn_invalid_test() {
-        // en passant move allows extra move?
         let encoded = String::from("4k3/8/8/2p5/P7/8/8/4K3 w - c2 0 1");
         let mut state = parse(&encoded).unwrap();
         let result = state.possible_moves();
@@ -666,7 +668,24 @@ mod tests {
         assert_eq!(result[1].capture_piece_kind, Some(PieceKind::Pawn));
         assert_eq!(result[1].promote_piece_kind, None);
         assert_eq!(result[1].en_passant_point, Some(Point { x: 1, y: 3}));
+        assert_eq!(result[1].en_passant_target, Some(Point { x: 1, y: 2}));
         assert_eq!(result[1].castle_move, None);
+    }
+
+    #[test]
+    fn possible_moves_en_passant_two_pawns_in_same_row_test() {
+        let encoded = String::from("4k3/8/8/Pp6/8/1p6/Pp6/4K3 w - b6 0 1");
+        let mut state = parse(&encoded).unwrap();
+        let result = state.possible_moves();
+
+        assert_eq!(result.len(), 10);
+        assert_eq!(result[4].from, Point { x: 0, y: 6 });
+        assert_eq!(result[4].to, Point { x: 1, y: 5 });
+        assert_eq!(result[4].moving_piece_kind, PieceKind::Pawn);
+        assert_eq!(result[4].capture_piece_kind, Some(PieceKind::Pawn));
+        assert_eq!(result[4].promote_piece_kind, None);
+        assert_eq!(result[4].en_passant_point, None);
+        assert_eq!(result[4].castle_move, None);
     }
 
     #[test]
@@ -686,12 +705,21 @@ mod tests {
     }
 
     #[test]
-    fn possible_moves_castle_move_blocked_test() {
+    fn possible_moves_castle_move_blocked_king_side_test() {
         let encoded = String::from("4k3/8/8/8/8/8/8/4KN1R w K - 0 1");
         let mut state = parse(&encoded).unwrap();
         let result = state.possible_moves();
 
         assert_eq!(result.len(), 16);
+    }
+
+    #[test]
+    fn possible_moves_castle_move_blocked_queen_side_test() {
+        let encoded = String::from("4k3/8/8/8/8/8/8/RN2K3 w Q - 0 1");
+        let mut state = parse(&encoded).unwrap();
+        let result = state.possible_moves();
+
+        assert_eq!(result.len(), 15);
     }
 
     #[test]
@@ -1013,6 +1041,35 @@ mod tests {
         assert_eq!(state.current_player_number, new_state.current_player_number);
         assert_eq!(state.squares, new_state.squares);
         assert_eq!(state.en_passant_target, new_state.en_passant_target);
+    }
+
+    #[test]
+    fn perform_and_undo_multiple_test() {
+        let encoded = String::from("r1bqkbnr/p1pppppp/np6/P7/8/8/1PPPPPPP/RNBQKBNR b KQkq - 0 1");
+        let state = parse(&encoded).unwrap();
+
+        let mut new_state = state.clone();
+        new_state.possible_moves().iter().for_each(|mov| {
+            let perform_result = new_state.perform_move(&mov);
+
+            let newer_state = new_state.clone();
+            new_state.possible_moves().iter().for_each(|movb| {
+                let perform_result = new_state.perform_move(&movb);
+                let undo_result = new_state.undo_move(&movb);
+                assert_eq!(perform_result, Ok(()));
+                assert_eq!(undo_result, Ok(()));
+                assert_eq!(new_state.current_player_number, newer_state.current_player_number);
+                assert_eq!(new_state.squares, newer_state.squares);
+                assert_eq!(new_state.en_passant_target, newer_state.en_passant_target);
+            });
+            let undo_result = new_state.undo_move(&mov);
+
+            assert_eq!(perform_result, Ok(()));
+            assert_eq!(undo_result, Ok(()));
+            assert_eq!(state.current_player_number, new_state.current_player_number);
+            assert_eq!(state.squares, new_state.squares);
+            assert_eq!(state.en_passant_target, new_state.en_passant_target);
+        });
     }
 
     #[test]

@@ -4,10 +4,10 @@ use crate::chess;
 use crate::chess::state::piece::PieceKind;
 
 const CENTER_SQUARE_COORDINATES: [[i8; 2]; 4] = [
-    [3,3], 
-    [3,4], 
-    [4,3], 
-    [4,4] 
+    [3,3],
+    [3,4],
+    [4,3],
+    [4,4]
 ];
 
 pub fn recommended_move(game_state: &mut chess::state::game_state::GameState, depth: i8) -> Option<chess::state::mov::Move> {
@@ -44,7 +44,7 @@ pub fn recommended_move(game_state: &mut chess::state::game_state::GameState, de
 
                 (mov, value)
             });
-            
+
             let best_move = match maximizing_player {
                 true => moves_with_value.max_by(|a,b| (a.1).cmp(&b.1) ),
                 false => moves_with_value.min_by(|a,b| (a.1).cmp(&b.1) ),
@@ -63,7 +63,7 @@ pub fn evaluate(game_state: &mut chess::state::game_state::GameState, depth: i8,
     if depth == 0 || moves.len() == 0 {
         return Ok(static_evaluation(game_state));
     }
-    
+
     if maximizing_player {
         let mut max_eval = std::i32::MIN;
         for mov in moves {
@@ -77,8 +77,8 @@ pub fn evaluate(game_state: &mut chess::state::game_state::GameState, depth: i8,
                         Err(e) => return Err(e),
                     }
                 },
-                Err(e) => return Err(e), 
-            }; 
+                Err(e) => return Err(e),
+            };
 
             match game_state.undo_move(&mov) {
                 Ok(()) => (),
@@ -133,20 +133,12 @@ pub fn static_evaluation(game_state: &mut chess::state::game_state::GameState) -
     let player_one_center_squares_count = center_squares_count(game_state, 1);
     let player_two_center_squares_count = center_squares_count(game_state, 2);
     let center_squares_count_value = u_to_i32(player_one_center_squares_count) - u_to_i32(player_two_center_squares_count);
-   
-    2*pieces_count_value + 1*center_squares_count_value + 256*lose_value(game_state)
-}
 
-fn lose_value(game_state: &mut chess::state::game_state::GameState) -> i32 {
-    if game_state.possible_moves().len() == 0 {
-        match game_state.current_player_number {
-            1 => -1,
-            2 => 1,
-            _ => 0
-        }
-    } else {
-        0
-    }
+    let player_one_possible_moves_count = game_state.possible_moves_for_player(1).len();
+    let player_two_possible_moves_count = game_state.possible_moves_for_player(2).len();
+    let possible_moves_value = u_to_i32(player_one_possible_moves_count) - u_to_i32(player_two_possible_moves_count);
+
+    2*pieces_count_value + 1*center_squares_count_value + 4*possible_moves_value
 }
 
 fn center_squares_count(game_state: &chess::state::game_state::GameState, player_number: i8) -> usize {
@@ -179,9 +171,9 @@ fn player_pieces_count(game_state: &chess::state::game_state::GameState, player_
                     PieceKind::Pawn => 1
                 }
             },
-            None => 0 
+            None => 0
         }
-    }).sum() 
+    }).sum()
 }
 
 fn u_to_i32(value: usize) -> i32 {
@@ -202,7 +194,7 @@ mod tests {
         let mut game_state = chess::state::game_state::parse(&encoded).unwrap();
 
         match evaluate(&mut game_state, 2, std::i32::MIN, std::i32::MAX, false) {
-            Ok(result) => assert_eq!(result, 0),
+            Ok(result) => assert_eq!(result, -1033),
             Err(e) => assert!(false, "{}", e)
         }
     }
@@ -212,20 +204,20 @@ mod tests {
         let encoded = String::from("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
         let mut game_state = chess::state::game_state::parse(&encoded).unwrap();
 
-        let mov = recommended_move(&mut game_state, 2); 
+        let mov = recommended_move(&mut game_state, 2);
 
         match mov {
             Some(m) => {
-                assert_eq!(m.from, Point { x: 4, y: 6 });
-                assert_eq!(m.to, Point { x: 4, y: 4 });
-                assert_eq!(m.moving_piece_kind, PieceKind::Pawn);
+                assert_eq!(m.from, Point { x: 1, y: 7 });
+                assert_eq!(m.to, Point { x: 2, y: 5 });
+                assert_eq!(m.moving_piece_kind, PieceKind::Knight);
                 assert_eq!(m.capture_piece_kind, None);
                 assert_eq!(m.promote_piece_kind, None);
                 assert_eq!(m.en_passant_point, None);
                 assert_eq!(m.en_passant_target, None);
                 assert_eq!(m.castle_move, None);
             },
-            None => assert!(false, "expected move"), 
+            None => assert!(false, "expected move"),
         }
     }
 }
