@@ -194,7 +194,7 @@ mod tests {
         let mut game_state = chess::state::game_state::parse(&encoded).unwrap();
 
         match evaluate(&mut game_state, 2, std::i32::MIN, std::i32::MAX, false) {
-            Ok(result) => assert_eq!(result, -1033),
+            Ok(result) => assert_eq!(result, -1051),
             Err(e) => assert!(false, "{}", e)
         }
     }
@@ -208,9 +208,9 @@ mod tests {
 
         match mov {
             Some(m) => {
-                assert_eq!(m.from, Point { x: 1, y: 7 });
-                assert_eq!(m.to, Point { x: 2, y: 5 });
-                assert_eq!(m.moving_piece_kind, PieceKind::Knight);
+                assert_eq!(m.from, Point { x: 0, y: 6 });
+                assert_eq!(m.to, Point { x: 0, y: 5 });
+                assert_eq!(m.moving_piece_kind, PieceKind::Pawn);
                 assert_eq!(m.capture_piece_kind, None);
                 assert_eq!(m.promote_piece_kind, None);
                 assert_eq!(m.en_passant_point, None);

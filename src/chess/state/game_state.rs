@@ -7,6 +7,7 @@ use crate::chess::state::mov::Move;
 use crate::chess::state::piece_factory::parse as parse_piece;
 use crate::chess::state::castle_move::parse as parse_castle_move;
 use crate::chess::state::castle_move::CastleMove;
+use crate::chess::state::castle_move::Side;
 use crate::chess::state::square_set::find_by_x_and_y;
 use crate::chess::state::square::Square;
 use crate::chess::state::piece::PieceKind;
@@ -239,8 +240,6 @@ impl GameState {
                     Some(s) => s.piece = piece,
                     None => return Err("Invalid To Square")
                 }
-
-                self.castle_moves.retain(|&x| x.player_number != cm.player_number)
             },
             None => ()
         }
@@ -269,6 +268,25 @@ impl GameState {
             }
         } else {
             self.en_passant_target = None;
+        }
+
+        if mov.moving_piece_kind == PieceKind::Rook {
+            let player_number = self.current_player_number;
+            if mov.from.x == 7 || mov.from.x == 0 {
+                let side = if mov.from.x == 7 {
+                    Side::King
+                } else {
+                    Side::Queen
+                };
+                if let Some(pos) = self.castle_moves.iter().position(|cm| cm.player_number == player_number && cm.side == side) {
+                    self.castle_moves.remove(pos);
+                }
+            }
+        }
+
+        if mov.moving_piece_kind == PieceKind::King {
+            let player_number = self.current_player_number;
+            self.castle_moves.retain(|&x| x.player_number != player_number)
         }
 
         match self.current_player_number {
@@ -362,6 +380,65 @@ impl GameState {
                 };
             },
             None => ()
+        }
+
+        // castle moves
+        if mov.moving_piece_kind == PieceKind::King {
+            if let Some(from) = self.squares.iter().find(|s| s.x == mov.from.x && s.y == mov.from.y) {
+               if let Some(piece) = from.piece {
+                   if piece.player_number == 1 && mov.from.x == 4 && mov.from.y == 7 {
+                       // add player 1 castle moves if not present
+                        let castle_move_a = CastleMove { player_number: 1, side: Side::King };
+                        let castle_move_b = CastleMove { player_number: 1, side: Side::Queen };
+                        if !self.castle_moves.contains(&castle_move_a) {
+                            self.castle_moves.push(castle_move_a);
+                        }
+
+                        if !self.castle_moves.contains(&castle_move_b) {
+                            self.castle_moves.push(castle_move_b);
+                        }
+                   } else if piece.player_number == 2 && mov.from.x == 0 && mov.from.y == 7 {
+                        let castle_move_a = CastleMove { player_number: 2, side: Side::King };
+                        let castle_move_b = CastleMove { player_number: 2, side: Side::Queen };
+
+                        if !self.castle_moves.contains(&castle_move_a) {
+                            self.castle_moves.push(castle_move_a);
+                        }
+
+                        if !self.castle_moves.contains(&castle_move_b) {
+                            self.castle_moves.push(castle_move_b);
+                        }
+                   }
+               }
+            }
+        }
+
+        if mov.moving_piece_kind == PieceKind::Rook {
+            if let Some(from) = self.squares.iter().find(|s| s.x == mov.from.x && s.y == mov.from.y) {
+               if let Some(piece) = from.piece {
+                   if piece.player_number == 1 && mov.from.x == 0 && mov.from.y == 7 {
+                        let castle_move = CastleMove { player_number: 1, side: Side::Queen };
+                        if !self.castle_moves.contains(&castle_move) {
+                            self.castle_moves.push(castle_move);
+                        }
+                   } else if piece.player_number == 1 && mov.from.x == 7 && mov.from.y == 7 {
+                        let castle_move = CastleMove { player_number: 1, side: Side::King };
+                        if !self.castle_moves.contains(&castle_move) {
+                            self.castle_moves.push(castle_move);
+                        }
+                   } else if piece.player_number == 2 && mov.from.x == 0 && mov.from.y == 0 {
+                        let castle_move = CastleMove { player_number: 2, side: Side::Queen };
+                        if !self.castle_moves.contains(&castle_move) {
+                            self.castle_moves.push(castle_move);
+                        }
+                   } else if piece.player_number == 2 && mov.from.x == 7 && mov.from.y == 0 {
+                        let castle_move = CastleMove { player_number: 2, side: Side::King };
+                        if !self.castle_moves.contains(&castle_move) {
+                            self.castle_moves.push(castle_move);
+                        }
+                   }
+               }
+            }
         }
 
         // set en passant target
@@ -767,6 +844,54 @@ mod tests {
     }
 
     #[test]
+    fn perform_move_king_test() {
+        let encoded = String::from("rnbqkbnr/8/8/8/8/8/8/RNBQKBNR w KQkq - 0 1");
+        let mut state = parse(&encoded).unwrap();
+        let mov = Move {
+            from: Point { x: 4, y: 7 },
+            to: Point { x: 4, y: 6 },
+            moving_piece_kind: PieceKind::King,
+            capture_piece_kind: None,
+            promote_piece_kind: None,
+            en_passant_point: None,
+            en_passant_target: None,
+            castle_move: None
+        };
+
+        let result = state.perform_move(&mov);
+        let expected = vec![
+            CastleMove { player_number: 2, side: Side::King },
+            CastleMove { player_number: 2, side: Side::Queen }
+        ];
+        assert_eq!(result, Ok(()));
+        assert_eq!(state.castle_moves, expected);
+    }
+
+    #[test]
+    fn perform_move_rook_test() {
+        let encoded = String::from("rnbqkbnr/8/8/8/8/8/8/RNBQKBNR w KQkq - 0 1");
+        let mut state = parse(&encoded).unwrap();
+        let mov = Move {
+            from: Point { x: 7, y: 7 },
+            to: Point { x: 7, y: 6 },
+            moving_piece_kind: PieceKind::Rook,
+            capture_piece_kind: None,
+            promote_piece_kind: None,
+            en_passant_point: None,
+            en_passant_target: None,
+            castle_move: None
+        };
+        let result = state.perform_move(&mov);
+        let expected = vec![
+            CastleMove { player_number: 1, side: Side::Queen },
+            CastleMove { player_number: 2, side: Side::King },
+            CastleMove { player_number: 2, side: Side::Queen }
+        ];
+        assert_eq!(result, Ok(()));
+        assert_eq!(state.castle_moves, expected);
+    }
+
+    #[test]
     fn perform_move_two_space_pawn_test() {
         let encoded = String::from("4k3/8/8/8/8/8/P7/4K3 w - - 0 1");
         let mut state = parse(&encoded).unwrap();
@@ -1014,6 +1139,57 @@ mod tests {
         assert_eq!(from.piece.unwrap(), Piece { player_number: 1, kind: PieceKind::Pawn });
         let to = find_by_x_and_y(&state.squares, 0, 5).unwrap();
         assert_eq!(to.piece, None);
+    }
+
+    #[test]
+    fn undo_move_king_test() {
+        let encoded = String::from("rnbqkbnr/8/8/8/8/8/4K3/RNBQ1BNR w kq - 0 1");
+        let mut state = parse(&encoded).unwrap();
+        let mov = Move {
+            from: Point { x: 4, y: 7 },
+            to: Point { x: 4, y: 6 },
+            moving_piece_kind: PieceKind::King,
+            capture_piece_kind: None,
+            promote_piece_kind: None,
+            en_passant_point: None,
+            en_passant_target: None,
+            castle_move: None
+        };
+
+        let result = state.undo_move(&mov);
+        let expected = vec![
+            CastleMove { player_number: 2, side: Side::King },
+            CastleMove { player_number: 2, side: Side::Queen },
+            CastleMove { player_number: 1, side: Side::King },
+            CastleMove { player_number: 1, side: Side::Queen }
+        ];
+        assert_eq!(result, Ok(()));
+        assert_eq!(state.castle_moves, expected);
+    }
+
+    #[test]
+    fn undo_move_rook_test() {
+        let encoded = String::from("rnbqkbnr/8/8/8/8/8/7R/RNBQKBN1 w Qkq - 0 1");
+        let mut state = parse(&encoded).unwrap();
+        let mov = Move {
+            from: Point { x: 7, y: 7 },
+            to: Point { x: 7, y: 6 },
+            moving_piece_kind: PieceKind::Rook,
+            capture_piece_kind: None,
+            promote_piece_kind: None,
+            en_passant_point: None,
+            en_passant_target: None,
+            castle_move: None
+        };
+        let result = state.undo_move(&mov);
+        let expected = vec![
+            CastleMove { player_number: 1, side: Side::Queen },
+            CastleMove { player_number: 2, side: Side::King },
+            CastleMove { player_number: 2, side: Side::Queen },
+            CastleMove { player_number: 1, side: Side::King }
+        ];
+        assert_eq!(result, Ok(()));
+        assert_eq!(state.castle_moves, expected);
     }
 
     #[test]
