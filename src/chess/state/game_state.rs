@@ -17,7 +17,6 @@ const PROMOTE_PIECE_KINDS: [PieceKind; 4] = [
   PieceKind::Queen, PieceKind::Bishop, PieceKind::Knight, PieceKind::Rook
 ];
 
-// TODO: Bug in certain combinations of possible_moves perform_move or undo_move where pieces change player number
 pub struct GameState {
     pub current_player_number: i8,
     pub squares: Vec<Square>,
@@ -49,15 +48,13 @@ impl GameState {
            return false;
         };
 
-        for square in self.squares.iter().filter(|s| s.occupied_by_player(other_player_number)) {
+        for square in self.squares.iter() {
             if check {
                 break;
             } else {
                 if let Some(piece) = square.piece {
                     // if any capture square match king square
-                    if piece.capture_squares(&square, self).iter().any(|s| *s == king_square) {
-                        check = true;
-                    }
+                    check = piece.player_number == other_player_number && piece.capture_squares(&square, self).iter().any(|s| *s == king_square)
                 }
             }
         }
@@ -77,10 +74,12 @@ impl GameState {
 
     pub fn possible_moves_for_player(&mut self, subject_player_number: i8) -> Vec<Move> {
         let mut moves = vec![];
+
         for from in self.squares.iter() {
             if let Some(from_piece) = from.piece {
                 if from_piece.player_number == subject_player_number {
                     for to in from.destinations(&self) {
+
                         let mut capture_piece_kind: Option<PieceKind> = None;
                         if let Some(to_piece) = to.piece {
                            if subject_player_number != to_piece.player_number {
@@ -192,73 +191,59 @@ impl GameState {
         }
 
         // maybe use en_passant_target
-        match mov.en_passant_point {
-            Some(p) => {
-                match self.squares.iter_mut().find(|s| s.x == p.x && s.y == p.y) {
-                    Some(s) => s.piece = None,
-                    None => return Err("Invalid En Passant Square")
-                }
-            },
-            None => ()
+        if let Some(p) = mov.en_passant_point {
+            match self.squares.iter_mut().find(|s| s.x == p.x && s.y == p.y) {
+                Some(s) => s.piece = None,
+                None => return Err("Invalid En Passant Square")
+            }
         }
 
-        match &mov.castle_move {
-            Some(cm) => {
-                let from = cm.from();
-                let to = cm.to();
-                let piece: Option<Piece>;
+        if let Some(cm) = &mov.castle_move {
+            let from = cm.from();
+            let to = cm.to();
+            let piece: Option<Piece>;
 
-                match self.squares.iter_mut().find(|s| s.x == from.x && s.y == from.y) {
-                   Some(s) => {
-                        piece = s.piece.clone();
-                        s.piece = None;
-                   },
-                   None => return Err("Invalid From Square")
-                }
+            match self.squares.iter_mut().find(|s| s.x == from.x && s.y == from.y) {
+               Some(s) => {
+                    piece = s.piece.clone();
+                    s.piece = None;
+               },
+               None => return Err("Invalid From Square")
+            }
 
-                match self.squares.iter_mut().find(|s| s.x == to.x && s.y == to.y) {
-                    Some(s) => s.piece = piece,
-                    None => return Err("Invalid To Square")
-                }
-            },
-            None => ()
+            match self.squares.iter_mut().find(|s| s.x == to.x && s.y == to.y) {
+                Some(s) => s.piece = piece,
+                None => return Err("Invalid To Square")
+            }
         }
 
-        match mov.promote_piece_kind {
-           Some(pk) => {
-               let promote_piece = Piece { kind: pk, player_number: self.current_player_number };
+        if let Some(pk) =  mov.promote_piece_kind {
+           let promote_piece = Piece { kind: pk, player_number: self.current_player_number };
 
-               match self.squares.iter_mut().find(|s| s.x == mov.to.x && s.y == mov.to.y) {
-                   Some(s) => s.piece = Some(promote_piece),
-                   None => return Err("Invalid To Square")
-               }
-           },
-           None => ()
+           match self.squares.iter_mut().find(|s| s.x == mov.to.x && s.y == mov.to.y) {
+               Some(s) => s.piece = Some(promote_piece),
+               None => return Err("Invalid To Square")
+           }
         }
 
         // set en passant target
-        if mov.moving_piece_kind == PieceKind::Pawn {
-            if length(mov.from.x, mov.from.y, mov.to.x, mov.to.y) == 2 {
-                let backwards = direction_unit_n(mov.from.y, mov.to.y)*-1;
-                let x = mov.to.x;
-                let y = mov.to.y + backwards; // 3: 4 -1 or 2 + 1
-                self.en_passant_target = Some(Point { x, y });
-            } else {
-                self.en_passant_target = None;
-            }
+        if mov.moving_piece_kind == PieceKind::Pawn && length(mov.from.x, mov.from.y, mov.to.x, mov.to.y) == 2 {
+            let backwards = direction_unit_n(mov.from.y, mov.to.y)*-1;
+            let x = mov.to.x;
+            let y = mov.to.y + backwards; // 3: 4 -1 or 2 + 1
+            self.en_passant_target = Some(Point { x, y });
         } else {
             self.en_passant_target = None;
         }
 
         if mov.moving_piece_kind == PieceKind::Rook {
-            let player_number = self.current_player_number;
             if mov.from.x == 7 || mov.from.x == 0 {
                 let side = if mov.from.x == 7 {
                     Side::King
                 } else {
                     Side::Queen
                 };
-                if let Some(pos) = self.castle_moves.iter().position(|cm| cm.player_number == player_number && cm.side == side) {
+                if let Some(pos) = self.castle_moves.iter().position(|cm| cm.player_number == self.current_player_number && cm.side == side) {
                     self.castle_moves.remove(pos);
                 }
             }
@@ -266,7 +251,7 @@ impl GameState {
 
         if mov.moving_piece_kind == PieceKind::King {
             let player_number = self.current_player_number;
-            self.castle_moves.retain(|&x| x.player_number != player_number)
+            self.castle_moves.retain(|cm| cm.player_number != player_number);
         }
 
         match self.current_player_number {
@@ -278,26 +263,23 @@ impl GameState {
     }
 
     pub fn undo_move(&mut self, mov: &Move) -> Result<(), &'static str> {
-        match &mov.castle_move {
-            Some(cm) => {
-                let from = cm.from();
-                let to = cm.to();
-                let piece: Option<Piece>;
+        if let Some(cm) = &mov.castle_move {
+            let from = cm.from();
+            let to = cm.to();
+            let piece: Option<Piece>;
 
-                match self.squares.iter_mut().find(|s| s.x == to.x && s.y == to.y) {
-                   Some(s) => {
-                        piece = s.piece.clone();
-                        s.piece = None;
-                   },
-                   None => return Err("Invalid From Square")
-                }
+            match self.squares.iter_mut().find(|s| s.x == to.x && s.y == to.y) {
+               Some(s) => {
+                    piece = s.piece.clone();
+                    s.piece = None;
+               },
+               None => return Err("Invalid From Square")
+            }
 
-                match self.squares.iter_mut().find(|s| s.x == from.x && s.y == from.y) {
-                    Some(s) => s.piece = piece,
-                    None => return Err("Invalid To Square")
-                }
-            },
-            None => ()
+            match self.squares.iter_mut().find(|s| s.x == from.x && s.y == from.y) {
+                Some(s) => s.piece = piece,
+                None => return Err("Invalid To Square")
+            }
         };
 
         let moving_piece: Option<Piece>;
@@ -333,44 +315,35 @@ impl GameState {
         };
 
         // capture
-        match mov.capture_piece_kind {
-            Some(pk) => {
-                // maybe use en passant target
-                match mov.en_passant_point {
-                    Some(p) => {
-                        // en passant
-                        match self.squares.iter_mut().find(|s| s.x == p.x && s.y == p.y) {
-                            Some(s) => {
-                                s.piece = Some(Piece { kind: PieceKind::Pawn, player_number: other_player_number });
-                            },
-                            None => return Err("Invalid En Passant Square")
-                        }
-                    },
-                    None => {
-                        // regular capture
-                        let capture_piece = Piece { kind: pk, player_number: other_player_number };
-
-                        match self.squares.iter_mut().find(|s| s.x == mov.to.x && s.y == mov.to.y) {
-                            Some(s) => s.piece = Some(capture_piece),
-                            None => return Err("Invalid To Square")
-                        };
-
+        if let Some(pk) = mov.capture_piece_kind {
+            // maybe use en passant target
+            match mov.en_passant_point {
+                Some(p) => {
+                    // en passant
+                    match self.squares.iter_mut().find(|s| s.x == p.x && s.y == p.y) {
+                        Some(s) => s.piece = Some(Piece { kind: PieceKind::Pawn, player_number: other_player_number }),
+                        None => return Err("Invalid En Passant Square")
                     }
-                };
-            },
-            None => ()
+                },
+                None => {
+                    // regular capture
+                    let capture_piece = Piece { kind: pk, player_number: other_player_number };
+
+                    match self.squares.iter_mut().find(|s| s.x == mov.to.x && s.y == mov.to.y) {
+                        Some(s) => s.piece = Some(capture_piece),
+                        None => return Err("Invalid To Square")
+                    }
+                }
+            }
         }
 
-        match &mov.promote_piece_kind {
-            Some(_) => {
-                let unpromote_piece = Piece { kind: PieceKind::Pawn, player_number: moving_piece_player_number };
+        if mov.promote_piece_kind.is_some() {
+            let unpromote_piece = Piece { kind: PieceKind::Pawn, player_number: moving_piece_player_number };
 
-                match self.squares.iter_mut().find(|s| s.x == mov.from.x && s.y == mov.from.y) {
-                    Some(s) => s.piece = Some(unpromote_piece),
-                    None => return Err("Invalid To Square")
-                }
-            },
-            None => ()
+            match self.squares.iter_mut().find(|s| s.x == mov.from.x && s.y == mov.from.y) {
+                Some(s) => s.piece = Some(unpromote_piece),
+                None => return Err("Invalid To Square")
+            }
         };
 
         // castle moves
@@ -378,7 +351,6 @@ impl GameState {
             if let Some(from) = self.squares.iter().find(|s| s.x == mov.from.x && s.y == mov.from.y) {
                if let Some(piece) = from.piece {
                    if piece.player_number == 1 && mov.from.x == 4 && mov.from.y == 7 {
-                       // add player 1 castle moves if not present
                         let castle_move_a = CastleMove { player_number: 1, side: Side::King };
                         let castle_move_b = CastleMove { player_number: 1, side: Side::Queen };
                         if !self.castle_moves.contains(&castle_move_a) {

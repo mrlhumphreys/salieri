@@ -13,16 +13,15 @@ pub fn length(from_x: i8, from_y: i8, to_x: i8, to_y: i8) -> i8 {
 
 pub fn direction_unit_n(from_n: i8, to_n: i8) -> i8 {
     let dn = to_n - from_n;
-    return match dn.partial_cmp(&0) {
-        Some(c) => {
-            match c {
-                Ordering::Less => -1,
-                Ordering::Greater => 1,
-                Ordering::Equal => 0,
-            }
-        },
-        None => 0,
-    };
+    if let Some(c) = dn.partial_cmp(&0) {
+        match c {
+            Ordering::Less => -1,
+            Ordering::Greater => 1,
+            Ordering::Equal => 0,
+        }
+    } else {
+        0
+    }
 }
 
 pub fn orthogonal(from_x: i8, from_y: i8, to_x: i8, to_y: i8) -> bool {

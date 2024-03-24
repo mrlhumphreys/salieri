@@ -7,7 +7,7 @@ pub fn find_by_x_and_y(squares: &Vec<Square>, x: i8, y: i8) -> Option<&Square> {
     squares.iter().find(|s| s.x == x && s.y == y)
 }
 
-pub fn between_unoccupied_points(squares: &Vec<Square>, from: (i8, i8), to: (i8, i8)) -> bool {
+pub fn between_unoccupied(squares: &Vec<Square>, from: (i8, i8), to: (i8, i8)) -> bool {
     let mut result = true;
 
     if orthogonal_or_diagonal(from.0, from.1, to.0, to.1) && length(from.0, from.1, to.0, to.1) > 1 {
@@ -17,30 +17,6 @@ pub fn between_unoccupied_points(squares: &Vec<Square>, from: (i8, i8), to: (i8,
         let end_y = to.1;
         let mut counter_x = from.0 + direction_unit_x;
         let mut counter_y = from.1 + direction_unit_y;
-        while counter_x != end_x || counter_y != end_y {
-            if let Some(square) = find_by_x_and_y(squares, counter_x, counter_y) {
-               if square.occupied() {
-                   result = false;
-                   break;
-               }
-            }
-            counter_x = counter_x + direction_unit_x;
-            counter_y = counter_y + direction_unit_y;
-        }
-    }
-    result
-}
-
-pub fn between_unoccupied(squares: &Vec<Square>, from: &Square, to: &Square) -> bool {
-    let mut result = true;
-
-    if orthogonal_or_diagonal(from.x, from.y, to.x, to.y) && length(from.x, from.y, to.x, to.y) > 1 {
-        let direction_unit_x = direction_unit_n(from.x, to.x);
-        let direction_unit_y = direction_unit_n(from.y, to.y);
-        let end_x = to.x;
-        let end_y = to.y;
-        let mut counter_x = from.x + direction_unit_x;
-        let mut counter_y = from.y + direction_unit_y;
         while counter_x != end_x || counter_y != end_y {
             if let Some(square) = find_by_x_and_y(squares, counter_x, counter_y) {
                if square.occupied() {
@@ -78,7 +54,7 @@ mod tests {
     }
 
     #[test]
-    fn square_set_between_unoccupied_points_true_test() {
+    fn square_set_between_unoccupied_true_test() {
         let origin = Square { x: 1, y: 1, piece: None };
         let between = Square { x: 1, y: 2, piece: None };
         let destination = Square { x: 1, y: 3, piece: None };
@@ -88,35 +64,7 @@ mod tests {
         let origin_point: (i8, i8) = (1, 1);
         let destination_point: (i8, i8) = (1, 3);
 
-        let result = between_unoccupied_points(&squares, origin_point, destination_point);
-        assert_eq!(result, true);
-    }
-
-    #[test]
-    fn square_set_between_unoccupied_points_false_test() {
-        let origin = Square { x: 1, y: 1, piece: None };
-        let between = Square { x: 1, y: 2, piece: Some(Piece { player_number: 1, kind: PieceKind::Pawn })};
-        let gap = Square { x: 1, y: 3, piece: None };
-        let destination = Square { x: 1, y: 4, piece: None };
-        let beyond = Square { x: 1, y: 5, piece: None };
-        let squares = vec![origin, between, gap, destination, beyond];
-
-        let origin_point: (i8, i8) = (1, 1);
-        let destination_point: (i8, i8) = (1, 4);
-
-        let result = between_unoccupied_points(&squares, origin_point, destination_point);
-        assert_eq!(result, false);
-    }
-
-    #[test]
-    fn square_set_between_unoccupied_true_test() {
-        let origin = Square { x: 1, y: 1, piece: None };
-        let between = Square { x: 1, y: 2, piece: None };
-        let destination = Square { x: 1, y: 3, piece: None };
-        let beyond = Square { x: 1, y: 4, piece: None };
-        let squares = vec![origin, between, destination, beyond];
-
-        let result = between_unoccupied(&squares, &origin, &destination);
+        let result = between_unoccupied(&squares, origin_point, destination_point);
         assert_eq!(result, true);
     }
 
@@ -129,7 +77,10 @@ mod tests {
         let beyond = Square { x: 1, y: 5, piece: None };
         let squares = vec![origin, between, gap, destination, beyond];
 
-        let result = between_unoccupied(&squares, &origin, &destination);
+        let origin_point: (i8, i8) = (1, 1);
+        let destination_point: (i8, i8) = (1, 4);
+
+        let result = between_unoccupied(&squares, origin_point, destination_point);
         assert_eq!(result, false);
     }
 }

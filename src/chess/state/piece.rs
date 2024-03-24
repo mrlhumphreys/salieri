@@ -1,6 +1,5 @@
 use crate::chess::state::square::Square;
 use crate::chess::state::square_set::between_unoccupied;
-use crate::chess::state::square_set::between_unoccupied_points;
 use crate::chess::state::game_state::GameState;
 use crate::chess::state::castle_move::Side;
 use crate::chess::state::vector::orthogonal;
@@ -44,7 +43,7 @@ impl Piece {
                 game_state.squares.iter().filter(|to| {
                     orthogonal(from.x, from.y, to.x, to.y) &&
                         to.unoccupied_or_occupied_by_opponent(self.player_number) &&
-                        between_unoccupied(&game_state.squares, from, &to)
+                        between_unoccupied(&game_state.squares, (from.x, from.y), (to.x, to.y))
                 }).collect()
             },
             PieceKind::Knight => {
@@ -57,14 +56,14 @@ impl Piece {
                 game_state.squares.iter().filter(|to| {
                     diagonal(from.x, from.y, to.x, to.y) &&
                         to.unoccupied_or_occupied_by_opponent(self.player_number) &&
-                        between_unoccupied(&game_state.squares, from, &to)
+                        between_unoccupied(&game_state.squares, (from.x, from.y), (to.x, to.y))
                 }).collect()
             },
             PieceKind::Queen => {
                 game_state.squares.iter().filter(|to| {
                     orthogonal_or_diagonal(from.x, from.y, to.x, to.y) &&
                         to.unoccupied_or_occupied_by_opponent(self.player_number) &&
-                        between_unoccupied(&game_state.squares, from, &to)
+                        between_unoccupied(&game_state.squares, (from.x, from.y), (to.x, to.y))
                 }).collect()
             },
             PieceKind::King => {
@@ -115,11 +114,11 @@ impl Piece {
                 match (to.x, to.y) {
                     PLAYER_ONE_CASTLE_KING_SIDE => {
                         game_state.castle_moves.iter().any(|cm| cm.player_number == 1 && cm.side == Side::King) &&
-                            between_unoccupied_points(&game_state.squares, (from.x, from.y), PLAYER_ONE_KING_SIDE_ROOK)
+                            between_unoccupied(&game_state.squares, (from.x, from.y), PLAYER_ONE_KING_SIDE_ROOK)
                     },
                     PLAYER_ONE_CASTLE_QUEEN_SIDE => {
                         game_state.castle_moves.iter().any(|cm| cm.player_number == 1 && cm.side == Side::Queen) &&
-                            between_unoccupied_points(&game_state.squares, (from.x, from.y), PLAYER_ONE_QUEEN_SIDE_ROOK)
+                            between_unoccupied(&game_state.squares, (from.x, from.y), PLAYER_ONE_QUEEN_SIDE_ROOK)
                     },
                     _ => false
                 }
@@ -128,11 +127,11 @@ impl Piece {
                 match (to.x, to.y) {
                     PLAYER_TWO_CASTLE_KING_SIDE => {
                         game_state.castle_moves.iter().any(|cm| cm.player_number == 2 && cm.side == Side::King) &&
-                            between_unoccupied_points(&game_state.squares, (from.x, from.y), PLAYER_TWO_KING_SIDE_ROOK)
+                            between_unoccupied(&game_state.squares, (from.x, from.y), PLAYER_TWO_KING_SIDE_ROOK)
                     },
                     PLAYER_TWO_CASTLE_QUEEN_SIDE => {
                         game_state.castle_moves.iter().any(|cm| cm.player_number == 2 && cm.side == Side::Queen) &&
-                            between_unoccupied_points(&game_state.squares, (from.x, from.y), PLAYER_TWO_QUEEN_SIDE_ROOK)
+                            between_unoccupied(&game_state.squares, (from.x, from.y), PLAYER_TWO_QUEEN_SIDE_ROOK)
                     },
                     _ => false
                 }
@@ -150,14 +149,14 @@ impl Piece {
                 let move_capture_y = from.y + self.forwards_direction();
                 let move_double_y = from.y + 2*self.forwards_direction();
                 let r = self.range(from);
-                game_state.squares.iter().filter(|s| {
+                game_state.squares.iter().filter(|to| {
                     // Move
-                    (s.x == move_x && (r == 2 && s.y == move_double_y || s.y == move_capture_y) &&
-                     s.unoccupied() &&
-                     between_unoccupied(&game_state.squares, from, &s)
+                    (to.x == move_x && (r == 2 && to.y == move_double_y || to.y == move_capture_y) &&
+                     to.unoccupied() &&
+                     between_unoccupied(&game_state.squares, (from.x, from.y), (to.x, to.y))
                      ) ||
-                    ((s.x == capture_x_a || s.x == capture_x_b) && s.y == move_capture_y &&
-                     (s.occupied_by_opponent(self.player_number) || self.en_passant_condition(from, s, game_state)  )
+                    ((to.x == capture_x_a || to.x == capture_x_b) && to.y == move_capture_y &&
+                     (to.occupied_by_opponent(self.player_number) || self.en_passant_condition(from, to, game_state)  )
                      )
                 }).collect()
             },
@@ -166,19 +165,18 @@ impl Piece {
     }
 
     fn en_passant_condition(&self, from: &Square, to: &Square, game_state: &GameState) -> bool {
-        match game_state.en_passant_target {
-            Some(target) => {
-                if to.x == target.x && to.y == target.y {
-                    if let Some(capture_square) = game_state.squares.iter().find(|s| s.x == target.x && s.y == from.y) {
-                        capture_square.occupied_by_opponent(self.player_number)
-                    } else {
-                        false
-                    }
+        if let Some(target) = game_state.en_passant_target {
+            if to.x == target.x && to.y == target.y {
+                if let Some(capture_square) = game_state.squares.iter().find(|s| s.x == target.x && s.y == from.y) {
+                    capture_square.occupied_by_opponent(self.player_number)
                 } else {
                     false
                 }
-            },
-            None => false
+            } else {
+                false
+            }
+        } else {
+            false
         }
     }
 

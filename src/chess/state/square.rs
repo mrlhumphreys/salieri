@@ -35,13 +35,6 @@ impl Square {
        self.piece.is_none() 
     }
     
-    pub fn occupied_by_player(&self, player_number: i8) -> bool {
-        match &self.piece {
-            Some(p) => p.player_number == player_number,
-            None => false 
-        }
-    }
-
     pub fn occupied_by_opponent(&self, player_number: i8) -> bool {
         match &self.piece {
             Some(p) => p.player_number != player_number,
@@ -94,30 +87,6 @@ mod tests {
         assert_eq!(result, expected);
     }
 
-    #[test]
-    fn occupied_by_player_one_test() {
-        let square = Square { x: 1, y: 2, piece: Some(Piece { player_number: 1, kind: PieceKind::Pawn }) };        
-        let expected = true;
-        let result = square.occupied_by_player(1);
-        assert_eq!(result, expected);
-    }
-
-    #[test]
-    fn occupied_by_player_two_test() {
-        let square = Square { x: 1, y: 2, piece: Some(Piece { player_number: 2, kind: PieceKind::Pawn }) };        
-        let expected = false;
-        let result = square.occupied_by_player(1);
-        assert_eq!(result, expected);
-    }
-
-    #[test]
-    fn occupied_by_player_none_test() {
-        let square = Square { x: 1, y: 2, piece: None };        
-        let expected = false;
-        let result = square.occupied_by_player(1);
-        assert_eq!(result, expected);
-    }
-    
     #[test]
     fn occupied_by_opponent_one_test() {
         let square = Square { x: 1, y: 2, piece: Some(Piece { player_number: 1, kind: PieceKind::Pawn }) };        
