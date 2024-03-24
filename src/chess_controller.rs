@@ -18,7 +18,7 @@ pub fn minimax(game_data: &String) -> HttpResponse {
     };
 
     let minimax_depth: i8 = env::var("CHESS_MINIMAX_DEPTH")
-        .unwrap_or_else(|_| "3".to_string())
+        .unwrap_or_else(|_| "2".to_string())
         .parse()
         .expect("CHESS_MINIMAX_DEPTH must be a number");
 
@@ -155,7 +155,7 @@ mod tests {
 
          assert_eq!(result.status(), 200);
          match result.into_body().try_into_bytes() {
-            Ok(bytes) => assert_eq!(bytes, "a4\n"),
+            Ok(bytes) => assert_eq!(bytes, "e4\n"),
             Err(_) => assert!(false, "unexpected body")
          };
      }

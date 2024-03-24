@@ -34,7 +34,10 @@ pub fn recommended_move(game_state: &mut chess::state::game_state::GameState, de
 
                 let value = match evaluate(&mut new_game_state, depth, std::i32::MIN, std::i32::MAX, maximizing_player) {
                     Ok(v) => v,
-                    Err(_) => 0,
+                    Err(_) => {
+                        // TODO: pass error up instead of ignoring
+                        0
+                    }
                 };
 
                 match new_game_state.undo_move(mov) {
@@ -60,6 +63,7 @@ pub fn recommended_move(game_state: &mut chess::state::game_state::GameState, de
 
 pub fn evaluate(game_state: &mut chess::state::game_state::GameState, depth: i8, mut alpha: i32, mut beta: i32, maximizing_player: bool) -> Result<i32, &'static str> {
     let moves = game_state.possible_moves();
+
     if depth == 0 || moves.len() == 0 {
         return Ok(static_evaluation(game_state));
     }
@@ -194,7 +198,7 @@ mod tests {
         let mut game_state = chess::state::game_state::parse(&encoded).unwrap();
 
         match evaluate(&mut game_state, 2, std::i32::MIN, std::i32::MAX, false) {
-            Ok(result) => assert_eq!(result, -1051),
+            Ok(result) => assert_eq!(result, 0),
             Err(e) => assert!(false, "{}", e)
         }
     }
@@ -208,8 +212,8 @@ mod tests {
 
         match mov {
             Some(m) => {
-                assert_eq!(m.from, Point { x: 0, y: 6 });
-                assert_eq!(m.to, Point { x: 0, y: 5 });
+                assert_eq!(m.from, Point { x: 4, y: 6 });
+                assert_eq!(m.to, Point { x: 4, y: 4 });
                 assert_eq!(m.moving_piece_kind, PieceKind::Pawn);
                 assert_eq!(m.capture_piece_kind, None);
                 assert_eq!(m.promote_piece_kind, None);
