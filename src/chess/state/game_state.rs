@@ -36,6 +36,33 @@ impl Clone for GameState {
 }
 
 impl GameState {
+    pub fn game_over(&mut self) -> bool {
+        (self.in_checkmate(1) || self.in_stalemate(1)) ||
+            (self.in_checkmate(2) || self.in_stalemate(1))
+    }
+
+    pub fn winner(&mut self) -> Option<i8> {
+        if self.in_checkmate(1) {
+            Some(2)
+        } else if self.in_checkmate(2) {
+            Some(1)
+        } else {
+            None
+        }
+    }
+
+    pub fn in_checkmate(&mut self, player_number: i8) -> bool {
+        let in_check = self.in_check(player_number);
+        let no_moves = self.possible_moves_for_player(player_number).is_empty();
+        in_check && no_moves
+    }
+
+    pub fn in_stalemate(&mut self, player_number: i8) -> bool {
+        let in_check = self.in_check(player_number);
+        let no_moves = self.possible_moves_for_player(player_number).is_empty();
+        !in_check && no_moves
+    }
+
     pub fn in_check(&self, player_number: i8) -> bool {
         let other_player_number = match player_number {
             1 => 2,
@@ -60,12 +87,6 @@ impl GameState {
         }
 
         check
-    }
-
-    pub fn in_checkmate(&mut self, player_number: i8) -> bool {
-        let in_check = self.in_check(player_number);
-        let no_moves = self.possible_moves_for_player(player_number).is_empty();
-        in_check && no_moves
     }
 
     pub fn possible_moves(&mut self) -> Vec<Move> {
@@ -590,6 +611,78 @@ mod tests {
     use crate::chess::state::castle_move::Side;
 
     #[test]
+    fn game_over_test() {
+        let encoded = String::from("4k2R/7R/8/8/8/8/8/4K3 b - - 0 1");
+        let mut state = parse(&encoded).unwrap();
+        let result = state.game_over();
+
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    fn not_game_over_test() {
+        let encoded = String::from("4k3/7R/8/8/8/8/8/4K3 b - - 0 1");
+        let mut state = parse(&encoded).unwrap();
+        let result = state.game_over();
+
+        assert_eq!(result, false);
+    }
+
+    #[test]
+    fn winner_test() {
+        let encoded = String::from("4k2R/7R/8/8/8/8/8/4K3 b - - 0 1");
+        let mut state = parse(&encoded).unwrap();
+        let result = state.winner();
+
+        assert_eq!(result, Some(1));
+    }
+
+    #[test]
+    fn not_winner_test() {
+        let encoded = String::from("4k3/7R/8/8/8/8/8/4K3 b - - 0 1");
+        let mut state = parse(&encoded).unwrap();
+        let result = state.winner();
+
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn in_checkmate_test() {
+        let encoded = String::from("4k2R/7R/8/8/8/8/8/4K3 b - - 0 1");
+        let mut state = parse(&encoded).unwrap();
+        let result = state.in_checkmate(2);
+
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    fn not_in_checkmate_test() {
+        let encoded = String::from("4k3/7R/8/8/8/8/8/4K3 b - - 0 1");
+        let mut state = parse(&encoded).unwrap();
+        let result = state.in_checkmate(2);
+
+        assert_eq!(result, false);
+    }
+
+    #[test]
+    fn in_stalemate_test() {
+        let encoded = String::from("k7/2Q5/8/8/8/8/8/4K3 b - - 0 1");
+        let mut state = parse(&encoded).unwrap();
+        let result = state.in_stalemate(2);
+
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    fn not_in_stalemate_test() {
+        let encoded = String::from("k7/2R5/8/8/8/8/8/4K3 b - - 0 1");
+        let mut state = parse(&encoded).unwrap();
+        let result = state.in_stalemate(2);
+
+        assert_eq!(result, false);
+    }
+
+    #[test]
     fn in_check_test() {
         let encoded = String::from("4k3/8/8/8/8/8/8/R3K2r w Q - 0 1");
         let state = parse(&encoded).unwrap();
@@ -603,24 +696,6 @@ mod tests {
         let encoded = String::from("4k2r/8/8/8/8/8/8/R3K3 w Qq - 0 1");
         let state = parse(&encoded).unwrap();
         let result = state.in_check(1);
-
-        assert_eq!(result, false);
-    }
-
-    #[test]
-    fn in_checkmate_test() {
-        let encoded = String::from("4k2R/7R/8/8/8/8/8/4K3 b - - 0 1");
-        let mut state = parse(&encoded).unwrap();
-        let result = state.in_checkmate(2);
-
-        assert_eq!(result, true);
-    }
-
-    #[test]
-    fn not_in_chemkate_test() {
-        let encoded = String::from("4k3/7R/8/8/8/8/8/4K3 b - - 0 1");
-        let mut state = parse(&encoded).unwrap();
-        let result = state.in_checkmate(2);
 
         assert_eq!(result, false);
     }
