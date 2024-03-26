@@ -3,19 +3,19 @@ mod node;
 use std::cmp::Ordering;
 
 use rand::prelude::*;
-use crate::checkers::state::game_state::GameState;
-use crate::checkers::state::mov::Move;
-use crate::checkers::mcts::node::Node;
+use crate::chess::state::game_state::GameState;
+use crate::chess::state::mov::Move;
+use crate::chess::mcts::node::Node;
 
 const EXPLORATION: f32 = 1.4142135623730950; // square root 2
 
-pub fn recommended_move(game_state: GameState, simulation_count: i16, max_simulation_depth: i16) -> Result<Move, &'static str> {
+pub fn recommended_move(game_state: &mut GameState, simulation_count: i16, max_simulation_depth: i16) -> Result<Move, &'static str> {
     let moves = game_state.possible_moves();
     match moves.len() {
         0 => Err("No moves possible"),
         1 => match moves.first() {
             Some(s) => Ok(s.clone()),
-            None => Err("No moves possible") 
+            None => Err("No moves possible")
         },
         _ => {
             let root_node = Node {
@@ -23,7 +23,7 @@ pub fn recommended_move(game_state: GameState, simulation_count: i16, max_simula
                 parent_id: None,
                 child_ids: Vec::new(),
                 mov: None,
-                state: game_state,
+                state: game_state.clone(),
                 wins: 0,
                 simulations: 0
             };
@@ -32,7 +32,7 @@ pub fn recommended_move(game_state: GameState, simulation_count: i16, max_simula
 
             for _i in 1..simulation_count {
                 // 1) selection
-                let selection_result = selection(&nodes); 
+                let selection_result = selection(&nodes);
                 match selection_result {
                     Ok(selected_node_id) => {
 
@@ -53,7 +53,7 @@ pub fn recommended_move(game_state: GameState, simulation_count: i16, max_simula
                                     Err(e) => return Err(e)
                                 }
                             },
-                            Err(e) => return Err(e) 
+                            Err(e) => return Err(e)
                         }
 
                     },
@@ -76,7 +76,7 @@ pub fn recommended_move(game_state: GameState, simulation_count: i16, max_simula
 }
 
 fn selection(nodes: &Vec<Node>) -> Result<i32, &'static str> {
-    let leaf_nodes = nodes.iter().filter(|n| n.child_ids.len() == 0 ); 
+    let leaf_nodes = nodes.iter().filter(|n| n.child_ids.len() == 0 );
     let node_scores = leaf_nodes.map(|n| {
         match nodes.iter().find(|p| Some(p.id) == n.parent_id) {
             Some(parent) => {
@@ -87,7 +87,7 @@ fn selection(nodes: &Vec<Node>) -> Result<i32, &'static str> {
     });
 
     let max_node_score = node_scores.max_by(|a,b| {
-        match (a.1).partial_cmp(&b.1) { 
+        match (a.1).partial_cmp(&b.1) {
             Some(c) => c,
             None => Ordering::Equal
         }
@@ -95,7 +95,7 @@ fn selection(nodes: &Vec<Node>) -> Result<i32, &'static str> {
 
     match max_node_score {
         Some(ns) => Ok(ns.0),
-        None => Err("mcts::selection - No nodes") 
+        None => Err("mcts::selection - No nodes")
     }
 }
 
@@ -159,7 +159,7 @@ fn simulate(nodes: &Vec<Node>, id: i32, max_simulation_depth: i16) -> Result<boo
                         let selected_move = &moves[0];
                         match current_game_state.perform_move(&selected_move) {
                             Ok(_) => (),
-                            Err(_) => end_game = true 
+                            Err(_) => end_game = true
                         }
                     },
                     _ => {
@@ -168,7 +168,7 @@ fn simulate(nodes: &Vec<Node>, id: i32, max_simulation_depth: i16) -> Result<boo
                         let selected_move = &moves[0];
                         match current_game_state.perform_move(&selected_move) {
                             Ok(_) => (),
-                            Err(_) => end_game = true 
+                            Err(_) => end_game = true
                         }
                     }
                 }
@@ -181,7 +181,7 @@ fn simulate(nodes: &Vec<Node>, id: i32, max_simulation_depth: i16) -> Result<boo
                     None => simulation_depth = simulation_depth + 1
                 }
             }
-            
+
             match winner {
                 Some(w) => Ok(w == node.state.current_player_number),
                 None => Ok(false)
@@ -197,7 +197,7 @@ fn backpropagation(nodes: &mut Vec<Node>, selected_node_id: i32, result: bool) -
             node.add_result(result);
             match node.parent_id {
                 Some(p_id) => backpropagation(nodes, p_id, result),
-                None => Ok(()) 
+                None => Ok(())
             }
         },
         None => Err("Node not found")
@@ -209,26 +209,35 @@ fn upper_confidence_bound(parent_node: &Node, node: &Node) -> f32 {
         f32::INFINITY
     } else {
         ( node.wins as f32 / node.simulations as f32 ) + EXPLORATION * ((parent_node.simulations as f32).ln() / node.simulations as f32).sqrt()
-    } 
+    }
 }
 
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::checkers::state::mov::MoveKind;
-    use crate::checkers::state::game_state;
+    use crate::chess::state::game_state;
+    use crate::chess::state::piece::PieceKind;
+    use crate::chess::state::point::Point;
 
     #[test]
     fn recommended_move_test() {
-        let game_state = game_state::parse(&String::from("W:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,12,15")).unwrap();
+        let mut game_state = game_state::parse(&String::from("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")).unwrap();
         let simulation_count: i16 = 10;
         let max_simulation_depth: i16 = 30;
 
-        match recommended_move(game_state, simulation_count, max_simulation_depth) {
+        match recommended_move(&mut game_state, simulation_count, max_simulation_depth) {
             Ok(mov) => {
-                assert_eq!(24, mov.from);
-                assert_eq!(vec![20], mov.to);
+                assert_eq!(6, mov.from.x);
+                assert_eq!(7, mov.from.y);
+                assert_eq!(7, mov.to.x);
+                assert_eq!(5, mov.to.y);
+                assert_eq!(PieceKind::Knight, mov.moving_piece_kind);
+                assert_eq!(None, mov.capture_piece_kind);
+                assert_eq!(None, mov.promote_piece_kind);
+                assert_eq!(None, mov.en_passant_point);
+                assert_eq!(None, mov.en_passant_target);
+                assert_eq!(None, mov.castle_move);
             },
             Err(e) => assert!(false, "{}", e)
         }
@@ -236,11 +245,16 @@ mod tests {
 
     #[test]
     fn selection_test() {
-        let child_node_a_state = game_state::parse(&String::from("W:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,12,15")).unwrap();
+        let child_node_a_state = game_state::parse(&String::from("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1")).unwrap();
         let mov_a = Move {
-            kind: MoveKind::Mov,
-            from: 10,
-            to: vec![15]
+            from: Point { x: 4, y: 6 },
+            to: Point { x: 4, y: 4 },
+            moving_piece_kind: PieceKind::Pawn,
+            capture_piece_kind: None,
+            promote_piece_kind: None,
+            en_passant_point: None,
+            en_passant_target: None,
+            castle_move: None
         };
         let child_node_a = Node {
             id: 2,
@@ -252,11 +266,16 @@ mod tests {
             simulations: 10
         };
 
-        let child_node_b_state = game_state::parse(&String::from("W:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,12,16")).unwrap();
+        let child_node_b_state = game_state::parse(&String::from("rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq d3 0 1")).unwrap();
         let mov_b = Move {
-            kind: MoveKind::Mov,
-            from: 11,
-            to: vec![16]
+            from: Point { x: 3, y: 6 },
+            to: Point { x: 3, y: 4 },
+            moving_piece_kind: PieceKind::Pawn,
+            capture_piece_kind: None,
+            promote_piece_kind: None,
+            en_passant_point: None,
+            en_passant_target: None,
+            castle_move: None
         };
         let child_node_b = Node {
             id: 3,
@@ -268,7 +287,7 @@ mod tests {
             simulations: 30
         };
 
-        let parent_node_state = game_state::parse(&String::from("B:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,11,12")).unwrap();
+        let parent_node_state = game_state::parse(&String::from("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")).unwrap();
 
         let parent_node = Node {
             id: 1,
@@ -291,11 +310,16 @@ mod tests {
 
     #[test]
     fn upper_confidence_bound_test() {
-        let node_state = game_state::parse(&String::from("W:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,12,15")).unwrap();
+        let node_state = game_state::parse(&String::from("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1")).unwrap();
         let mov = Move {
-            kind: MoveKind::Mov,
-            from: 10,
-            to: vec![15]
+            from: Point { x: 4, y: 6 },
+            to: Point { x: 4, y: 4 },
+            moving_piece_kind: PieceKind::Pawn,
+            capture_piece_kind: None,
+            promote_piece_kind: None,
+            en_passant_point: None,
+            en_passant_target: None,
+            castle_move: None
         };
         let node = Node {
             id: 2,
@@ -307,8 +331,8 @@ mod tests {
             simulations: 21
         };
 
-        let parent_node_state = game_state::parse(&String::from("B:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,11,12")).unwrap();
-                                                                   
+        let parent_node_state = game_state::parse(&String::from("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")).unwrap();
+
         let parent_node = Node {
             id: 1,
             parent_id: None,
@@ -318,14 +342,14 @@ mod tests {
             wins: 7,
             simulations: 10
         };
-        
+
         let result = upper_confidence_bound(&parent_node, &node);
         assert_eq!(result, 0.99209774);
     }
 
     #[test]
     fn expansion_test() {
-        let node_state = game_state::parse(&String::from("B:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,11,12")).unwrap();
+        let node_state = game_state::parse(&String::from("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")).unwrap();
         let node = Node {
             id: 1,
             parent_id: None,
@@ -339,7 +363,7 @@ mod tests {
         let mut nodes = vec![node];
 
         match expansion(&mut nodes, 1) {
-            Ok(_) => assert_eq!(8, nodes.len()),
+            Ok(_) => assert_eq!(21, nodes.len()),
             Err(e) => assert!(false, "{}", e)
         }
     }
@@ -347,7 +371,7 @@ mod tests {
 
     #[test]
     fn simulate_test() {
-        let node_state = game_state::parse(&String::from("B:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,11,12")).unwrap();
+        let node_state = game_state::parse(&String::from("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")).unwrap();
         let node = Node {
             id: 1,
             parent_id: None,
@@ -367,11 +391,16 @@ mod tests {
 
     #[test]
     fn backpropagation_test() {
-        let node_state = game_state::parse(&String::from("W:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,12,15")).unwrap();
+        let node_state = game_state::parse(&String::from("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1")).unwrap();
         let mov = Move {
-            kind: MoveKind::Mov,
-            from: 10,
-            to: vec![15]
+            from: Point { x: 4, y: 6 },
+            to: Point { x: 4, y: 4 },
+            moving_piece_kind: PieceKind::Pawn,
+            capture_piece_kind: None,
+            promote_piece_kind: None,
+            en_passant_point: None,
+            en_passant_target: None,
+            castle_move: None
         };
         let node = Node {
             id: 2,
@@ -383,8 +412,8 @@ mod tests {
             simulations: 21
         };
 
-        let parent_node_state = game_state::parse(&String::from("B:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,11,12")).unwrap();
-                                                                   
+        let parent_node_state = game_state::parse(&String::from("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1")).unwrap();
+
         let parent_node = Node {
             id: 1,
             parent_id: None,

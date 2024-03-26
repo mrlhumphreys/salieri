@@ -26,41 +26,44 @@ pub fn minimax(game_data: &String) -> HttpResponse {
 
     match recommended_move {
         Some(m) => {
-            let external_move = build_external_move(game_state, m);
+            let external_move = build_external_move(&game_state, m);
             HttpResponse::Ok().body(format!("{}\n", external_move.format()))
         },
         None => HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n")
     }
 }
 
-// pub fn mcts(game_data: &String) -> HttpResponse {
-//     let game_state = match chess::state::game_state::parse(game_data) {
-//         Ok(gs) => gs,
-//         Err(_) => return HttpResponse::NotFound().body("404 Not Found\n"),
-//     };
-//
-//     let mcts_simulation_count: i16 = env::var("CHESS_MCTS_SIMULATION_COUNT")
-//         .unwrap_or_else(|_| "120".to_string())
-//         .parse()
-//         .expect("CHESS_MCTS_SIMULATION_COUNT must be a number");
-//
-//     let mcts_simulation_depth: i16 = env::var("CHESS_MCTS_SIMULATION_DEPTH")
-//         .unwrap_or_else(|_| "40".to_string())
-//         .parse()
-//         .expect("CHESS_MCTS_SIMULATION_DEPTH must be a number");
-//
-//     let recommended_move = chess::mcts::recommended_move(game_state, mcts_simulation_count, mcts_simulation_depth);
-//
-//     match recommended_move {
-//         Ok(m) => HttpResponse::Ok().body(format!("{}\n", m.format())),
-//         Err(e) => {
-//             println!("{}", e);
-//             HttpResponse::NotFound().body("404 Not Found\n")
-//         }
-//     }
-// }
+pub fn mcts(game_data: &String) -> HttpResponse {
+    let mut game_state = match chess::state::game_state::parse(game_data) {
+        Ok(gs) => gs,
+        Err(_) => return HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n"),
+    };
 
-fn build_external_move(game_state: chess::state::game_state::GameState, mov: chess::state::mov::Move) -> chess::state::external_mov::ExternalMove {
+    let mcts_simulation_count: i16 = env::var("CHESS_MCTS_SIMULATION_COUNT")
+        .unwrap_or_else(|_| "120".to_string())
+        .parse()
+        .expect("CHESS_MCTS_SIMULATION_COUNT must be a number");
+
+    let mcts_simulation_depth: i16 = env::var("CHESS_MCTS_SIMULATION_DEPTH")
+        .unwrap_or_else(|_| "60".to_string())
+        .parse()
+        .expect("CHESS_MCTS_SIMULATION_DEPTH must be a number");
+
+    let recommended_move = chess::mcts::recommended_move(&mut game_state, mcts_simulation_count, mcts_simulation_depth);
+
+    match recommended_move {
+        Ok(m) => {
+            let external_move = build_external_move(&game_state, m);
+            HttpResponse::Ok().body(format!("{}\n", external_move.format()))
+        },
+        Err(e) => {
+            println!("{}", e);
+            HttpResponse::NotFound().body("404 Not Found\n")
+        }
+    }
+}
+
+fn build_external_move(game_state: &chess::state::game_state::GameState, mov: chess::state::mov::Move) -> chess::state::external_mov::ExternalMove {
     let mut new_state = game_state.clone();
     let _result = new_state.perform_move(&mov);
 
@@ -222,7 +225,7 @@ mod tests {
             en_passant_target: None,
             castle_move: None
         };
-        let result = build_external_move(state, mov);
+        let result = build_external_move(&state, mov);
 
         assert_eq!(result.file_disambiguation, true);
      }
@@ -242,7 +245,7 @@ mod tests {
             castle_move: None
         };
 
-        let result = build_external_move(state, mov);
+        let result = build_external_move(&state, mov);
 
         assert_eq!(result.rank_disambiguation, true);
      }
@@ -262,7 +265,7 @@ mod tests {
             castle_move: None
         };
 
-        let result = build_external_move(state, mov);
+        let result = build_external_move(&state, mov);
 
         assert_eq!(result.file_disambiguation, true);
      }
@@ -282,7 +285,7 @@ mod tests {
             castle_move: None
         };
 
-        let result = build_external_move(state, mov);
+        let result = build_external_move(&state, mov);
 
         assert_eq!(result.file_disambiguation, true);
         assert_eq!(result.rank_disambiguation, true);
@@ -303,7 +306,7 @@ mod tests {
             castle_move: None
         };
 
-        let result = build_external_move(state, mov);
+        let result = build_external_move(&state, mov);
         assert_eq!(result.in_check, true);
      }
 
@@ -322,7 +325,7 @@ mod tests {
             castle_move: None
         };
 
-        let result = build_external_move(state, mov);
+        let result = build_external_move(&state, mov);
         assert_eq!(result.in_checkmate, true);
      }
 }

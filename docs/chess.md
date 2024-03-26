@@ -2,21 +2,33 @@
 
 ## API response codes
 
-* 200 - Recomended move was able to be generated using the algorithm 
+* 200 - Recomended move was able to be generated using the algorithm
 * 404 - No move was able to be generated using the algorithm. Possible causes include invalid game state or no move found in lookup (e.g. openings db)
 
-## Chess Api Endpoints 
+## Chess Api Endpoints
 
-### Chess Default Algorithm 
+### Chess Default Algorithm - Openings DB with Minimax
 
 ```
   curl -X POST http://localhost:7878/api/v0/chess -d "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 ```
 
-### Chess Algorithm - Minimax 
+### Chess Algorithm - Openings DB
+
+```
+  curl -X POST http://localhost:7878/api/v0/chess/openings_db -d "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+```
+
+### Chess Algorithm - Minimax
 
 ```
   curl -X POST http://localhost:7878/api/v0/chess/minimax -d "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+```
+
+### Chess Algorithm - Monte-Carlo Tree Search
+
+```
+  curl -X POST http://localhost:7878/api/v0/chess/mcts -d "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 ```
 
 ## Chess State Request Body Format

@@ -2,10 +2,10 @@
 
 ## API response codes
 
-* 200 - Recomended move was able to be generated using the algorithm 
+* 200 - Recomended move was able to be generated using the algorithm
 * 404 - No move was able to be generated using the algorithm. Possible causes include invalid game state or no move found in lookup (e.g. openings db)
 
-## Checkers Api Endpoints 
+## Checkers Api Endpoints
 
 ### Checkers Default Algorithm - Openings DB with Monte Carlo Tree Search
 
@@ -13,56 +13,29 @@
   curl -x POST http://localhost:7878/api/v0/checkers -d "bbbbbbbbb-bb--b-----wwwwwwwwwwwww"
 ```
 
-### Checkers Algorithm - Openings DB 
+### Checkers Algorithm - Openings DB
 
 ```
-  curl -x POST http://localhost:7878/api/v0/checkers/openings_db -d "bbbbbbbbb-bb--b-----wwwwwwwwwwwww"
+  curl -x POST http://localhost:7878/api/v0/checkers/openings_db -d "W:W16,19,20,21,22,27,28,29,30,31,32:B1,2,3,4,5,6,7,9,11,12"
 ```
 
-### Checkers Algorithm - Minimax 
+### Checkers Algorithm - Minimax
 
 ```
-  curl -x POST http://localhost:7878/api/v0/checkers/minimax -d "bbbbbbbbb-bb--b-----wwwwwwwwwwwww"
+  curl -x POST http://localhost:7878/api/v0/checkers/minimax -d "W:W16,19,20,21,22,27,28,29,30,31,32:B1,2,3,4,5,6,7,9,11,12"
 ```
 
-### Checkers Algorithm - Monte-Carlo Tree Search 
+### Checkers Algorithm - Monte-Carlo Tree Search
 
 ```
-  curl -x POST http://localhost:7878/api/v0/checkers/mcts -d "bbbbbbbbb-bb--b-----wwwwwwwwwwwww"
+  curl -x POST http://localhost:7878/api/v0/checkers/mcts -d "W:W16,19,20,21,22,27,28,29,30,31,32:B1,2,3,4,5,6,7,9,11,12"
 ```
 
 ## Checkers State Argument Format
 
-Checkers State is represented with 33 characters. Example:
-
-```
-  bbbbbbbbb-bb--b-----wwwwwwwwwwwww
-```
-
-The first 32 characters represent the 32 squares on the board. Each character represents the state of the square:
-
-* `w` - White Piece
-* `b` - Black Piece
-* `-` - Empty Square
-* `W` - White King
-* `B` - Black King
-
-The last (33rd) character represents the player who's turn it is. The recommended move returned is for that player.
-
-* `w`
-* `b`
+The state is represented in FEN format. See the FEN tag under [Portable Draughts Notation](https://en.wikipedia.org/wiki/Portable_Draughts_Notation#Tag_Pairs)
 
 ## Checkers Move Response Format
 
-The response is in standard checkers notation:
-
-```
-23-19
-```
-
-With each number representing a square on the board. The first being the origin and the subsequent ones, the destinations.
-
-Moves are represented with dashes (-) between the numbers. There will only be two in this case
-
-Jumps are represented with crosses (x) between the numbers. There can be more than two in this case.
+The response is in standard checkers notation. See the Movetext section in [Portable Draughts Notation](https://en.wikipedia.org/wiki/Portable_Draughts_Notation#Movetext)
 
