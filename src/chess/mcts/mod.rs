@@ -32,27 +32,15 @@ pub fn recommended_move(game_state: &mut GameState, simulation_count: i16, max_s
 
             for _i in 1..simulation_count {
                 // 1) selection
-                let selection_result = selection(&nodes);
-                match selection_result {
+                match selection(&nodes) {
                     Ok(selected_node_id) => {
-
                         // 2) expansion
-                        let expansion_result = expansion(&mut nodes, selected_node_id);
-                        match expansion_result {
-                            Ok(_) => (),
-                            Err(e) => return Err(e)
-                        }
+                        expansion(&mut nodes, selected_node_id)?;
 
                         // 3) simulation ? pick one child nodes of previously expanded?
-                        let simulation_result = simulate(&nodes, selected_node_id, max_simulation_depth);
-                        // 4) backpropagation
-                        match simulation_result {
-                            Ok(result) => {
-                                match backpropagation(&mut nodes, selected_node_id, result) {
-                                    Ok(_) => (),
-                                    Err(e) => return Err(e)
-                                }
-                            },
+                        match simulate(&nodes, selected_node_id, max_simulation_depth) {
+                            // 4) backpropagation
+                            Ok(result) => backpropagation(&mut nodes, selected_node_id, result)?,
                             Err(e) => return Err(e)
                         }
 
@@ -62,14 +50,13 @@ pub fn recommended_move(game_state: &mut GameState, simulation_count: i16, max_s
             };
 
             let best_node = nodes.iter().filter(|n| n.parent_id == Some(1)).max_by(|a,b| a.wins.cmp(&b.wins));
-            match best_node {
-                Some(n) => {
-                    match n.mov.clone() {
-                        Some(m) => Ok(m),
-                        None => Err("No best move")
-                    }
-                },
-                None => Err("No best node")
+            if let Some(n) = best_node {
+                match n.mov.clone() {
+                    Some(m) => Ok(m),
+                    None => Err("No best move")
+                }
+            } else {
+                Err("No best node")
             }
         }
     }
@@ -79,9 +66,7 @@ fn selection(nodes: &Vec<Node>) -> Result<i32, &'static str> {
     let leaf_nodes = nodes.iter().filter(|n| n.child_ids.len() == 0 );
     let node_scores = leaf_nodes.map(|n| {
         match nodes.iter().find(|p| Some(p.id) == n.parent_id) {
-            Some(parent) => {
-                (n.id, upper_confidence_bound(parent, n))
-            },
+            Some(parent) => (n.id, upper_confidence_bound(parent, n)),
             None => (n.id, 0.0)
         }
     });
@@ -105,102 +90,94 @@ fn expansion(nodes: &mut Vec<Node>, id: i32) -> Result<(), &'static str> {
        None => 1
    };
 
-   match nodes.iter_mut().find(|n| n.id == id) {
-       Some(node) => {
-           match node.leaf() {
-                true => {
-                    let mut child_nodes: Vec<Node> = Vec::new();
-                    for mov in node.state.possible_moves() {
-                        counter_id = counter_id + 1;
-                        let mut new_game_state = node.state.clone();
-                        match new_game_state.perform_move(&mov) {
-                            Ok(_) => (),
-                            Err(e) => return Err(e)
-                        };
-                        let child_node = Node {
-                            id: counter_id,
-                            parent_id: Some(node.id),
-                            child_ids: Vec::new(),
-                            mov: Some(mov),
-                            state: new_game_state,
-                            wins: 0,
-                            simulations: 0
-                        };
-                        child_nodes.push(child_node);
-                    }
-                    node.add_child_ids(child_nodes.iter().map(|n| n.id).collect());
-                    nodes.extend(child_nodes);
-                    Ok(())
-                },
-                false => Err("mcts::expansion - Node already has child nodes.")
-           }
-       },
-       None => Err("mcts::expansion - Can't find node")
-   }
+   if let Some(node) = nodes.iter_mut().find(|n| n.id == id) {
+       if node.leaf() {
+            let mut child_nodes: Vec<Node> = Vec::new();
+            for mov in node.state.possible_moves() {
+                counter_id = counter_id + 1;
+                let mut new_game_state = node.state.clone();
+                new_game_state.perform_move(&mov)?;
+                let child_node = Node {
+                    id: counter_id,
+                    parent_id: Some(node.id),
+                    child_ids: Vec::new(),
+                    mov: Some(mov),
+                    state: new_game_state,
+                    wins: 0,
+                    simulations: 0
+                };
+                child_nodes.push(child_node);
+            }
+            node.add_child_ids(child_nodes.iter().map(|n| n.id).collect());
+            nodes.extend(child_nodes);
+            Ok(())
+        } else {
+            Err("mcts::expansion - Node already has child nodes.")
+        }
+    } else {
+        Err("mcts::expansion - Can't find node")
+    }
 }
 
 fn simulate(nodes: &Vec<Node>, id: i32, max_simulation_depth: i16) -> Result<bool, &'static str> {
-    match nodes.iter().find(|n| n.id == id) {
-        Some(node) => {
-            let mut end_game = false;
-            let mut winner: Option<i8> = None;
-            let mut simulation_depth: i16 = 0;
-            let mut current_game_state = node.state.clone();
+    if let Some(node) = nodes.iter().find(|n| n.id == id) {
+        let mut end_game = false;
+        let mut winner: Option<i8> = None;
+        let mut simulation_depth: i16 = 0;
+        let mut current_game_state = node.state.clone();
 
-            while !end_game && simulation_depth <= max_simulation_depth {
-                let mut moves = current_game_state.possible_moves();
+        while !end_game && simulation_depth <= max_simulation_depth {
+            let mut moves = current_game_state.possible_moves();
 
-                match moves.len() {
-                    0 => {
-                        end_game = true;
-                        winner = current_game_state.winner();
-                    },
-                    1 => {
-                        let selected_move = &moves[0];
-                        match current_game_state.perform_move(&selected_move) {
-                            Ok(_) => (),
-                            Err(_) => end_game = true
-                        }
-                    },
-                    _ => {
-                        let mut rng = rand::thread_rng();
-                        moves.shuffle(&mut rng);
-                        let selected_move = &moves[0];
-                        match current_game_state.perform_move(&selected_move) {
-                            Ok(_) => (),
-                            Err(_) => end_game = true
-                        }
+            match moves.len() {
+                0 => {
+                    end_game = true;
+                    winner = current_game_state.winner();
+                },
+                1 => {
+                    let selected_move = &moves[0];
+                    match current_game_state.perform_move(&selected_move) {
+                        Ok(_) => (),
+                        Err(_) => end_game = true
+                    }
+                },
+                _ => {
+                    let mut rng = rand::thread_rng();
+                    moves.shuffle(&mut rng);
+                    let selected_move = &moves[0];
+                    match current_game_state.perform_move(&selected_move) {
+                        Ok(_) => (),
+                        Err(_) => end_game = true
                     }
                 }
-
-                match current_game_state.winner() {
-                    Some(w) => {
-                        end_game = true;
-                        winner = Some(w);
-                    },
-                    None => simulation_depth = simulation_depth + 1
-                }
             }
 
-            match winner {
-                Some(w) => Ok(w == node.state.current_player_number),
-                None => Ok(false)
+            if let Some(w) = current_game_state.winner() {
+                end_game = true;
+                winner = Some(w);
+            } else {
+                simulation_depth = simulation_depth + 1;
             }
-        },
-        None => Err("Node not found")
+        }
+
+        match winner {
+            Some(w) => Ok(w == node.state.current_player_number),
+            None => Ok(false)
+        }
+    } else {
+        Err("Node not found")
     }
 }
 
 fn backpropagation(nodes: &mut Vec<Node>, selected_node_id: i32, result: bool) -> Result<(), &'static str> {
-    match nodes.iter_mut().find(|n| n.id == selected_node_id) {
-        Some(node) => {
-            node.add_result(result);
-            match node.parent_id {
-                Some(p_id) => backpropagation(nodes, p_id, result),
-                None => Ok(())
-            }
-        },
-        None => Err("Node not found")
+    if let Some(node) = nodes.iter_mut().find(|n| n.id == selected_node_id) {
+        node.add_result(result);
+        match node.parent_id {
+            Some(p_id) => backpropagation(nodes, p_id, result),
+            None => Ok(())
+        }
+    } else {
+        Err("Node not found")
     }
 }
 
