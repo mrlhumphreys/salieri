@@ -1,14 +1,8 @@
 use std::cmp;
 use std::convert::TryFrom;
-use crate::chess;
+use crate::chess::state::square::Square;
 use crate::chess::state::piece::PieceKind;
-
-const CENTER_SQUARE_COORDINATES: [[i8; 2]; 4] = [
-    [3,3],
-    [3,4],
-    [4,3],
-    [4,4]
-];
+use crate::chess;
 
 pub fn recommended_move(game_state: &mut chess::state::game_state::GameState, depth: i8) -> Option<chess::state::mov::Move> {
     let mut new_game_state = game_state.clone();
@@ -134,26 +128,24 @@ pub fn static_evaluation(game_state: &mut chess::state::game_state::GameState) -
     let player_two_pieces_count = player_pieces_count(game_state, 2);
     let pieces_count_value = u_to_i32(player_one_pieces_count) - u_to_i32(player_two_pieces_count);
 
-    let player_one_center_squares_count = center_squares_count(game_state, 1);
-    let player_two_center_squares_count = center_squares_count(game_state, 2);
-    let center_squares_count_value = u_to_i32(player_one_center_squares_count) - u_to_i32(player_two_center_squares_count);
+    let player_one_double_pawn_count = player_double_pawns_count(game_state, 1);
+    let player_two_double_pawn_count = player_double_pawns_count(game_state, 2);
+    let double_pawn_count_value = u_to_i32(player_one_double_pawn_count) - u_to_i32(player_two_double_pawn_count);
+
+    let player_one_blocked_pawn_count = player_blocked_pawns_count(game_state, 1);
+    let player_two_blocked_pawn_count = player_blocked_pawns_count(game_state, 2);
+    let blocked_pawn_count_value = u_to_i32(player_one_blocked_pawn_count) - u_to_i32(player_two_blocked_pawn_count);
+
+    let player_one_isolated_pawn_count = player_isolated_pawns_count(game_state, 1);
+    let player_two_isolated_pawn_count = player_isolated_pawns_count(game_state, 2);
+    let isolated_pawn_count_value = u_to_i32(player_one_isolated_pawn_count) - u_to_i32(player_two_isolated_pawn_count);
 
     let player_one_possible_moves_count = game_state.possible_moves_for_player(1).len();
     let player_two_possible_moves_count = game_state.possible_moves_for_player(2).len();
     let possible_moves_value = u_to_i32(player_one_possible_moves_count) - u_to_i32(player_two_possible_moves_count);
 
-    2*pieces_count_value + 1*center_squares_count_value + 4*possible_moves_value
-}
-
-fn center_squares_count(game_state: &chess::state::game_state::GameState, player_number: i8) -> usize {
-    game_state.squares.iter().filter(|s| {
-        match &s.piece {
-            Some(p) => {
-                p.player_number == player_number && CENTER_SQUARE_COORDINATES.iter().any(|c| s.x == c[0] && s.y == c[1] )
-            },
-            None => false
-        }
-    }).count()
+    // double, blocked, isolated counts are reverse and must be subtracted
+    10*pieces_count_value - 5*double_pawn_count_value - 5*blocked_pawn_count_value -5*isolated_pawn_count_value + 1*possible_moves_value
 }
 
 // p: 1, n: 3, b: 3, r: 5, q: 9, k: 200
@@ -178,6 +170,70 @@ fn player_pieces_count(game_state: &chess::state::game_state::GameState, player_
             None => 0
         }
     }).sum()
+}
+
+fn player_double_pawns_count(game_state: &chess::state::game_state::GameState, player_number: i8) -> usize {
+    let mut count = 0;
+    for x in 0..8 {
+        let number_of_pawns = game_state.squares.iter().filter(|s| {
+            if let Some(p) = s.piece {
+                p.kind == PieceKind::Pawn && p.player_number == player_number && s.x == x
+            } else {
+                false
+            }
+        }).collect::<Vec<&Square>>().len();
+        if number_of_pawns > 1 {
+            count += 1;
+        }
+    }
+    count
+}
+
+fn player_blocked_pawns_count(game_state: &chess::state::game_state::GameState, player_number: i8) -> usize {
+    let mut count = 0;
+    let forward_direction_y = if player_number == 1 {
+        -1
+    } else {
+        1
+    };
+    game_state.squares.iter().for_each(|s| {
+        if let Some(p) = s.piece {
+            if p.kind == PieceKind::Pawn && p.player_number == player_number {
+                let piece_blocking_pawn = game_state.squares.iter().any(|t| {
+                    if let Some(_) = t.piece {
+                        t.x == s.x && t.y == s.y + forward_direction_y
+                    } else {
+                        false
+                    }
+                });
+                if piece_blocking_pawn {
+                    count += 1;
+                }
+            }
+        }
+    });
+    count
+}
+
+fn player_isolated_pawns_count(game_state: &chess::state::game_state::GameState, player_number: i8) -> usize {
+    let mut count = 0;
+    game_state.squares.iter().for_each(|s| {
+        if let Some(p) = s.piece {
+            if p.kind == PieceKind::Pawn && p.player_number == player_number {
+                let pawns_in_adjacent_files = game_state.squares.iter().filter(|t| {
+                    if let Some(q) = t.piece {
+                        (t.x == s.x - 1 || t.x == s.x + 1) && q.kind == PieceKind::Pawn && q.player_number == player_number
+                    } else {
+                       false
+                    }
+                }).count();
+                if pawns_in_adjacent_files == 0 {
+                    count += 1;
+                }
+            }
+        }
+    });
+    count
 }
 
 fn u_to_i32(value: usize) -> i32 {
@@ -213,7 +269,7 @@ mod tests {
         match mov {
             Some(m) => {
                 assert_eq!(m.from, Point { x: 4, y: 6 });
-                assert_eq!(m.to, Point { x: 4, y: 4 });
+                assert_eq!(m.to, Point { x: 4, y: 5 });
                 assert_eq!(m.moving_piece_kind, PieceKind::Pawn);
                 assert_eq!(m.capture_piece_kind, None);
                 assert_eq!(m.promote_piece_kind, None);
