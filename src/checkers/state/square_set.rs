@@ -1,34 +1,6 @@
-use std::fmt;
-
 use crate::checkers::state::vector::Vector;
 use crate::checkers::state::vector::Direction;
 use crate::checkers::state::square::Square;
-
-#[derive(PartialEq, Debug)]
-pub struct SquareSet {
-    pub squares: Vec<Square>,
-}
-
-impl Clone for SquareSet {
-    fn clone(&self) -> SquareSet {
-        SquareSet {
-            squares: self.squares.clone(),
-        }
-    }
-}
-
-impl fmt::Display for SquareSet {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let characters = self.squares.iter().map(|s| {
-            match s.player_number {
-                1 => "b",
-                2 => "w",
-                _ => "-"
-            }
-        }).collect::<String>();
-        write!(f, "{}", characters)
-    }
-}
 
 pub fn find_by_x_and_y(squares: &Vec<Square>, x: i8, y: i8) -> Option<&Square> {
     squares.iter().find(|s| { s.x == x && s.y == y })

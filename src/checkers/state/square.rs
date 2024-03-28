@@ -90,12 +90,12 @@ impl Square {
     }
 
     pub fn can_jump(&self, player_number: i8, king: bool, game_state: &GameState) -> bool {
-        game_state.squares.squares.iter().any(|s| {
+        game_state.squares.iter().any(|s| {
             self.magnitude(&s) == 2 &&
                 self.diagonal(&s) &&
                 s.in_direction(&self, player_number, king) &&
                 s.unoccupied() &&
-                match between(&game_state.squares.squares, &self, &s).first() {
+                match between(&game_state.squares, &self, &s).first() {
                     Some(b) => b.occupied_by_opponent(player_number),
                     None => false,
                 }
@@ -103,7 +103,7 @@ impl Square {
     }
 
     pub fn can_move(&self, player_number: i8, king: bool, game_state: &GameState) -> bool {
-        game_state.squares.squares.iter().any(|s| {
+        game_state.squares.iter().any(|s| {
             self.magnitude(&s) == 1 &&
                 self.diagonal(&s) &&
                 s.in_direction(&self, player_number, king) &&
@@ -112,12 +112,12 @@ impl Square {
     }
 
     pub fn jump_destinations<'a>(&self, player_number: i8, king: bool, game_state: &'a GameState) -> Vec<&'a Square> {
-        game_state.squares.squares.iter().filter(|s| {
+        game_state.squares.iter().filter(|s| {
             self.magnitude(&s) == 2 &&
                 self.diagonal(&s) &&
                 s.in_direction(&self, player_number, king) &&
                 s.unoccupied() &&
-                match between(&game_state.squares.squares, &self, &s).first() {
+                match between(&game_state.squares, &self, &s).first() {
                     Some(b) => b.occupied_by_opponent(player_number),
                     None => false,
                 }
@@ -125,7 +125,7 @@ impl Square {
     }
 
     pub fn move_destinations<'a>(&self, player_number: i8, king: bool, game_state: &'a GameState) -> Vec<&'a Square> {
-        game_state.squares.squares.iter().filter(|s| {
+        game_state.squares.iter().filter(|s| {
             self.magnitude(&s) == 1 &&
                 self.diagonal(&s) &&
                 s.in_direction(&self, player_number, king) &&
@@ -184,7 +184,6 @@ impl Square {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::checkers::state::square_set::SquareSet;
 
     #[test]
     fn occupied_by_player_own_player() {
@@ -297,7 +296,7 @@ mod tests {
         let from = Square { id: 1, x: 4, y: 4, player_number: 0, king: false };
         let between_square = Square { id: 2, x: 3, y: 5, player_number: 1, king: false };
         let to = Square { id: 3, x: 2, y: 6, player_number: 0, king: false };
-        let squares = SquareSet { squares: vec![from, between_square, to] };
+        let squares = vec![from, between_square, to];
         let game_state = GameState { current_player_number: 1, squares };
 
         let result = from.can_jump(player_number, king, &game_state);
@@ -317,7 +316,7 @@ mod tests {
         let from = Square { id: 1, x: 4, y: 4, player_number: 2, king: false };
         let to = Square { id: 2, x: 5, y: 5, player_number: 0, king: false };
         let cant_to = Square { id: 4, x: 3, y: 5, player_number: 1, king: false };
-        let squares = SquareSet { squares: vec![from, to, cant_to] };
+        let squares = vec![from, to, cant_to];
         let game_state = GameState { current_player_number: 1, squares };
 
         let result = from.can_move(player_number, king, &game_state);
@@ -337,7 +336,7 @@ mod tests {
         let from = Square { id: 1, x: 4, y: 4, player_number: 0, king: false };
         let between_square = Square { id: 2, x: 3, y: 5, player_number: 1, king: false };
         let to = Square { id: 3, x: 2, y: 6, player_number: 0, king: false };
-        let squares = SquareSet { squares: vec![from, between_square, to] };
+        let squares = vec![from, between_square, to];
         let game_state = GameState { current_player_number: 1, squares };
 
         let result = from.can_jump(player_number, king, &game_state);
@@ -353,7 +352,7 @@ mod tests {
         let from = Square { id: 1, x: 4, y: 4, player_number: 0, king: false };
         let between_square = Square { id: 2, x: 3, y: 5, player_number: 0, king: false };
         let to = Square { id: 3, x: 2, y: 6, player_number: 0, king: false };
-        let squares = SquareSet { squares: vec![from, between_square, to] };
+        let squares = vec![from, between_square, to];
         let game_state = GameState { current_player_number: 1, squares };
 
         let result = from.can_jump(player_number, king, &game_state);
@@ -369,7 +368,7 @@ mod tests {
         let from = Square { id: 1, x: 4, y: 4, player_number: 0, king: false };
         let between_square = Square { id: 2, x: 3, y: 3, player_number: 1, king: false };
         let to = Square { id: 3, x: 2, y: 2, player_number: 0, king: false };
-        let squares = SquareSet { squares: vec![from, between_square, to] };
+        let squares = vec![from, between_square, to];
         let game_state = GameState { current_player_number: 1, squares };
 
         let result = from.can_jump(player_number, king, &game_state);
@@ -390,7 +389,7 @@ mod tests {
 
         let over_b = Square { id: 6, x: 2, y: 4, player_number: 1, king: false };
         let to_b = Square { id: 7, x: 1, y: 5, player_number: 0, king: false };
-        let squares = SquareSet { squares: vec![from, over_a, to_a, over_aa, to_aa, over_b, to_b] };
+        let squares = vec![from, over_a, to_a, over_aa, to_aa, over_b, to_b];
         let game_state = GameState { current_player_number: 1, squares };
 
         let mut accumulator = vec![];
@@ -414,7 +413,7 @@ mod tests {
 
         let over_b = Square { id: 6, x: 4, y: 6, player_number: 1, king: false };
         let to_b = Square { id: 7, x: 3, y: 7, player_number: 0, king: false };
-        let squares = SquareSet { squares: vec![from, over_a, to_a, over_aa, to_aa, over_b, to_b] };
+        let squares = vec![from, over_a, to_a, over_aa, to_aa, over_b, to_b];
         let game_state = GameState { current_player_number: 1, squares };
 
         let mut accumulator = vec![];
@@ -438,7 +437,7 @@ mod tests {
 
         let over_b = Square { id: 6, x: 2, y: 4, player_number: 1, king: false };
         let to_b = Square { id: 7, x: 1, y: 5, player_number: 0, king: false };
-        let squares = SquareSet { squares: vec![from, over_a, to_a, over_aa, to_aa, over_b, to_b] };
+        let squares = vec![from, over_a, to_a, over_aa, to_aa, over_b, to_b];
         let game_state = GameState { current_player_number: 1, squares };
 
         let result = from.jumps(player_number, king, &game_state);
@@ -462,7 +461,7 @@ mod tests {
 
         let over_b = Square { id: 6, x: 4, y: 6, player_number: 1, king: false };
         let to_b = Square { id: 7, x: 3, y: 7, player_number: 0, king: false };
-        let squares = SquareSet { squares: vec![from, over_a, to_a, over_aa, to_aa, over_b, to_b] };
+        let squares = vec![from, over_a, to_a, over_aa, to_aa, over_b, to_b];
         let game_state = GameState { current_player_number: 1, squares };
         let result = from.jumps(player_number, king, &game_state);
 
@@ -481,7 +480,7 @@ mod tests {
         let from = Square { id: 1, x: 4, y: 4, player_number: 2, king: false };
         let to = Square { id: 2, x: 5, y: 5, player_number: 0, king: false };
         let cant_to = Square { id: 4, x: 3, y: 5, player_number: 1, king: false };
-        let squares = SquareSet { squares: vec![from, to, cant_to] };
+        let squares = vec![from, to, cant_to];
         let game_state = GameState { current_player_number: 1, squares };
 
         let result = from.moves(player_number, king, &game_state);
