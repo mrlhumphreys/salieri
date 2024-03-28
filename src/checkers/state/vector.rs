@@ -39,25 +39,23 @@ impl Vector {
     pub fn direction_unit(&self) -> Point {
         let dx = self.to.x - self.from.x;
         let dy = self.to.y - self.from.y;
-        let ux = match dx.partial_cmp(&0) {
-            Some(c) => {
-                match c {
-                    Ordering::Less => -1,
-                    Ordering::Greater => 1,
-                    Ordering::Equal => 0,
-                }
-            },
-            None => 0,
+        let ux = if let Some(c) = dx.partial_cmp(&0) {
+            match c {
+                Ordering::Less => -1,
+                Ordering::Greater => 1,
+                Ordering::Equal => 0,
+            }
+        } else {
+            0
         };
-        let uy = match dy.partial_cmp(&0) {
-            Some(c) => {
-                match c {
-                    Ordering::Less => -1,
-                    Ordering::Greater => 1,
-                    Ordering::Equal => 0,
-                }
-            },
-            None => 0,
+        let uy = if let Some(c) = dy.partial_cmp(&0) {
+            match c {
+                Ordering::Less => -1,
+                Ordering::Greater => 1,
+                Ordering::Equal => 0,
+            }
+        } else {
+            0
         };
 
         Point { x: ux, y: uy }
@@ -65,14 +63,11 @@ impl Vector {
 
     pub fn diagonal(&self) -> bool {
         let abs_dx = (self.to.x - self.from.x).abs();
-        let abs_dy = (self.to.y - self.from.y).abs();
-        self.from != self.to && abs_dx == abs_dy
+        abs_dx != 0 && abs_dx == (self.to.y - self.from.y).abs()
     }
 
     pub fn orthogonal(&self) -> bool {
-        let same_x = self.to.x == self.from.x;
-        let same_y = self.to.y == self.from.y;
-        (self.from != self.to) && (same_x || same_y)
+        (self.to.x == self.from.x) ^ (self.to.y == self.from.y)
     }
 }
 

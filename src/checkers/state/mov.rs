@@ -5,7 +5,7 @@ pub enum MoveKind {
 }
 
 pub struct Move {
-    pub kind: MoveKind, 
+    pub kind: MoveKind,
     pub from: i8,
     pub to: Vec<i8>,
 }
@@ -17,7 +17,7 @@ impl Move {
             MoveKind::Jump => "x",
         };
 
-        let to_string = self.to.iter().map(|i| { i.to_string() }).collect::<Vec<String>>().join(separator); 
+        let to_string = self.to.iter().map(|i| { i.to_string() }).collect::<Vec<String>>().join(separator);
         String::from(format!("{}{}{}", self.from, separator, to_string))
     }
 
@@ -25,7 +25,7 @@ impl Move {
         let mut points = vec![self.from];
         let mut tos = self.to.clone();
         points.append(&mut tos);
-        let size = points.len(); 
+        let size = points.len();
 
         (0..(size-1)).map(|n| {
             (points[n], points[n+1])
@@ -49,21 +49,21 @@ mod tests {
 
     #[test]
     fn legs() {
-        let mov = Move { kind: MoveKind::Mov, from: 1, to: vec![3, 5, 7] };    
+        let mov = Move { kind: MoveKind::Mov, from: 1, to: vec![3, 5, 7] };
         let legs = mov.legs();
-        assert_eq!(legs, vec![(1,3), (3,5), (5, 7)]); 
+        assert_eq!(legs, vec![(1,3), (3,5), (5, 7)]);
     }
 
     #[test]
     fn format_move() {
-        let mov = Move { kind: MoveKind::Mov, from: 1, to: vec![3] };    
+        let mov = Move { kind: MoveKind::Mov, from: 1, to: vec![3] };
         let result = mov.format();
         assert_eq!(result, "1-3");
     }
 
     #[test]
     fn format_jump() {
-        let mov = Move { kind: MoveKind::Jump, from: 1, to: vec![3, 5, 7] };    
+        let mov = Move { kind: MoveKind::Jump, from: 1, to: vec![3, 5, 7] };
         let result = mov.format();
         assert_eq!(result, "1x3x5x7");
     }

@@ -63,9 +63,9 @@ impl Clone for GameState {
 
 impl GameState {
     pub fn winner(&self) -> Option<i8> {
-        if self.possible_moves_for_player(1).len() == 0 {
+        if self.possible_moves_for_player(1).is_empty() {
             Some(2)
-        } else if self.possible_moves_for_player(2).len() == 0 {
+        } else if self.possible_moves_for_player(2).is_empty() {
             Some(1)
         } else {
             None
@@ -78,7 +78,7 @@ impl GameState {
 
     pub fn possible_moves_for_player(&self, player_number: i8) -> Vec<Move> {
         let jumps = self.squares.jumps_for_player(player_number, &self.squares);
-        if jumps.len() == 0 {
+        if jumps.is_empty() {
             self.squares.moves_for_player(player_number, &self.squares)
         } else {
             jumps
@@ -89,12 +89,7 @@ impl GameState {
         let legs = mov.legs();
 
         for (origin, destination) in legs {
-           match self.squares.perform_move(origin, destination) {
-                Ok(_) => (),
-                Err(e) => {
-                    return Err(e);
-                },
-           }
+           self.squares.perform_move(origin, destination)?;
         }
 
         let (next_player_number, promotion_row) = match self.current_player_number {
@@ -103,21 +98,16 @@ impl GameState {
             _ => return Err("invalid player number"),
         };
 
-        match mov.to.last() {
-            Some(last_id) => {
-                match self.squares.squares.iter_mut().find(|s| s.id == *last_id) {
-                    Some(s) => {
-                        if promotion_row == s.y {
-                            match self.squares.promote(*last_id) {
-                                Ok(_) => (),
-                                Err(e) => return Err(e),
-                            }
-                        }
-                    },
-                    None => return Err("invalid square id"),
+        if let Some(last_id) = mov.to.last() {
+            if let Some(s) = self.squares.squares.iter_mut().find(|s| s.id == *last_id) {
+                if promotion_row == s.y {
+                    self.squares.promote(*last_id)?;
                 }
-            },
-            None => return Err("no square id"),
+            } else {
+                return Err("invalid square id");
+            }
+        } else {
+            return Err("no square id");
         };
 
         self.current_player_number = next_player_number;
@@ -133,32 +123,20 @@ impl GameState {
             _ => return Err("invalid player number"),
         };
 
-        match mov.to.last() {
-            Some(last_id) => {
-                match self.squares.squares.iter_mut().find(|s| s.id == *last_id) {
-                    Some(s) => {
-                        if promotion_row == s.y {
-                            match self.squares.demote(*last_id) {
-                                Ok(_) => (),
-                                Err(e) => return Err(e),
-                            }
-                        }
-                    },
-                    None => return Err("invalid square id"),
+        if let Some(last_id) = mov.to.last() {
+            if let Some(s) = self.squares.squares.iter_mut().find(|s| s.id == *last_id) {
+                if promotion_row == s.y {
+                    self.squares.demote(*last_id)?;
                 }
-            },
-            None => return Err("no square id"),
+            } else {
+                return Err("invalid square id");
+            }
+        } else {
+            return Err("no square id");
         };
 
-        let reverse_legs = mov.legs().into_iter().rev();
-
-        for (origin, destination) in reverse_legs {
-           match self.squares.undo_move(origin, destination) {
-                Ok(_) => (),
-                Err(e) => {
-                    return Err(e);
-                },
-           }
+        for (origin, destination) in mov.legs().into_iter().rev() {
+           self.squares.undo_move(origin, destination)?;
         }
 
         self.current_player_number = previous_player_number;

@@ -39,10 +39,7 @@ impl Square {
     }
 
     pub fn point(&self) -> Point {
-        Point {
-            x: self.x,
-            y: self.y,
-        }
+        Point { x: self.x, y: self.y, }
     }
 
     pub fn occupied(&self) -> bool {
@@ -62,9 +59,10 @@ impl Square {
     }
 
     pub fn in_direction(&self, from: &Square, player_number: i8, king: bool) -> bool {
-        let direction = match king {
-            true => 0,
-            false => match player_number {
+        let direction = if king {
+            0
+        } else {
+            match player_number {
                 1 => -1,
                 2 => 1,
                 _ => 0
@@ -81,22 +79,21 @@ impl Square {
 
     pub fn diagonal(&self, to: &Square) -> bool {
         let abs_dx = (to.x - self.x).abs();
-        let abs_dy = (to.y - self.y).abs();
-        abs_dx == abs_dy && abs_dx != 0 && abs_dy != 0
+        abs_dx != 0 && abs_dx == (to.y - self.y).abs()
     }
 
     pub fn magnitude(&self, to: &Square) -> i8 {
         let abs_dx = (to.x - self.x).abs();
         let abs_dy = (to.y - self.y).abs();
-        cmp::max(abs_dx, abs_dy) 
+        cmp::max(abs_dx, abs_dy)
     }
 
     pub fn can_jump(&self, player_number: i8, king: bool, board: &SquareSet) -> bool {
         board.squares.iter().any(|s| {
-            self.magnitude(&s) == 2 && 
-                self.diagonal(&s) && 
+            self.magnitude(&s) == 2 &&
+                self.diagonal(&s) &&
                 s.in_direction(&self, player_number, king) &&
-                s.unoccupied() && 
+                s.unoccupied() &&
                 match board.between(&self, &s).first() {
                     Some(b) => b.occupied_by_opponent(player_number),
                     None => false,
@@ -106,19 +103,19 @@ impl Square {
 
     pub fn can_move(&self, player_number: i8, king: bool, board: &SquareSet) -> bool {
         board.squares.iter().any(|s| {
-            self.magnitude(&s) == 1 && 
-                self.diagonal(&s) && 
+            self.magnitude(&s) == 1 &&
+                self.diagonal(&s) &&
                 s.in_direction(&self, player_number, king) &&
-                s.unoccupied()   
+                s.unoccupied()
         })
     }
 
     pub fn jump_destinations<'a>(&self, player_number: i8, king: bool, board: &'a SquareSet) -> Vec<&'a Square> {
         board.squares.iter().filter(|s| {
-            self.magnitude(&s) == 2 && 
-                self.diagonal(&s) && 
+            self.magnitude(&s) == 2 &&
+                self.diagonal(&s) &&
                 s.in_direction(&self, player_number, king) &&
-                s.unoccupied() && 
+                s.unoccupied() &&
                 match board.between(&self, &s).first() {
                     Some(b) => b.occupied_by_opponent(player_number),
                     None => false,
@@ -128,23 +125,23 @@ impl Square {
 
     pub fn move_destinations<'a>(&self, player_number: i8, king: bool, board: &'a SquareSet) -> Vec<&'a Square> {
         board.squares.iter().filter(|s| {
-            self.magnitude(&s) == 1 && 
-                self.diagonal(&s) && 
+            self.magnitude(&s) == 1 &&
+                self.diagonal(&s) &&
                 s.in_direction(&self, player_number, king) &&
-                s.unoccupied()   
+                s.unoccupied()
         }).collect()
     }
 
     pub fn jump_legs<'a>(&self, player_number: i8, king: bool, board: &SquareSet, mut accumulator: &'a mut Vec<Vec<i8>>, mut current_leg: &mut Vec<i8>) -> &'a mut Vec<Vec<i8>> {
         let destinations = self.jump_destinations(player_number, king, board);
 
-        if destinations.len() > 0 {
+        if !destinations.is_empty() {
             for destination in destinations.iter() {
-                
-                if current_leg.len() == 0 {
+
+                if current_leg.is_empty() {
                     current_leg.push(self.id);
                 }
-                
+
                 current_leg.push(destination.id);
 
                 let mut new_board = board.clone();
@@ -171,7 +168,7 @@ impl Square {
         all_legs.iter().map(|l| {
             let from_id = l[0];
             let to_ids = l[1..].to_vec();
-            Move { kind: MoveKind::Jump, from: from_id, to: to_ids } 
+            Move { kind: MoveKind::Jump, from: from_id, to: to_ids }
         }).collect()
     }
 

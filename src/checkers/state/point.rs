@@ -12,7 +12,7 @@ impl ops::Add<Point> for Point {
     fn add(self, rhs: Point) -> Point {
         let x = self.x + rhs.x;
         let y = self.y + rhs.y;
-        Point { x: x, y: y }
+        Point { x, y }
     }
 }
 
@@ -22,7 +22,7 @@ mod tests {
 
     #[test]
     fn adding() {
-        let left = Point { x: 4, y: 4 };    
+        let left = Point { x: 4, y: 4 };
         let right = Point { x: 2, y: 6 };
         let result = left + right;
         assert_eq!(result.x, 6);
