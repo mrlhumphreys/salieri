@@ -1,5 +1,6 @@
 use std::cmp;
 use crate::checkers::state::point::Point;
+use crate::checkers::state::square_set::between;
 use crate::checkers::state::game_state::GameState;
 use crate::checkers::state::mov::Move;
 use crate::checkers::state::mov::MoveKind;
@@ -94,7 +95,7 @@ impl Square {
                 self.diagonal(&s) &&
                 s.in_direction(&self, player_number, king) &&
                 s.unoccupied() &&
-                match game_state.squares.between(&self, &s).first() {
+                match between(&game_state.squares.squares, &self, &s).first() {
                     Some(b) => b.occupied_by_opponent(player_number),
                     None => false,
                 }
@@ -116,7 +117,7 @@ impl Square {
                 self.diagonal(&s) &&
                 s.in_direction(&self, player_number, king) &&
                 s.unoccupied() &&
-                match game_state.squares.between(&self, &s).first() {
+                match between(&game_state.squares.squares, &self, &s).first() {
                     Some(b) => b.occupied_by_opponent(player_number),
                     None => false,
                 }
@@ -294,9 +295,9 @@ mod tests {
     fn pieces_can_jump() {
         let (player_number, king) = (2, false);
         let from = Square { id: 1, x: 4, y: 4, player_number: 0, king: false };
-        let between = Square { id: 2, x: 3, y: 5, player_number: 1, king: false };
+        let between_square = Square { id: 2, x: 3, y: 5, player_number: 1, king: false };
         let to = Square { id: 3, x: 2, y: 6, player_number: 0, king: false };
-        let squares = SquareSet { squares: vec![from, between, to] };
+        let squares = SquareSet { squares: vec![from, between_square, to] };
         let game_state = GameState { current_player_number: 1, squares };
 
         let result = from.can_jump(player_number, king, &game_state);
@@ -334,9 +335,9 @@ mod tests {
     fn pieces_cannot_jump_over_friendly() {
         let (player_number, king) = (1, false);
         let from = Square { id: 1, x: 4, y: 4, player_number: 0, king: false };
-        let between = Square { id: 2, x: 3, y: 5, player_number: 1, king: false };
+        let between_square = Square { id: 2, x: 3, y: 5, player_number: 1, king: false };
         let to = Square { id: 3, x: 2, y: 6, player_number: 0, king: false };
-        let squares = SquareSet { squares: vec![from, between, to] };
+        let squares = SquareSet { squares: vec![from, between_square, to] };
         let game_state = GameState { current_player_number: 1, squares };
 
         let result = from.can_jump(player_number, king, &game_state);
@@ -350,9 +351,9 @@ mod tests {
     fn pieces_cannot_jump_over_empty() {
         let (player_number, king) = (1, false);
         let from = Square { id: 1, x: 4, y: 4, player_number: 0, king: false };
-        let between = Square { id: 2, x: 3, y: 5, player_number: 0, king: false };
+        let between_square = Square { id: 2, x: 3, y: 5, player_number: 0, king: false };
         let to = Square { id: 3, x: 2, y: 6, player_number: 0, king: false };
-        let squares = SquareSet { squares: vec![from, between, to] };
+        let squares = SquareSet { squares: vec![from, between_square, to] };
         let game_state = GameState { current_player_number: 1, squares };
 
         let result = from.can_jump(player_number, king, &game_state);
@@ -366,9 +367,9 @@ mod tests {
     fn pieces_cannot_jump_backwards() {
         let (player_number, king) = (1, false);
         let from = Square { id: 1, x: 4, y: 4, player_number: 0, king: false };
-        let between = Square { id: 2, x: 3, y: 3, player_number: 1, king: false };
+        let between_square = Square { id: 2, x: 3, y: 3, player_number: 1, king: false };
         let to = Square { id: 3, x: 2, y: 2, player_number: 0, king: false };
-        let squares = SquareSet { squares: vec![from, between, to] };
+        let squares = SquareSet { squares: vec![from, between_square, to] };
         let game_state = GameState { current_player_number: 1, squares };
 
         let result = from.can_jump(player_number, king, &game_state);

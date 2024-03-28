@@ -1,5 +1,6 @@
 use crate::checkers::state::square::Square;
 use crate::checkers::state::square_set::SquareSet;
+use crate::checkers::state::square_set::between;
 use crate::checkers::state::mov::Move;
 
 const ID_COORDINATE_MAP: [(i8, i8); 33] = [
@@ -202,7 +203,7 @@ impl GameState {
         let from_square = self.squares.squares.iter().find(|s| s.id == from);
         let to_square = self.squares.squares.iter().find(|s| s.id == to);
 
-        if let Some(b) = self.squares.between(&from_square.unwrap(), &to_square.unwrap()).first() {
+        if let Some(b) = between(&self.squares.squares, &from_square.unwrap(), &to_square.unwrap()).first() {
             if let Some(n) = self.squares.squares.iter_mut().find(|s| s.id == b.id) {
                 n.player_number = 0;
                 n.king = false;
@@ -239,7 +240,7 @@ impl GameState {
         let from_square = self.squares.squares.iter().find(|s| s.id == from);
         let to_square = self.squares.squares.iter().find(|s| s.id == to);
 
-        if let Some(b) = self.squares.between(&from_square.unwrap(), &to_square.unwrap()).first() {
+        if let Some(b) = between(&self.squares.squares, &from_square.unwrap(), &to_square.unwrap()).first() {
             if let Some(n) = self.squares.squares.iter_mut().find(|s| s.id == b.id) {
                 n.player_number = match player_number {
                     2 => 1,
