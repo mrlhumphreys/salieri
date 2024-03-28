@@ -1,3 +1,4 @@
+use crate::checkers::state::point::Point;
 use crate::checkers::state::square::Square;
 use crate::checkers::state::square_set::between;
 use crate::checkers::state::mov::Move;
@@ -170,8 +171,11 @@ impl GameState {
     pub fn perform_move_leg(&mut self, from: i8, to: i8) -> Result<(), &'static str> {
         let player_number: i8;
         let king: bool;
+        let from_point: Point;
+        let to_point: Point;
 
         if let Some(s) = self.squares.iter_mut().find(|s| s.id == from) {
+            from_point = s.point();
             if s.occupied() {
                 player_number = s.player_number;
                 king = s.king;
@@ -185,17 +189,16 @@ impl GameState {
         }
 
         if let Some(s) = self.squares.iter_mut().find(|s| s.id == to) {
+            to_point = s.point();
             s.player_number = player_number;
             s.king = king;
         } else {
             return Err("Invalid To Square")
         }
 
-        let from_square = self.squares.iter().find(|s| s.id == from);
-        let to_square = self.squares.iter().find(|s| s.id == to);
-
-        if let Some(b) = between(&self.squares, &from_square.unwrap(), &to_square.unwrap()).first() {
-            if let Some(n) = self.squares.iter_mut().find(|s| s.id == b.id) {
+        if let Some(b) = between(&self.squares, from_point, to_point) {
+            let id = b.id;
+            if let Some(n) = self.squares.iter_mut().find(|s| s.id == id) {
                 n.player_number = 0;
                 n.king = false;
             }
@@ -207,8 +210,11 @@ impl GameState {
     pub fn undo_move_leg(&mut self, from: i8, to: i8) -> Result<(), &'static str> {
         let player_number: i8;
         let king: bool;
+        let from_point: Point;
+        let to_point: Point;
 
         if let Some(s) = self.squares.iter_mut().find(|s| s.id == to) {
+            to_point = s.point();
             if s.occupied() {
                 player_number = s.player_number;
                 king = s.king;
@@ -222,17 +228,16 @@ impl GameState {
         }
 
         if let Some(s) = self.squares.iter_mut().find(|s| s.id == from) {
+            from_point = s.point();
             s.player_number = player_number;
             s.king = king;
         } else {
             return Err("Invalid From Square")
         }
 
-        let from_square = self.squares.iter().find(|s| s.id == from);
-        let to_square = self.squares.iter().find(|s| s.id == to);
-
-        if let Some(b) = between(&self.squares, &from_square.unwrap(), &to_square.unwrap()).first() {
-            if let Some(n) = self.squares.iter_mut().find(|s| s.id == b.id) {
+        if let Some(b) = between(&self.squares, from_point, to_point) {
+            let id = b.id;
+            if let Some(n) = self.squares.iter_mut().find(|s| s.id == id) {
                 n.player_number = match player_number {
                     2 => 1,
                     1 => 2,

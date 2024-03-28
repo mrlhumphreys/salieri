@@ -1,3 +1,4 @@
+use crate::checkers::state::point::Point;
 use crate::checkers::state::vector::Vector;
 use crate::checkers::state::vector::Direction;
 use crate::checkers::state::square::Square;
@@ -6,27 +7,25 @@ pub fn find_by_x_and_y(squares: &Vec<Square>, x: i8, y: i8) -> Option<&Square> {
     squares.iter().find(|s| { s.x == x && s.y == y })
 }
 
-pub fn between(squares: &Vec<Square>, from: &Square, to: &Square) -> Vec<Square> {
-    let vector = Vector { from: from.point(), to: to.point() };
+pub fn between<'a>(squares: &'a Vec<Square>, from: Point, to: Point) -> Option<&'a Square> {
+    let vector = Vector { from, to };
 
-    let squares = if vector.direction() == Direction::Other {
-        Vec::new()
+    if vector.direction() == Direction::Other {
+       return None; 
     } else {
         let direction_unit = vector.direction_unit();
-        let end = to.point();
-        let mut counter = from.point() + direction_unit;
-        let mut acc = Vec::new();
+        let end = to;
+        let mut counter = from + direction_unit;
         while counter != end {
             let square = find_by_x_and_y(squares, counter.x, counter.y);
-            if let Some(s) = square {
-                acc.push(*s)
+            if square.is_some() {
+                return square;
             }
             counter = counter + direction_unit;
         }
-        acc
     };
 
-    squares
+    return None;
 }
 
 #[cfg(test)]
@@ -51,23 +50,25 @@ mod tests {
     #[test]
     fn fetching_between_diagonal() {
         let from = Square { id: 1, x: 4, y: 4, player_number: 0, king: false };
+        let from_point = Point { x: 4, y: 4 };
         let between_square = Square { id: 2, x: 5, y: 3, player_number: 1, king: false };
         let to = Square { id: 3, x: 6, y: 2, player_number: 0, king: false };
+        let to_point = Point { x: 6, y: 2 };
         let squares = vec![from, between_square, to];
-        let result = between(&squares, &from, &to);
-        assert_eq!(result.len(), 1);
-        let square = &result[0];
-        assert_eq!(square.x, 5);
-        assert_eq!(square.y, 3);
+        let result = between(&squares, from_point, to_point).unwrap();
+        assert_eq!(result.x, 5);
+        assert_eq!(result.y, 3);
     }
 
     #[test]
     fn fetching_between_l_shape() {
         let from = Square { id: 1, x: 4, y: 4, player_number: 0, king: false };
+        let from_point = Point { x: 4, y: 4 };
         let between_square = Square { id: 2, x: 5, y: 4, player_number: 0, king: false };
         let to = Square { id: 3, x: 6, y: 3, player_number: 0, king: false };
+        let to_point = Point { x: 6, y: 3 };
         let squares = vec![from, between_square, to];
-        let result = between(&squares, &from, &to);
-        assert_eq!(result.len(), 0);
+        let result = between(&squares, from_point, to_point);
+        assert_eq!(result, None);
     }
 }

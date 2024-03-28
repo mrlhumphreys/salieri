@@ -95,7 +95,7 @@ impl Square {
                 self.diagonal(&s) &&
                 s.in_direction(&self, player_number, king) &&
                 s.unoccupied() &&
-                match between(&game_state.squares, &self, &s).first() {
+                match between(&game_state.squares, self.point(), s.point()) {
                     Some(b) => b.occupied_by_opponent(player_number),
                     None => false,
                 }
@@ -117,7 +117,7 @@ impl Square {
                 self.diagonal(&s) &&
                 s.in_direction(&self, player_number, king) &&
                 s.unoccupied() &&
-                match between(&game_state.squares, &self, &s).first() {
+                match between(&game_state.squares, self.point(), s.point()) {
                     Some(b) => b.occupied_by_opponent(player_number),
                     None => false,
                 }
