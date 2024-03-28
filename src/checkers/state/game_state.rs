@@ -77,42 +77,34 @@ impl GameState {
     }
 
     pub fn possible_moves_for_player(&self, player_number: i8) -> Vec<Move> {
-        let jumps = self.jumps_for_player(player_number, &self);
+        let jumps = self.jumps_for_player(player_number);
         if jumps.is_empty() {
-            self.moves_for_player(player_number, &self)
+            self.moves_for_player(player_number)
         } else {
             jumps
         }
     }
 
-    pub fn jumps_for_player(&self, player_number: i8, game_state: &GameState) -> Vec<Move> {
-        let jump_froms: Vec<&Square> = self.squares.iter().filter(|s| {
-            s.occupied_by_player(player_number) && s.can_jump(s.player_number, s.king, &game_state)
-        }).collect();
-
+    pub fn jumps_for_player(&self, player_number: i8) -> Vec<Move> {
         let mut list = Vec::new();
 
-        for from in jump_froms {
-            if from.occupied() {
-               list.append(&mut from.jumps(from.player_number, from.king, &game_state));
+        self.squares.iter().for_each(|from| {
+            if from.occupied_by_player(player_number) && from.can_jump(from.player_number, from.king, &self) {
+                list.append(&mut from.jumps(from.player_number, from.king, &self));
             }
-        }
+        });
 
         list
     }
 
-    pub fn moves_for_player(&self, player_number: i8, game_state: &GameState) -> Vec<Move> {
-        let move_froms: Vec<&Square> = self.squares.iter().filter(|s| {
-            s.occupied_by_player(player_number) && s.can_move(s.player_number, s.king, &game_state)
-        }).collect();
-
+    pub fn moves_for_player(&self, player_number: i8) -> Vec<Move> {
         let mut list = Vec::new();
 
-        for from in move_froms {
-            if from.occupied() {
-                list.append(&mut from.moves(from.player_number, from.king, &game_state))
+        self.squares.iter().for_each(|from| {
+            if from.occupied_by_player(player_number) && from.can_move(from.player_number, from.king, &self) {
+                list.append(&mut from.moves(from.player_number, from.king, &self))
             }
-        }
+        });
 
         list
     }
@@ -578,12 +570,10 @@ mod tests {
         let to = Square { id: 3, x: 6, y: 6, player_number: 0, king: false };
         let cant_over = Square { id: 4, x: 3, y: 5, player_number: 1, king: false };
         let cant_to = Square { id: 5, x: 2, y: 6, player_number: 2, king: false };
-        let squares_a = vec![from];
-        let game_state_a = GameState { current_player_number: 1, squares: squares_a };
-        let squares_b = vec![from, over, to, cant_over, cant_to];
-        let game_state_b = GameState { current_player_number: 1, squares: squares_b };
+        let squares = vec![from, over, to, cant_over, cant_to];
+        let game_state = GameState { current_player_number: 1, squares };
 
-        let result = game_state_a.jumps_for_player(2, &game_state_b);
+        let result = game_state.jumps_for_player(2);
 
         assert_eq!(result.len(), 1);
 
@@ -602,12 +592,10 @@ mod tests {
         let from = Square { id: 1, x: 4, y: 4, player_number: 2, king: false };
         let to = Square { id: 2, x: 5, y: 5, player_number: 0, king: false };
         let cant_to = Square { id: 3, x: 3, y: 5, player_number: 1, king: false };
-        let squares_a = vec![from];
-        let game_state_a = GameState { current_player_number: 1, squares: squares_a };
-        let squares_b = vec![from, cant_to, to];
-        let game_state_b = GameState { current_player_number: 1, squares: squares_b };
+        let squares = vec![from, cant_to, to];
+        let game_state = GameState { current_player_number: 1, squares };
 
-        let result = game_state_a.moves_for_player(2, &game_state_b);
+        let result = game_state.moves_for_player(2);
 
         assert_eq!(result.len(), 1);
 
