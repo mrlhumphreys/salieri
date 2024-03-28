@@ -77,19 +77,51 @@ impl GameState {
     }
 
     pub fn possible_moves_for_player(&self, player_number: i8) -> Vec<Move> {
-        let jumps = self.squares.jumps_for_player(player_number, &self.squares);
+        let jumps = self.jumps_for_player(player_number, &self);
         if jumps.is_empty() {
-            self.squares.moves_for_player(player_number, &self.squares)
+            self.moves_for_player(player_number, &self)
         } else {
             jumps
         }
+    }
+
+    pub fn jumps_for_player(&self, player_number: i8, game_state: &GameState) -> Vec<Move> {
+        let jump_froms: Vec<&Square> = self.squares.squares.iter().filter(|s| {
+            s.occupied_by_player(player_number) && s.can_jump(s.player_number, s.king, &game_state)
+        }).collect();
+
+        let mut list = Vec::new();
+
+        for from in jump_froms {
+            if from.occupied() {
+               list.append(&mut from.jumps(from.player_number, from.king, &game_state));
+            }
+        }
+
+        list
+    }
+
+    pub fn moves_for_player(&self, player_number: i8, game_state: &GameState) -> Vec<Move> {
+        let move_froms: Vec<&Square> = self.squares.squares.iter().filter(|s| {
+            s.occupied_by_player(player_number) && s.can_move(s.player_number, s.king, &game_state)
+        }).collect();
+
+        let mut list = Vec::new();
+
+        for from in move_froms {
+            if from.occupied() {
+                list.append(&mut from.moves(from.player_number, from.king, &game_state))
+            }
+        }
+
+        list
     }
 
     pub fn perform_move(&mut self, mov: &Move) -> Result<(), &'static str> {
         let legs = mov.legs();
 
         for (origin, destination) in legs {
-           self.squares.perform_move(origin, destination)?;
+           self.perform_move_leg(origin, destination)?;
         }
 
         let (next_player_number, promotion_row) = match self.current_player_number {
@@ -101,7 +133,7 @@ impl GameState {
         if let Some(last_id) = mov.to.last() {
             if let Some(s) = self.squares.squares.iter_mut().find(|s| s.id == *last_id) {
                 if promotion_row == s.y {
-                    self.squares.promote(*last_id)?;
+                    self.promote(*last_id)?;
                 }
             } else {
                 return Err("invalid square id");
@@ -116,7 +148,6 @@ impl GameState {
     }
 
     pub fn undo_move(&mut self, mov: &Move) -> Result<(), &'static str> {
-
         let (previous_player_number, promotion_row) = match self.current_player_number {
             1 => (2, 0),
             2 => (1, 7),
@@ -126,7 +157,7 @@ impl GameState {
         if let Some(last_id) = mov.to.last() {
             if let Some(s) = self.squares.squares.iter_mut().find(|s| s.id == *last_id) {
                 if promotion_row == s.y {
-                    self.squares.demote(*last_id)?;
+                    self.demote(*last_id)?;
                 }
             } else {
                 return Err("invalid square id");
@@ -136,10 +167,108 @@ impl GameState {
         };
 
         for (origin, destination) in mov.legs().into_iter().rev() {
-           self.squares.undo_move(origin, destination)?;
+           self.undo_move_leg(origin, destination)?;
         }
 
         self.current_player_number = previous_player_number;
+
+        Ok(())
+    }
+
+    pub fn perform_move_leg(&mut self, from: i8, to: i8) -> Result<(), &'static str> {
+        let player_number: i8;
+        let king: bool;
+
+        if let Some(s) = self.squares.squares.iter_mut().find(|s| s.id == from) {
+            if s.occupied() {
+                player_number = s.player_number;
+                king = s.king;
+            } else {
+                return Err("square_set::perform_move - No piece on from");
+            }
+            s.player_number = 0;
+            s.king = false;
+        } else {
+            return Err("Invalid From Square")
+        }
+
+        if let Some(s) = self.squares.squares.iter_mut().find(|s| s.id == to) {
+            s.player_number = player_number;
+            s.king = king;
+        } else {
+            return Err("Invalid To Square")
+        }
+
+        let from_square = self.squares.squares.iter().find(|s| s.id == from);
+        let to_square = self.squares.squares.iter().find(|s| s.id == to);
+
+        if let Some(b) = self.squares.between(&from_square.unwrap(), &to_square.unwrap()).first() {
+            if let Some(n) = self.squares.squares.iter_mut().find(|s| s.id == b.id) {
+                n.player_number = 0;
+                n.king = false;
+            }
+        }
+
+        Ok(())
+    }
+
+    pub fn undo_move_leg(&mut self, from: i8, to: i8) -> Result<(), &'static str> {
+        let player_number: i8;
+        let king: bool;
+
+        if let Some(s) = self.squares.squares.iter_mut().find(|s| s.id == to) {
+            if s.occupied() {
+                player_number = s.player_number;
+                king = s.king;
+            } else {
+                return Err("square_set::undo_move - No piece on from");
+            }
+            s.player_number = 0;
+            s.king = false;
+        } else {
+            return Err("Invalid To Square")
+        }
+
+        if let Some(s) = self.squares.squares.iter_mut().find(|s| s.id == from) {
+            s.player_number = player_number;
+            s.king = king;
+        } else {
+            return Err("Invalid From Square")
+        }
+
+        let from_square = self.squares.squares.iter().find(|s| s.id == from);
+        let to_square = self.squares.squares.iter().find(|s| s.id == to);
+
+        if let Some(b) = self.squares.between(&from_square.unwrap(), &to_square.unwrap()).first() {
+            if let Some(n) = self.squares.squares.iter_mut().find(|s| s.id == b.id) {
+                n.player_number = match player_number {
+                    2 => 1,
+                    1 => 2,
+                    _ => 0
+                };
+                n.king = false;
+            }
+        }
+
+        Ok(())
+    }
+
+    pub fn promote(&mut self, id: i8) -> Result<(), &'static str> {
+        if let Some(s) = self.squares.squares.iter_mut().find(|s| s.id == id) {
+            s.promote()?;
+        } else {
+            return Err("Invalid From Square")
+        }
+
+        Ok(())
+    }
+
+    pub fn demote(&mut self, id: i8) -> Result<(), &'static str> {
+        if let Some(s) = self.squares.squares.iter_mut().find(|s| s.id == id) {
+            s.demote()?;
+        } else {
+            return Err("Invalid From Square")
+        }
 
         Ok(())
     }
@@ -446,6 +575,56 @@ mod tests {
     }
 
     #[test]
+    fn jumps_for_player_test() {
+        let from = Square { id: 1, x: 4, y: 4, player_number: 2, king: false };
+        let over = Square { id: 2, x: 5, y: 5, player_number: 1, king: false };
+        let to = Square { id: 3, x: 6, y: 6, player_number: 0, king: false };
+        let cant_over = Square { id: 4, x: 3, y: 5, player_number: 1, king: false };
+        let cant_to = Square { id: 5, x: 2, y: 6, player_number: 2, king: false };
+        let squares_a = SquareSet { squares: vec![from] };
+        let game_state_a = GameState { current_player_number: 1, squares: squares_a };
+        let squares_b = SquareSet { squares: vec![from, over, to, cant_over, cant_to] };
+        let game_state_b = GameState { current_player_number: 1, squares: squares_b };
+
+        let result = game_state_a.jumps_for_player(2, &game_state_b);
+
+        assert_eq!(result.len(), 1);
+
+        let mov = result.first();
+        match mov {
+            Some(m) => {
+                assert_eq!(m.from, 1);
+                assert_eq!(m.to, vec![3]);
+            },
+            None => assert!(false, "Expected Move"),
+        }
+    }
+
+    #[test]
+    fn moves_for_player_test() {
+        let from = Square { id: 1, x: 4, y: 4, player_number: 2, king: false };
+        let to = Square { id: 2, x: 5, y: 5, player_number: 0, king: false };
+        let cant_to = Square { id: 3, x: 3, y: 5, player_number: 1, king: false };
+        let squares_a = SquareSet { squares: vec![from] };
+        let game_state_a = GameState { current_player_number: 1, squares: squares_a };
+        let squares_b = SquareSet { squares: vec![from, cant_to, to] };
+        let game_state_b = GameState { current_player_number: 1, squares: squares_b };
+
+        let result = game_state_a.moves_for_player(2, &game_state_b);
+
+        assert_eq!(result.len(), 1);
+
+        let mov = result.first();
+        match mov {
+            Some(m) => {
+                assert_eq!(m.from, 1);
+                assert_eq!(m.to, vec![2]);
+            },
+            None => assert!(false, "Expected Move"),
+        }
+    }
+
+    #[test]
     fn perform_move_test() {
         let encoded = String::from("B:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,11,12");
         let mut game_state = parse(&encoded).unwrap();
@@ -546,6 +725,173 @@ mod tests {
                 }
             },
             Err(e) => assert!(false, "{}", e)
+        }
+    }
+
+    #[test]
+    fn perform_move_jump_test() {
+        let jump_from = Square { id: 1, x: 4, y: 4, player_number: 1, king: false };
+        let jump_over = Square { id: 2, x: 5, y: 5, player_number: 2, king: false };
+        let jump_to = Square { id: 3, x: 6, y: 6, player_number: 0, king: false };
+        let squares = SquareSet { squares: vec![jump_from, jump_over, jump_to] };
+        let mut game_state = GameState { current_player_number: 1, squares };
+
+        match game_state.perform_move_leg(jump_from.id, jump_to.id) {
+            Ok(_) => (),
+            Err(e) => return assert!(false, "{}", e),
+        };
+
+        let mut iterator = game_state.squares.squares.iter();
+        let new_from = iterator.find(|s| s.id == 1);
+
+        match new_from {
+            Some(s) => assert_eq!(s.occupied(), false),
+            None => assert!(false, "expected square"),
+        }
+
+        let new_over = iterator.find(|s| s.id == 2);
+
+        match new_over {
+            Some(s) => assert_eq!(s.occupied(), false),
+            None => assert!(false, "expected square"),
+        }
+
+        let new_to = iterator.find(|s| s.id == 3);
+
+        match new_to {
+            Some(s) => assert_eq!(s.player_number, 1),
+            None => assert!(false, "expected square"),
+        }
+    }
+
+    #[test]
+    fn perform_move_move_test() {
+        let from = Square { id: 1, x: 4, y: 4, player_number: 1, king: false };
+        let to = Square { id: 2, x: 5, y: 5, player_number: 0, king: false };
+        let squares = SquareSet { squares: vec![from, to] };
+        let mut game_state = GameState { current_player_number: 1, squares };
+
+        match game_state.perform_move_leg(from.id, to.id) {
+            Ok(_) => (),
+            Err(e) => return assert!(false, "{}", e),
+        };
+
+        let mut iterator = game_state.squares.squares.iter();
+        let new_from = iterator.find(|s| s.id == 1);
+
+        match new_from {
+            Some(s) => assert_eq!(s.occupied(), false),
+            None => assert!(false, "expected square"),
+        }
+
+        let new_to = iterator.find(|s| s.id == 2);
+
+        match new_to {
+            Some(s) => assert_eq!(s.player_number, 1),
+            None => assert!(false, "expected square"),
+        }
+    }
+
+    #[test]
+    fn undo_move_leg_jump_test() {
+        let jump_from = Square { id: 1, x: 4, y: 4, player_number: 0, king: false };
+        let jump_over = Square { id: 2, x: 5, y: 5, player_number: 0, king: false };
+        let jump_to = Square { id: 3, x: 6, y: 6, player_number: 1, king: false };
+        let squares = SquareSet { squares: vec![jump_from, jump_over, jump_to] };
+        let mut game_state = GameState { current_player_number: 1, squares };
+
+        match game_state.undo_move_leg(jump_from.id, jump_to.id) {
+            Ok(_) => (),
+            Err(e) => return assert!(false, "{}", e)
+        };
+
+        let mut iterator = game_state.squares.squares.iter();
+        let new_from = iterator.find(|s| s.id == 1);
+
+        match new_from {
+            Some(s) => assert_eq!(s.player_number, 1),
+            None => assert!(false, "expected square"),
+        }
+
+        let new_over = iterator.find(|s| s.id == 2);
+
+        match new_over {
+            Some(s) => {
+                assert_eq!(s.occupied(), true);
+                assert_eq!(s.player_number, 2);
+            },
+            None => assert!(false, "expected square"),
+        }
+
+        let new_to = iterator.find(|s| s.id == 3);
+
+        match new_to {
+            Some(s) => assert_eq!(s.occupied(), false),
+            None => assert!(false, "expected square"),
+        }
+    }
+
+    #[test]
+    fn undo_move_move_test() {
+        let from = Square { id: 1, x: 4, y: 4, player_number: 0, king: false };
+        let to = Square { id: 2, x: 5, y: 5, player_number: 1, king: false };
+        let squares = SquareSet { squares: vec![from, to] };
+        let mut game_state = GameState { current_player_number: 1, squares };
+
+        match game_state.undo_move_leg(from.id, to.id) {
+            Ok(_) => (),
+            Err(e) => return assert!(false, "{}", e)
+        };
+
+        let mut iterator = game_state.squares.squares.iter();
+        let new_from = iterator.find(|s| s.id == 1);
+
+        match new_from {
+            Some(s) => assert_eq!(s.player_number, 1),
+            None => assert!(false, "expected square"),
+        }
+
+        let new_to = iterator.find(|s| s.id == 2);
+
+        match new_to {
+            Some(s) => assert_eq!(s.occupied(), false),
+            None => assert!(false, "expected square"),
+        }
+    }
+
+    #[test]
+    fn promote_piece_test() {
+        let promoteable = Square { id: 1, x: 4, y: 4, player_number: 1, king: false };
+        let not_promoteable = Square { id: 2, x: 5, y: 5, player_number: 2, king: false };
+        let squares = SquareSet { squares: vec![promoteable, not_promoteable] };
+        let mut game_state = GameState { current_player_number: 1, squares };
+
+        match game_state.promote(1) {
+            Ok(_) => {
+                match game_state.squares.squares.into_iter().find(|s| s.id == 1) {
+                    Some(s) => assert_eq!(true, s.king),
+                    None => assert!(false, "expected square"),
+                }
+            },
+            Err(e) => assert!(false, "{}", e),
+        }
+    }
+
+    #[test]
+    fn demote_piece() {
+        let promoted = Square { id: 1, x: 4, y: 4, player_number: 1, king: true };
+        let not_promoted = Square { id: 2, x: 5, y: 5, player_number: 2, king: false };
+        let squares = SquareSet { squares: vec![promoted, not_promoted] };
+        let mut game_state = GameState { current_player_number: 1, squares };
+
+        match game_state.demote(1) {
+            Ok(_) => {
+                match game_state.squares.squares.into_iter().find(|s| s.id == 1) {
+                    Some(s) => assert_eq!(false, s.king),
+                    None => assert!(false, "expected square"),
+                }
+            },
+            Err(e) => assert!(false, "{}", e),
         }
     }
 }
