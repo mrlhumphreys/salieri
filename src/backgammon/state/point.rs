@@ -12,7 +12,7 @@ impl Point {
         match player_number {
             1 => self.number > 18,
             2 => self.number <= 6,
-            _ => false 
+            _ => false
         }
     }
 
@@ -92,7 +92,7 @@ impl Point {
                     }
                 }
             },
-            _ => Err("invalid piece") 
+            _ => Err("invalid piece")
         }
     }
 }
@@ -113,48 +113,47 @@ pub fn parse_point(index: usize, encoded: &str) -> Result<Point, &'static str> {
         Err(_) => return Err("invalid point number"),
     };
 
-    let re = Regex::new(r"^([0-9a-f])([0-9a-f])$").unwrap(); 
+    let re = Regex::new(r"^([0-9a-f])([0-9a-f])$").unwrap();
     let caps = re.captures(encoded);
 
-    match caps {
-        Some(c) => {
-            let first_value = c.get(1).unwrap().as_str().chars().nth(0).unwrap().to_digit(16).unwrap();
-            let second_value = c.get(2).unwrap().as_str().chars().nth(0).unwrap().to_digit(16).unwrap();
+    if let Some(c) = caps {
+        let first_value = c.get(1).unwrap().as_str().chars().nth(0).unwrap().to_digit(16).unwrap();
+        let second_value = c.get(2).unwrap().as_str().chars().nth(0).unwrap().to_digit(16).unwrap();
 
-            if first_value > 0 && second_value > 0 {
-                Err("point must contain pieces from only one player")
-            } else { 
-                match i8::try_from(first_value) {
-                    Ok(player_one_piece_count) => {
-                        match i8::try_from(second_value) {
-                            Ok(player_two_piece_count) => {
-                                let point = Point { 
-                                    number, 
-                                    player_one_piece_count, 
-                                    player_two_piece_count 
-                                };
-                                Ok(point)
-                            },
-                            Err(_) => Err("invalid second value")
-                        }
-                    },
-                    Err(_) => Err("invalid first value")
-                }
+        if first_value > 0 && second_value > 0 {
+            Err("point must contain pieces from only one player")
+        } else {
+            match i8::try_from(first_value) {
+                Ok(player_one_piece_count) => {
+                    match i8::try_from(second_value) {
+                        Ok(player_two_piece_count) => {
+                            let point = Point {
+                                number,
+                                player_one_piece_count,
+                                player_two_piece_count
+                            };
+                            Ok(point)
+                        },
+                        Err(_) => Err("invalid second value")
+                    }
+                },
+                Err(_) => Err("invalid first value")
             }
-        },
-        None => Err("invalid point")
+        }
+    } else {
+        Err("invalid point")
     }
 }
 
 #[cfg(test)]
-mod tests {   
+mod tests {
     use super::*;
 
     #[test]
     fn home_player_1_test() {
         let player_number = 1;
-        let point = Point { 
-            number: 19, 
+        let point = Point {
+            number: 19,
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
@@ -165,8 +164,8 @@ mod tests {
     #[test]
     fn not_home_player_1_test() {
         let player_number = 1;
-        let point = Point { 
-            number: 18, 
+        let point = Point {
+            number: 18,
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
@@ -177,8 +176,8 @@ mod tests {
     #[test]
     fn home_player_2_test() {
         let player_number = 2;
-        let point = Point { 
-            number: 6, 
+        let point = Point {
+            number: 6,
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
@@ -189,8 +188,8 @@ mod tests {
     #[test]
     fn not_home_player_2_test() {
         let player_number = 2;
-        let point = Point { 
-            number: 7, 
+        let point = Point {
+            number: 7,
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
@@ -201,8 +200,8 @@ mod tests {
     #[test]
     fn home_player_x_test() {
         let player_number = 3;
-        let point = Point { 
-            number: 7, 
+        let point = Point {
+            number: 7,
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
@@ -212,8 +211,8 @@ mod tests {
 
     #[test]
     fn prime_test() {
-        let point = Point { 
-            number: 1, 
+        let point = Point {
+            number: 1,
             player_one_piece_count: 2,
             player_two_piece_count: 0
         };
@@ -223,8 +222,8 @@ mod tests {
 
     #[test]
     fn not_prime_test() {
-        let point = Point { 
-            number: 1, 
+        let point = Point {
+            number: 1,
             player_one_piece_count: 1,
             player_two_piece_count: 0
         };
@@ -234,8 +233,8 @@ mod tests {
 
     #[test]
     fn blot_test() {
-        let point = Point { 
-            number: 1, 
+        let point = Point {
+            number: 1,
             player_one_piece_count: 1,
             player_two_piece_count: 0
         };
@@ -245,8 +244,8 @@ mod tests {
 
     #[test]
     fn not_blot_test() {
-        let point = Point { 
-            number: 1, 
+        let point = Point {
+            number: 1,
             player_one_piece_count: 2,
             player_two_piece_count: 0
         };
@@ -256,8 +255,8 @@ mod tests {
 
     #[test]
     fn occupied_by_player_with_player_test() {
-        let point = Point { 
-            number: 7, 
+        let point = Point {
+            number: 7,
             player_one_piece_count: 1,
             player_two_piece_count: 0
         };
@@ -267,8 +266,8 @@ mod tests {
 
     #[test]
     fn occupied_by_player_with_opponent_test() {
-        let point = Point { 
-            number: 7, 
+        let point = Point {
+            number: 7,
             player_one_piece_count: 1,
             player_two_piece_count: 0
         };
@@ -278,8 +277,8 @@ mod tests {
 
     #[test]
     fn occupied_by_player_empty_test() {
-        let point = Point { 
-            number: 7, 
+        let point = Point {
+            number: 7,
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
@@ -289,8 +288,8 @@ mod tests {
 
     #[test]
     fn occupied_by_opponent_with_player_test() {
-        let point = Point { 
-            number: 7, 
+        let point = Point {
+            number: 7,
             player_one_piece_count: 1,
             player_two_piece_count: 0
         };
@@ -300,8 +299,8 @@ mod tests {
 
     #[test]
     fn occupied_by_opponent_with_opponent_test() {
-        let point = Point { 
-            number: 7, 
+        let point = Point {
+            number: 7,
             player_one_piece_count: 1,
             player_two_piece_count: 0
         };
@@ -311,8 +310,8 @@ mod tests {
 
     #[test]
     fn occupied_by_opponent_empty_test() {
-        let point = Point { 
-            number: 7, 
+        let point = Point {
+            number: 7,
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
@@ -377,40 +376,40 @@ mod tests {
 
     #[test]
     fn pop_piece_valid_test() {
-        let mut point = Point { 
-            number: 1, 
+        let mut point = Point {
+            number: 1,
             player_one_piece_count: 1,
             player_two_piece_count: 0
-        };  
+        };
         let result = point.pop_piece();
         match result {
             Ok(p) => assert_eq!(1, p),
-            Err(_) => assert!(false, "expected number")    
+            Err(_) => assert!(false, "expected number")
         }
     }
 
     #[test]
     fn pop_piece_invalid_test() {
-        let mut point = Point { 
-            number: 1, 
+        let mut point = Point {
+            number: 1,
             player_one_piece_count: 0,
             player_two_piece_count: 0
         };
         let result = point.pop_piece();
         match result {
             Ok(_) => assert!(false, "expected no number"),
-            Err(_) => assert!(true)    
+            Err(_) => assert!(true)
         }
     }
 
     #[test]
     fn push_empty_test() {
         let piece = 1;
-        let mut point = Point { 
-            number: 1, 
+        let mut point = Point {
+            number: 1,
             player_one_piece_count: 0,
             player_two_piece_count: 0
-        }; 
+        };
         let result = point.push_piece(piece);
         match result {
             Ok(piece) => {
@@ -425,11 +424,11 @@ mod tests {
 
     #[test]
     fn push_blot_test() {
-       let piece = 1; 
-       let mut point = Point { 
-           number: 1, 
+       let piece = 1;
+       let mut point = Point {
+           number: 1,
            player_one_piece_count: 0,
-           player_two_piece_count: 1 
+           player_two_piece_count: 1
        };
        let result = point.push_piece(piece);
        match result {
@@ -446,15 +445,15 @@ mod tests {
     #[test]
     fn push_prime_test() {
         let piece = 1;
-        let mut point = Point { 
-            number: 1, 
+        let mut point = Point {
+            number: 1,
             player_one_piece_count: 0,
-            player_two_piece_count: 2 
+            player_two_piece_count: 2
         };
         let result = point.push_piece(piece);
         match result {
-            Ok(_) => assert!(false, "expected error"), 
-            Err(_) => assert!(true) 
+            Ok(_) => assert!(false, "expected error"),
+            Err(_) => assert!(true)
         }
     }
-} 
+}

@@ -58,28 +58,27 @@ impl OffBoard {
 }
 
 pub fn parse_off_board(encoded: &str) -> Result<OffBoard, &'static str> {
-    let re = Regex::new(r"^([0-9a-f])([0-9a-f])$").unwrap(); 
+    let re = Regex::new(r"^([0-9a-f])([0-9a-f])$").unwrap();
     let caps = re.captures(encoded);
 
-    match caps {
-        Some(c) => {
-            let first_value = c.get(1).unwrap().as_str().chars().nth(0).unwrap().to_digit(16).unwrap();
-            let second_value = c.get(2).unwrap().as_str().chars().nth(0).unwrap().to_digit(16).unwrap();
+    if let Some(c) = caps {
+        let first_value = c.get(1).unwrap().as_str().chars().nth(0).unwrap().to_digit(16).unwrap();
+        let second_value = c.get(2).unwrap().as_str().chars().nth(0).unwrap().to_digit(16).unwrap();
 
-            match i8::try_from(first_value) {
-                Ok(player_one_piece_count) => {
-                    match i8::try_from(second_value) {
-                        Ok(player_two_piece_count) => {
-                            let off_board = OffBoard { player_one_piece_count, player_two_piece_count };
-                            Ok(off_board)
-                        },
-                        Err(_) => Err("invalid second value")
-                    }
-                },
-                Err(_) => Err("invalid first value")
-            }
-        },
-        None => Err("invalid off board") 
+        match i8::try_from(first_value) {
+            Ok(player_one_piece_count) => {
+                match i8::try_from(second_value) {
+                    Ok(player_two_piece_count) => {
+                        let off_board = OffBoard { player_one_piece_count, player_two_piece_count };
+                        Ok(off_board)
+                    },
+                    Err(_) => Err("invalid second value")
+                }
+            },
+            Err(_) => Err("invalid first value")
+        }
+    } else {
+        Err("invalid off board")
     }
 }
 
@@ -124,7 +123,7 @@ mod tests {
     #[test]
     fn push_piece_test() {
         let piece = 1;
-        let mut off_board = OffBoard { 
+        let mut off_board = OffBoard {
             player_one_piece_count: 0,
             player_two_piece_count: 0,
         };

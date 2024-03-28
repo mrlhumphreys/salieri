@@ -98,46 +98,35 @@ impl GameState {
         let mut move_steps: Vec<MoveStep> = Vec::new();
 
         for die in self.dice.iter().filter(|d| !d.used) {
-            let die_number = match die.number {
-                Some(d) => d,
-                None => 0
-            };
-
+            let die_number = die.number.unwrap_or_default();
 
             if self.on_bar() {
                 let destination_point_number = self.bar_destination_point_number(die_number);
                 let destination_point = self.find_point_by_number(destination_point_number);
                 let move_step = bar_move_step(destination_point, die_number, self.current_player_number);
-                match move_step {
-                    Some(ms) => {
-                        move_steps.push(ms)
-                    },
-                    None => ()
+                if let Some(ms) = move_step {
+                    move_steps.push(ms)
                 }
             } else {
-                let mut move_step: Option<MoveStep>;
                 for point in self.points.iter().filter(|p| p.occupied_by_player(self.current_player_number)) {
                     let destination_point_number = self.point_destination_point_number(point.number, die_number);
 
-                    if self.bearing_off() {
+                    let move_step = if self.bearing_off() {
                         if destination_point_number == 25 || destination_point_number == 1 {
-                            move_step = off_board_move_step(point, die_number);
+                            off_board_move_step(point, die_number)
                         } else if destination_point_number > 25 || destination_point_number < 1 {
-                            move_step = beyond_off_board_move_step(point, die_number, self.back_point_number());
+                            beyond_off_board_move_step(point, die_number, self.back_point_number())
                         } else {
                             let destination_point = self.find_point_by_number(destination_point_number);
-                            move_step = point_to_point_move_step(point, destination_point, die_number, self.current_player_number);
+                            point_to_point_move_step(point, destination_point, die_number, self.current_player_number)
                         }
                     } else {
                         let destination_point = self.find_point_by_number(destination_point_number);
-                        move_step = point_to_point_move_step(point, destination_point, die_number, self.current_player_number);
-                    }
+                        point_to_point_move_step(point, destination_point, die_number, self.current_player_number)
+                    };
 
-                    match move_step {
-                        Some(ms) => {
-                            move_steps.push(ms)
-                        },
-                        None => ()
+                    if let Some(ms) = move_step {
+                        move_steps.push(ms)
                     }
                 }
             }
@@ -148,39 +137,31 @@ impl GameState {
 
     fn find_moves(&mut self, step_list: Vec<MoveStep>, mut moves: Vec<Move>) -> Result<Vec<Move>, &'static str> {
         let steps = self.possible_steps();
-        if steps.len() == 0 {
+        if steps.is_empty() {
             // generate move and push to list
             let die_numbers: Vec<i8> = self.dice.iter().map(|d| {
-                match d.number {
-                    Some(n) => n,
-                    None => 0
-                }
+                d.number.unwrap_or_default()
             }).collect();
 
             let mov = Move {
-                die_numbers: die_numbers,
+                die_numbers,
                 list: step_list
             };
+
             moves.push(mov);
         } else {
             for step in steps {
                 let mut new_step_list = step_list.clone();
                 new_step_list.push(step.clone());
 
-                match self.perform_move_step(&step) {
-                   Ok(_) => (),
-                   Err(e) => return Err(e)
-                };
+                self.perform_move_step(&step)?;
 
                 match self.find_moves(new_step_list, moves) {
                     Ok(m) => moves = m,
                     Err(e) => return Err(e)
                 };
 
-                match self.undo_move_step(&step) {
-                   Ok(_) => (),
-                   Err(e) => return Err(e)
-                };
+                self.undo_move_step(&step)?;
             }
         }
         Ok(moves)
@@ -189,10 +170,7 @@ impl GameState {
     pub fn possible_moves(&mut self) -> Result<Vec<Move>, &'static str> {
         let moves: Vec<Move> = vec![];
         let step_list: Vec<MoveStep> = vec![];
-        match self.find_moves(step_list, moves) {
-            Ok(m) => return Ok(m),
-            Err(e) => return Err(e)
-        }
+        self.find_moves(step_list, moves)
     }
 
     fn bar_destination_point_number(&self, die_number: i8) -> i8 {
@@ -240,12 +218,7 @@ impl GameState {
                     };
                     let bar = Location { kind: PointKind::Bar, number: None };
                     match self.pop_piece(other_player_number, &bar) {
-                        Ok(bar_piece) => {
-                            match self.push_piece(&move_step.to, bar_piece) {
-                                Ok(_) => (),
-                                Err(e) => return Err(e)
-                            }
-                        },
+                        Ok(bar_piece) => self.push_piece(&move_step.to, bar_piece)?,
                         Err(e) => return Err(e)
                     };
                 }
@@ -274,14 +247,9 @@ impl GameState {
     }
 
     pub fn perform_move(&mut self, mov: &Move) -> Result<(), &'static str> {
-        let items: Result<Vec<_>, _> = mov.list.iter().map(|step| {
-            self.perform_move_step(step)
-        }).collect();
-
-        match items {
-            Ok(_) => (),
-            Err(e) => return Err(e)
-        };
+        for step in &mov.list {
+            self.perform_move_step(&step)?;
+        }
 
         match self.current_player_number {
             1 => self.current_player_number = 2,
@@ -303,14 +271,9 @@ impl GameState {
             _ => return Err("invalid player number")
         };
 
-        let items: Result<Vec<_>, _> = mov.list.iter().rev().map(|step| {
-            self.undo_move_step(step)
-        }).collect();
-
-        match items {
-            Ok(_) => (),
-            Err(e) => return Err(e)
-        };
+        for step in mov.list.iter().rev() {
+            self.undo_move_step(&step)?;
+        }
 
         Ok(())
     }
@@ -331,19 +294,18 @@ impl GameState {
     fn push_piece(&mut self, location: &Location, piece: i8) -> Result<(), &'static str> {
         match location.kind {
             PointKind::Point => {
-                match location.number {
-                    Some(n) => {
-                        match self.points_push_piece(piece, n) {
-                            Ok(res) => {
-                                match res {
-                                    Some(hit_piece) => self.bar.push_piece(hit_piece),
-                                    None => Ok(())
-                                }
-                            },
-                            Err(e) => Err(e)
-                        }
-                    },
-                    None => Err("point number must be specified")
+                if let Some(n) = location.number {
+                    match self.points_push_piece(piece, n) {
+                        Ok(res) => {
+                            match res {
+                                Some(hit_piece) => self.bar.push_piece(hit_piece),
+                                None => Ok(())
+                            }
+                        },
+                        Err(e) => Err(e)
+                    }
+                } else {
+                    Err("point number must be specified")
                 }
             },
             PointKind::Bar => self.bar.push_piece(piece),

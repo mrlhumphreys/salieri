@@ -5,7 +5,7 @@ pub fn parse_point_set(encoded: &str) -> Result<Vec<Point>, &'static str> {
     if encoded.len() == 48 {
         let mut points = Vec::new();
 
-        let mut point_counter = 1; 
+        let mut point_counter = 1;
 
         while point_counter <= 24 {
             let point_index = (point_counter * 2) - 2;
@@ -17,7 +17,7 @@ pub fn parse_point_set(encoded: &str) -> Result<Vec<Point>, &'static str> {
             };
 
             points.push(point);
-            
+
             point_counter += 1;
         }
 
@@ -34,14 +34,14 @@ mod tests {
     #[test]
     fn parse_test() {
         let encoded = String::from("200000000005003000000050020000000050003000000005");
-        let result = parse_point_set(&encoded).unwrap(); 
+        let result = parse_point_set(&encoded).unwrap();
         assert_eq!(result.len(), 24);
     }
 
     #[test]
     fn parse_long_test() {
         let encoded = String::from("20000000000500300000005002000000005000300000000501");
-        let result = parse_point_set(&encoded); 
+        let result = parse_point_set(&encoded);
         match result {
             Ok(_) => assert!(false, "must not return point set"),
             Err(_) => assert!(true)
@@ -51,7 +51,7 @@ mod tests {
     #[test]
     fn parse_short_test() {
         let encoded = String::from("2000000000050030000000500200000000500030000000");
-        let result = parse_point_set(&encoded); 
+        let result = parse_point_set(&encoded);
         match result {
             Ok(_) => assert!(false, "must not return point set"),
             Err(_) => assert!(true)

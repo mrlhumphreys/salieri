@@ -10,14 +10,14 @@ impl Clone for Bar {
     fn clone(&self) -> Bar {
        Bar {
             player_one_piece_count: self.player_one_piece_count.clone(),
-            player_two_piece_count: self.player_two_piece_count.clone() 
+            player_two_piece_count: self.player_two_piece_count.clone()
        }
     }
 }
 
 impl Bar {
     pub fn pop_piece(&mut self, player_number: i8) -> Result<i8, &'static str> {
-        match player_number { 
+        match player_number {
             1 => {
                 if self.player_one_piece_count > 0 {
                     self.player_one_piece_count -= 1;
@@ -58,28 +58,27 @@ impl Bar {
 }
 
 pub fn parse_bar(encoded: &str) -> Result<Bar, &'static str> {
-    let re = Regex::new(r"^([0-9a-f])([0-9a-f])$").unwrap(); 
+    let re = Regex::new(r"^([0-9a-f])([0-9a-f])$").unwrap();
     let caps = re.captures(encoded);
 
-    match caps {
-        Some(c) => {
-            let first_value = c.get(1).unwrap().as_str().chars().nth(0).unwrap().to_digit(16).unwrap();
-            let second_value = c.get(2).unwrap().as_str().chars().nth(0).unwrap().to_digit(16).unwrap();
+    if let Some(c) = caps {
+        let first_value = c.get(1).unwrap().as_str().chars().nth(0).unwrap().to_digit(16).unwrap();
+        let second_value = c.get(2).unwrap().as_str().chars().nth(0).unwrap().to_digit(16).unwrap();
 
-            match i8::try_from(first_value) {
-                Ok(player_one_piece_count) => {
-                    match i8::try_from(second_value) {
-                        Ok(player_two_piece_count) => {
-                            let bar = Bar { player_one_piece_count, player_two_piece_count };
-                            Ok(bar)
-                        },
-                        Err(_) => Err("invalid second value")
-                    }
-                },
-                Err(_) => Err("invalid first value") 
-            }
-        },
-        None => Err("invalid bar")
+        match i8::try_from(first_value) {
+            Ok(player_one_piece_count) => {
+                match i8::try_from(second_value) {
+                    Ok(player_two_piece_count) => {
+                        let bar = Bar { player_one_piece_count, player_two_piece_count };
+                        Ok(bar)
+                    },
+                    Err(_) => Err("invalid second value")
+                }
+            },
+            Err(_) => Err("invalid first value")
+        }
+    } else {
+        Err("invalid bar")
     }
 }
 
@@ -123,37 +122,37 @@ mod tests {
 
     #[test]
     fn pop_piece_valid_test() {
-        let mut bar = Bar { 
-            player_one_piece_count: 1, 
+        let mut bar = Bar {
+            player_one_piece_count: 1,
             player_two_piece_count: 2
-        };  
+        };
         let result = bar.pop_piece(1);
         match result {
             Ok(p) => assert_eq!(1, p),
-            Err(_) => assert!(false, "expected number")    
+            Err(_) => assert!(false, "expected number")
         }
     }
 
     #[test]
     fn pop_piece_invalid_test() {
-        let mut bar = Bar { 
-            player_one_piece_count: 0, 
+        let mut bar = Bar {
+            player_one_piece_count: 0,
             player_two_piece_count: 2
-        };  
+        };
         let result = bar.pop_piece(1);
         match result {
             Ok(_) => assert!(false, "expected no number"),
-            Err(_) => assert!(true)    
+            Err(_) => assert!(true)
         }
     }
 
     #[test]
     fn push_piece_test() {
         let piece = 1;
-        let mut bar = Bar { 
-            player_one_piece_count: 0, 
-            player_two_piece_count: 0 
-        };  
+        let mut bar = Bar {
+            player_one_piece_count: 0,
+            player_two_piece_count: 0
+        };
         match bar.push_piece(piece) {
             Ok(_) => assert_eq!(1, bar.player_one_piece_count),
             Err(_) => assert!(false, "expected no error")

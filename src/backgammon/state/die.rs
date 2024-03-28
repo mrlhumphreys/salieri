@@ -7,12 +7,12 @@ pub struct Die {
 
 impl Die {
     pub fn mark_used(&mut self) -> bool {
-       self.used = true; 
+       self.used = true;
        true
     }
 
     pub fn mark_unused(&mut self) -> bool {
-       self.used = false; 
+       self.used = false;
        true
     }
 }
@@ -29,18 +29,17 @@ impl Clone for Die {
 pub fn parse(encoded: char) -> Result<Die, &'static str> {
     let number = match encoded {
         '1'..='6' => {
-            match encoded.to_digit(10) {
-                Some(n) => {
-                    match i8::try_from(n) {
-                        Ok(n) => Some(n),
-                        Err(_) => return Err("Invalid Die Number")
-                    }
-                },
-                None => return Err("Invalid Die Number")
+            if let Some(n) = encoded.to_digit(10) {
+                match i8::try_from(n) {
+                    Ok(n) => Some(n),
+                    Err(_) => return Err("Invalid Die Number")
+                }
+            } else {
+                return Err("Invalid Die Number");
             }
         },
         '-' => None,
-        _ => return Err("Invalid die Number") 
+        _ => return Err("Invalid die Number")
     };
 
     let used = false;
@@ -55,7 +54,7 @@ mod tests {
 
     #[test]
     fn parsing_blank_test() {
-        let encoded = '-';    
+        let encoded = '-';
         let die = parse(encoded).unwrap();
         assert_eq!(die.used, false);
         match die.number {
@@ -66,7 +65,7 @@ mod tests {
 
     #[test]
     fn parsing_die_number_test() {
-        let encoded = '6';    
+        let encoded = '6';
         let die = parse(encoded).unwrap();
         assert_eq!(die.used, false);
         match die.number {
@@ -77,7 +76,7 @@ mod tests {
 
     #[test]
     fn parsing_high_number_test() {
-        let encoded = '7';    
+        let encoded = '7';
         let die = parse(encoded);
         match die {
             Ok(_) => assert!(false, "die must be invalid"),
@@ -87,7 +86,7 @@ mod tests {
 
     #[test]
     fn parsing_char_test() {
-        let encoded = 'c';    
+        let encoded = 'c';
         let die = parse(encoded);
         match die {
             Ok(_) => assert!(false, "die must be invalid"),
@@ -97,7 +96,7 @@ mod tests {
 
     #[test]
     fn mark_used_test() {
-        let mut die = Die { number: Some(1), used: false };    
+        let mut die = Die { number: Some(1), used: false };
         die.mark_used();
         assert!(die.used);
     }

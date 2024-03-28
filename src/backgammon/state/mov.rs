@@ -74,21 +74,20 @@ pub fn build_move_step(from_kind: PointKind, from_number: Option<i8>, to_kind: P
 }
 
 pub fn bar_move_step(destination_point: Option<&Point>, die_number: i8, player_number: i8) -> Option<MoveStep> {
-   match destination_point {
-       Some(p) => {
-           if !(p.prime() && p.occupied_by_opponent(player_number)) {
-               let hit = p.occupied_by_opponent(player_number) && p.blot();
-               Some(build_move_step(
-                   PointKind::Bar, None, 
-                   PointKind::Point, Some(p.number),
-                   die_number,
-                   hit
-               ))    
-           } else {
-               None
-           }
-       },
-       None => None 
+   if let Some(p) = destination_point {
+       if !(p.prime() && p.occupied_by_opponent(player_number)) {
+           let hit = p.occupied_by_opponent(player_number) && p.blot();
+           Some(build_move_step(
+               PointKind::Bar, None,
+               PointKind::Point, Some(p.number),
+               die_number,
+               hit
+           ))
+       } else {
+           None
+       }
+   } else {
+       None
    }
 }
 
@@ -102,34 +101,32 @@ pub fn off_board_move_step(origin_point: &Point, die_number: i8) -> Option<MoveS
 }
 
 pub fn beyond_off_board_move_step(origin_point: &Point, die_number: i8, back_point_number: Option<i8>) -> Option<MoveStep> {
-    match back_point_number { 
-        Some(n) => {
-            if n == origin_point.number {
-                off_board_move_step(origin_point, die_number)
-            } else {
-                None
-            }
-        },
-        None => None 
+    if let Some(n) = back_point_number {
+        if n == origin_point.number {
+            off_board_move_step(origin_point, die_number)
+        } else {
+            None
+        }
+    } else {
+        None
     }
 }
 
 pub fn point_to_point_move_step(origin_point: &Point, destination_point: Option<&Point>, die_number: i8, player_number: i8) -> Option<MoveStep> {
-   match destination_point {
-       Some(p) => {
-           if !(p.prime() && p.occupied_by_opponent(player_number)) {
-               let hit = p.occupied_by_opponent(player_number) && p.blot();
-               Some(build_move_step(
-                   PointKind::Point, Some(origin_point.number),
-                   PointKind::Point, Some(p.number),
-                   die_number,
-                   hit
-               ))
-           } else {
-               None
-           }
-       },
-       None => None 
+   if let Some(p) = destination_point {
+       if !(p.prime() && p.occupied_by_opponent(player_number)) {
+           let hit = p.occupied_by_opponent(player_number) && p.blot();
+           Some(build_move_step(
+               PointKind::Point, Some(origin_point.number),
+               PointKind::Point, Some(p.number),
+               die_number,
+               hit
+           ))
+       } else {
+           None
+       }
+   } else {
+       None
    }
 }
 
@@ -139,26 +136,26 @@ mod tests {
 
     #[test]
     fn location_format_point_test() {
-       let location = Location { kind: PointKind::Point, number: Some(1) }; 
+       let location = Location { kind: PointKind::Point, number: Some(1) };
        assert_eq!(location.format(), "1");
     }
 
     #[test]
     fn location_format_bar_test() {
-       let location = Location { kind: PointKind::Bar, number: None }; 
+       let location = Location { kind: PointKind::Bar, number: None };
        assert_eq!(location.format(), "bar");
     }
 
     #[test]
     fn location_format_off_board_test() {
-       let location = Location { kind: PointKind::OffBoard, number: None }; 
+       let location = Location { kind: PointKind::OffBoard, number: None };
        assert_eq!(location.format(), "off");
     }
 
     #[test]
     fn move_step_format_test() {
-       let from = Location { kind: PointKind::Point, number: Some(1) }; 
-       let to = Location { kind: PointKind::Point, number: Some(2) }; 
+       let from = Location { kind: PointKind::Point, number: Some(1) };
+       let to = Location { kind: PointKind::Point, number: Some(2) };
        let die_number = 1;
        let hit = true;
        let move_step = MoveStep { from, to, die_number, hit };
@@ -167,13 +164,13 @@ mod tests {
 
     #[test]
     fn move_format_test() {
-       let from_a = Location { kind: PointKind::Point, number: Some(1) }; 
-       let to_a = Location { kind: PointKind::Point, number: Some(2) }; 
+       let from_a = Location { kind: PointKind::Point, number: Some(1) };
+       let to_a = Location { kind: PointKind::Point, number: Some(2) };
        let die_number_a = 1;
        let move_step_a = MoveStep { from: from_a, to: to_a, die_number: die_number_a, hit: false };
-       
-       let from_b = Location { kind: PointKind::Point, number: Some(2) }; 
-       let to_b = Location { kind: PointKind::Point, number: Some(4) }; 
+
+       let from_b = Location { kind: PointKind::Point, number: Some(2) };
+       let to_b = Location { kind: PointKind::Point, number: Some(4) };
        let die_number_b = 2;
        let move_step_b = MoveStep { from: from_b, to: to_b, die_number: die_number_b, hit: false };
 
@@ -181,13 +178,13 @@ mod tests {
            die_numbers: vec![die_number_a, die_number_b],
            list: vec![move_step_a, move_step_b]
        };
-       
+
        assert_eq!(mov.format(), "2-1: 1/2 2/4");
     }
 
     #[test]
     fn build_move_step_test() {
-        let from_kind = PointKind::Point;        
+        let from_kind = PointKind::Point;
         let from_number = Some(1);
         let to_kind = PointKind::Point;
         let to_number = Some(2);
@@ -204,11 +201,11 @@ mod tests {
 
     #[test]
     fn bar_move_step_valid_test() {
-        let destination_point = Point { 
-            number: 2, 
+        let destination_point = Point {
+            number: 2,
             player_one_piece_count: 0,
             player_two_piece_count: 0
-        }; 
+        };
         let die_number = 2;
         let player_number = 1;
 
@@ -226,17 +223,17 @@ mod tests {
 
     #[test]
     fn bar_move_step_prime_test() {
-        let destination_point = Point { 
-            number: 2, 
+        let destination_point = Point {
+            number: 2,
             player_one_piece_count: 0,
-            player_two_piece_count: 2 
-        }; 
+            player_two_piece_count: 2
+        };
         let die_number = 2;
         let player_number = 1;
 
         match bar_move_step(Some(&destination_point), die_number, player_number) {
             Some(_) => assert!(false, "expected none"),
-            None => assert!(true) 
+            None => assert!(true)
         }
     }
 
@@ -247,17 +244,17 @@ mod tests {
 
         match bar_move_step(None, die_number, player_number) {
             Some(_) => assert!(false, "expected none"),
-            None => assert!(true) 
+            None => assert!(true)
         }
     }
 
     #[test]
     fn off_board_move_step_test() {
-        let origin_point = Point { 
-            number: 24, 
+        let origin_point = Point {
+            number: 24,
             player_one_piece_count: 0,
             player_two_piece_count: 0
-        }; 
+        };
         let die_number = 1;
 
         match off_board_move_step(&origin_point, die_number) {
@@ -274,11 +271,11 @@ mod tests {
 
     #[test]
     fn beyond_off_board_move_step_valid_test() {
-        let origin_point = Point { 
-            number: 21, 
+        let origin_point = Point {
+            number: 21,
             player_one_piece_count: 0,
             player_two_piece_count: 0
-        }; 
+        };
         let die_number = 6;
         let back_point_number = 21;
 
@@ -296,11 +293,11 @@ mod tests {
 
     #[test]
     fn beyond_off_board_move_step_invalid_test() {
-        let origin_point = Point { 
-            number: 21, 
+        let origin_point = Point {
+            number: 21,
             player_one_piece_count: 0,
             player_two_piece_count: 0
-        }; 
+        };
         let die_number = 6;
 
         match beyond_off_board_move_step(&origin_point, die_number, None) {
@@ -311,16 +308,16 @@ mod tests {
 
     #[test]
     fn point_to_point_move_step_valid_test() {
-        let origin_point = Point { 
-            number: 1, 
+        let origin_point = Point {
+            number: 1,
             player_one_piece_count: 0,
             player_two_piece_count: 0
-        }; 
-        let destination_point = Point { 
-            number: 4, 
+        };
+        let destination_point = Point {
+            number: 4,
             player_one_piece_count: 0,
             player_two_piece_count: 0
-        }; 
+        };
         let die_number = 3;
         let player_number = 1;
 
@@ -338,16 +335,16 @@ mod tests {
 
     #[test]
     fn point_to_point_move_step_prime_test() {
-        let origin_point = Point { 
-            number: 1, 
+        let origin_point = Point {
+            number: 1,
             player_one_piece_count: 0,
             player_two_piece_count: 0
-        }; 
-        let destination_point = Point { 
-            number: 4, 
+        };
+        let destination_point = Point {
+            number: 4,
             player_one_piece_count: 0,
-            player_two_piece_count: 2 
-        }; 
+            player_two_piece_count: 2
+        };
         let die_number = 3;
         let player_number = 1;
 
@@ -359,11 +356,11 @@ mod tests {
 
     #[test]
     fn point_to_point_move_step_invalid_test() {
-        let origin_point = Point { 
-            number: 1, 
+        let origin_point = Point {
+            number: 1,
             player_one_piece_count: 0,
             player_two_piece_count: 0
-        }; 
+        };
         let die_number = 3;
         let player_number = 1;
 
