@@ -8,7 +8,7 @@ const ALL_ROLLS: [(i8,i8); 21] = [
     (2,2), (2,3), (2,4), (2,5), (2,6),
     (3,3), (3,4), (3,5), (3,6),
     (4,4), (4,5), (4,6),
-    (5,5), (5,6), 
+    (5,5), (5,6),
     (6,6)
 ];
 
@@ -26,9 +26,8 @@ pub fn recommended_move(game_state: backgammon::state::game_state::GameState, de
         },
         _ => {
             let maximizing_player = match new_game_state.current_player_number {
-                1 => true,
                 2 => false,
-                _ => true,
+                _ => true
             };
 
             // Do something
@@ -70,7 +69,7 @@ pub fn evaluate_roll_phase(game_state: &mut backgammon::state::game_state::GameS
         game_state.perform_set_roll(roll.0, roll.1);
         evaluate_move_phase(game_state, depth - 1, alpha, beta, maximizing_player)
     }).collect();
-    
+
     match results {
         Ok(numbers) => {
             let total: i32 = numbers.iter().sum();
@@ -95,23 +94,17 @@ pub fn evaluate_move_phase(game_state: &mut backgammon::state::game_state::GameS
     if maximizing_player {
         let mut max_eval = std::i32::MIN;
         for mov in moves {
-            match game_state.perform_move(&mov) {
-                Ok(_) => {
-                    match evaluate_roll_phase(game_state, depth, alpha, beta, false) {
-                        Ok(eval) => {
-                            max_eval = cmp::max(max_eval, eval);
-                            alpha = cmp::max(alpha, eval);
-                        },
-                        Err(e) => return Err(e)
-                    };
-                },
-                Err(e) => return Err(e),
-            };
+            game_state.perform_move(&mov)?;
 
-            match game_state.undo_move(&mov) {
-                Ok(_) => (),
+            match evaluate_roll_phase(game_state, depth, alpha, beta, false) {
+                Ok(eval) => {
+                    max_eval = cmp::max(max_eval, eval);
+                    alpha = cmp::max(alpha, eval);
+                },
                 Err(e) => return Err(e)
             };
+
+            game_state.undo_move(&mov)?;
 
             if beta <= alpha {
                 break;
@@ -121,23 +114,17 @@ pub fn evaluate_move_phase(game_state: &mut backgammon::state::game_state::GameS
     } else {
         let mut min_eval = std::i32::MAX;
         for mov in moves {
-            match game_state.perform_move(&mov) {
-                Ok(_) => {
-                    match evaluate_roll_phase(game_state, depth, alpha, beta, true) {
-                        Ok(eval) => {
-                            min_eval = cmp::min(min_eval, eval);
-                            beta = cmp::min(beta, eval);
-                        },
-                        Err(e) => return Err(e)
-                    }
+            game_state.perform_move(&mov)?;
+
+            match evaluate_roll_phase(game_state, depth, alpha, beta, true) {
+                Ok(eval) => {
+                    min_eval = cmp::min(min_eval, eval);
+                    beta = cmp::min(beta, eval);
                 },
                 Err(e) => return Err(e)
-            };
+            }
 
-            match game_state.undo_move(&mov) {
-                Ok(_) => (),
-                Err(e) => return Err(e)
-            };
+            game_state.undo_move(&mov)?;
 
             if beta <= alpha {
                 break;
@@ -161,16 +148,16 @@ fn static_evaluation(game_state: &backgammon::state::game_state::GameState) -> i
     let player_one_bar_count = player_bar_count(game_state, 1);
     let player_two_bar_count = player_bar_count(game_state, 2);
     let bar_count_value = i32::from(player_two_bar_count - player_one_bar_count);
-    
+
     let player_one_home_count = player_home_count(game_state, 1);
     let player_two_home_count = player_home_count(game_state, 2);
     let home_count_value = i32::from(player_one_home_count - player_two_home_count);
 
-    let player_one_off_board_count = player_off_board_count(game_state, 1); 
-    let player_two_off_board_count = player_off_board_count(game_state, 2); 
+    let player_one_off_board_count = player_off_board_count(game_state, 1);
+    let player_two_off_board_count = player_off_board_count(game_state, 2);
     let off_board_count_value = i32::from(player_one_off_board_count - player_two_off_board_count);
 
-    8*prime_count_value + 16*blot_count_value + 32*bar_count_value + 64*home_count_value + 128*off_board_count_value + 256*win_value(game_state) 
+    8*prime_count_value + 16*blot_count_value + 32*bar_count_value + 64*home_count_value + 128*off_board_count_value + 256*win_value(game_state)
 }
 
 fn player_prime_count(game_state: &backgammon::state::game_state::GameState, player_number: i8) -> usize {
@@ -178,7 +165,7 @@ fn player_prime_count(game_state: &backgammon::state::game_state::GameState, pla
         match player_number {
             1 => point.player_one_piece_count >= 1,
             2 => point.player_two_piece_count >= 1,
-            _ => false 
+            _ => false
         }
     }).count()
 }
@@ -225,10 +212,10 @@ fn win_value(game_state: &backgammon::state::game_state::GameState) -> i32 {
    match game_state.winner() {
         Some(w) => match w {
            1 => 1,
-           2 => -1, 
-           _ => 0    
+           2 => -1,
+           _ => 0
         },
-        None => 0 
+        None => 0
    }
 }
 
@@ -250,7 +237,7 @@ mod tests {
         let mut game_state = backgammon::state::game_state::parse(&encoded).unwrap();
 
         match evaluate_move_phase(&mut game_state, 0, std::i32::MIN, std::i32::MAX, true) {
-            Ok(result) => assert_eq!(result, 0),            
+            Ok(result) => assert_eq!(result, 0),
             Err(e) => assert!(false, "{}", e)
         }
     }

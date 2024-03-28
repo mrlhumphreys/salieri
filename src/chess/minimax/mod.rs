@@ -1,6 +1,5 @@
 use std::cmp;
 use std::convert::TryFrom;
-use crate::chess::state::square::Square;
 use crate::chess::state::piece::PieceKind;
 use crate::chess;
 
@@ -15,9 +14,8 @@ pub fn recommended_move(game_state: &mut chess::state::game_state::GameState, de
         },
         _ => {
             let maximizing_player = match new_game_state.current_player_number {
-                1 => true,
                 2 => false,
-                _ => true,
+                _ => true
             };
 
             let moves_with_value = moves.iter().map(|mov| {
@@ -65,23 +63,17 @@ pub fn evaluate(game_state: &mut chess::state::game_state::GameState, depth: i8,
     if maximizing_player {
         let mut max_eval = std::i32::MIN;
         for mov in moves {
-            match game_state.perform_move(&mov) {
-                Ok(()) => {
-                    match evaluate(game_state, depth - 1, alpha, beta, false) {
-                        Ok(eval) => {
-                            max_eval = cmp::max(max_eval, eval);
-                            alpha = cmp::max(alpha, eval);
-                        },
-                        Err(e) => return Err(e),
-                    }
+            game_state.perform_move(&mov)?;
+
+            match evaluate(game_state, depth - 1, alpha, beta, false) {
+                Ok(eval) => {
+                    max_eval = cmp::max(max_eval, eval);
+                    alpha = cmp::max(alpha, eval);
                 },
                 Err(e) => return Err(e),
-            };
+            }
 
-            match game_state.undo_move(&mov) {
-                Ok(()) => (),
-                Err(e) => return Err(e)
-            };
+            game_state.undo_move(&mov)?;
 
             if beta <= alpha {
                 break;
@@ -91,25 +83,17 @@ pub fn evaluate(game_state: &mut chess::state::game_state::GameState, depth: i8,
     } else {
         let mut min_eval = std::i32::MAX;
         for mov in moves {
-            match game_state.perform_move(&mov) {
-                Ok(()) => {
-                    match evaluate(game_state, depth - 1, alpha, beta, true) {
-                        Ok(eval) => {
-                            min_eval = cmp::min(min_eval, eval);
-                            beta = cmp::min(beta, eval);
-                        },
-                        Err(e) => return Err(e),
-                    }
-                },
-                Err(e) => {
-                    return Err(e);
-                },
-            };
+            game_state.perform_move(&mov)?;
 
-            match game_state.undo_move(&mov) {
-                Ok(()) => (),
-                Err(e) => return Err(e)
-            };
+            match evaluate(game_state, depth - 1, alpha, beta, true) {
+                Ok(eval) => {
+                    min_eval = cmp::min(min_eval, eval);
+                    beta = cmp::min(beta, eval);
+                },
+                Err(e) => return Err(e),
+            }
+
+            game_state.undo_move(&mov)?;
 
             if beta <= alpha {
                 break;
@@ -156,18 +140,17 @@ fn player_pieces_count(game_state: &chess::state::game_state::GameState, player_
             None => false
         }
     }).map(|s| {
-        match s.piece {
-            Some(p) => {
-                match p.kind {
-                    PieceKind::King => 200,
-                    PieceKind::Queen => 9,
-                    PieceKind::Rook => 5,
-                    PieceKind::Bishop => 3,
-                    PieceKind::Knight => 3,
-                    PieceKind::Pawn => 1
-                }
-            },
-            None => 0
+        if let Some(p) = s.piece {
+            match p.kind {
+                PieceKind::King => 200,
+                PieceKind::Queen => 9,
+                PieceKind::Rook => 5,
+                PieceKind::Bishop => 3,
+                PieceKind::Knight => 3,
+                PieceKind::Pawn => 1
+            }
+        } else {
+            0
         }
     }).sum()
 }
@@ -181,7 +164,7 @@ fn player_double_pawns_count(game_state: &chess::state::game_state::GameState, p
             } else {
                 false
             }
-        }).collect::<Vec<&Square>>().len();
+        }).count();
         if number_of_pawns > 1 {
             count += 1;
         }

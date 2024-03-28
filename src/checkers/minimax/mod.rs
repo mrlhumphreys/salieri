@@ -15,7 +15,6 @@ pub fn recommended_move(game_state: checkers::state::game_state::GameState, dept
         },
         _ => {
             let maximizing_player = match new_game_state.current_player_number {
-                1 => true,
                 2 => false,
                 _ => true,
             };
@@ -38,7 +37,7 @@ pub fn recommended_move(game_state: checkers::state::game_state::GameState, dept
 
                 (mov, value)
             });
-            
+
             let best_move = match maximizing_player {
                 true => moves_with_value.max_by(|a,b| (a.1).cmp(&b.1) ),
                 false => moves_with_value.min_by(|a,b| (a.1).cmp(&b.1) ),
@@ -57,27 +56,21 @@ pub fn evaluate(game_state: &mut checkers::state::game_state::GameState, depth: 
     if depth == 0 || moves.len() == 0 {
         return Ok(static_evaluation(&game_state));
     }
-    
+
     if maximizing_player {
         let mut max_eval = std::i32::MIN;
         for mov in moves {
-            match game_state.perform_move(&mov) {
-                Ok(()) => {
-                    match evaluate(game_state, depth - 1, alpha, beta, false) {
-                        Ok(eval) => {
-                            max_eval = cmp::max(max_eval, eval);
-                            alpha = cmp::max(alpha, eval);
-                        },
-                        Err(e) => return Err(e),
-                    }
-                },
-                Err(e) => return Err(e), 
-            }; 
+            game_state.perform_move(&mov)?;
 
-            match game_state.undo_move(&mov) {
-                Ok(()) => (),
-                Err(e) => return Err(e)
-            };
+            match evaluate(game_state, depth - 1, alpha, beta, false) {
+                Ok(eval) => {
+                    max_eval = cmp::max(max_eval, eval);
+                    alpha = cmp::max(alpha, eval);
+                },
+                Err(e) => return Err(e),
+            }
+
+            game_state.undo_move(&mov)?;
 
             if beta <= alpha {
                 break;
@@ -87,25 +80,16 @@ pub fn evaluate(game_state: &mut checkers::state::game_state::GameState, depth: 
     } else {
         let mut min_eval = std::i32::MAX;
         for mov in moves {
-            match game_state.perform_move(&mov) {
-                Ok(()) => {
-                    match evaluate(game_state, depth - 1, alpha, beta, true) {
-                        Ok(eval) => {
-                            min_eval = cmp::min(min_eval, eval);
-                            beta = cmp::min(beta, eval);
-                        },
-                        Err(e) => return Err(e),
-                    }
+            game_state.perform_move(&mov)?;
+            match evaluate(game_state, depth - 1, alpha, beta, true) {
+                Ok(eval) => {
+                    min_eval = cmp::min(min_eval, eval);
+                    beta = cmp::min(beta, eval);
                 },
-                Err(e) => {
-                    return Err(e);
-                },
-            };
+                Err(e) => return Err(e),
+            }
 
-            match game_state.undo_move(&mov) {
-                Ok(()) => (),
-                Err(e) => return Err(e)
-            };
+            game_state.undo_move(&mov)?;
 
             if beta <= alpha {
                 break;
@@ -121,7 +105,7 @@ pub fn static_evaluation(game_state: &checkers::state::game_state::GameState) ->
     let player_one_pieces_count = player_pieces_count(game_state, 1);
     let player_two_pieces_count = player_pieces_count(game_state, 2);
     let pieces_count_value = u_to_i32(player_one_pieces_count) - u_to_i32(player_two_pieces_count);
-   
+
     let player_one_kings_count = player_kings_count(game_state, 1);
     let player_two_kings_count = player_kings_count(game_state, 2);
     let kings_count_value = u_to_i32(player_one_kings_count) - u_to_i32(player_two_kings_count);
@@ -129,7 +113,7 @@ pub fn static_evaluation(game_state: &checkers::state::game_state::GameState) ->
     let player_one_center_squares_count = center_squares_count(game_state, 1);
     let player_two_center_squares_count = center_squares_count(game_state, 2);
     let center_squares_count_value = u_to_i32(player_one_center_squares_count) - u_to_i32(player_two_center_squares_count);
-   
+
     2*pieces_count_value + 4*kings_count_value + 1*center_squares_count_value + 256*lose_value(game_state)
 }
 
@@ -189,14 +173,14 @@ mod tests {
     fn recommended_move_test() {
         let encoded = String::from("W:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,12,15");
         let game_state = checkers::state::game_state::parse(&encoded).unwrap();
-        let mov = recommended_move(game_state, 5); 
+        let mov = recommended_move(game_state, 5);
 
         match mov {
             Some(m) => {
                 assert_eq!(m.from, 23);
                 assert_eq!(m.to, vec![19]);
             },
-            None => assert!(false, "expected move"), 
+            None => assert!(false, "expected move"),
         }
     }
 }
