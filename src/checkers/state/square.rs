@@ -1,4 +1,3 @@
-use std::cmp;
 use crate::checkers::state::point::Point;
 use crate::checkers::state::square_set::between;
 use crate::checkers::state::game_state::GameState;
@@ -59,43 +58,59 @@ impl Square {
         self.occupied() && self.player_number != player_number
     }
 
-    pub fn in_direction(&self, from: &Square, player_number: i8, king: bool) -> bool {
-        let direction = if king {
-            0
+    pub fn potential_jump_points(&self, player_number: i8, king: bool) -> Vec<Point> {
+        if king {
+            vec![
+                Point { x: self.x - 2, y: self.y - 2 },
+                Point { x: self.x - 2, y: self.y + 2 },
+                Point { x: self.x + 2, y: self.y - 2 },
+                Point { x: self.x + 2, y: self.y + 2 }
+            ]
         } else {
-            match player_number {
-                1 => -1,
-                2 => 1,
-                _ => 0
+            if player_number == 2 {
+                vec![
+                    Point { x: self.x - 2, y: self.y + 2 },
+                    Point { x: self.x + 2, y: self.y + 2 }
+                ]
+            } else {
+                vec![
+                    Point { x: self.x - 2, y: self.y - 2 },
+                    Point { x: self.x + 2, y: self.y - 2 }
+                ]
             }
-        };
-
-        match direction {
-            -1 => self.y < from.y,
-            0 => self.y != from.y,
-            1 => self.y > from.y,
-            _ => false,
         }
     }
 
-    pub fn diagonal(&self, to: &Square) -> bool {
-        let abs_dx = (to.x - self.x).abs();
-        abs_dx != 0 && abs_dx == (to.y - self.y).abs()
-    }
-
-    pub fn magnitude(&self, to: &Square) -> i8 {
-        let abs_dx = (to.x - self.x).abs();
-        let abs_dy = (to.y - self.y).abs();
-        cmp::max(abs_dx, abs_dy)
+    pub fn potential_move_points(&self, player_number: i8, king: bool) -> Vec<Point> {
+        if king {
+            vec![
+                Point { x: self.x - 1, y: self.y - 1 },
+                Point { x: self.x - 1, y: self.y + 1 },
+                Point { x: self.x + 1, y: self.y - 1 },
+                Point { x: self.x + 1, y: self.y + 1 }
+            ]
+        } else {
+            if player_number == 2 {
+                vec![
+                    Point { x: self.x - 1, y: self.y + 1 },
+                    Point { x: self.x + 1, y: self.y + 1 }
+                ]
+            } else {
+                vec![
+                    Point { x: self.x - 1, y: self.y - 1 },
+                    Point { x: self.x + 1, y: self.y - 1 }
+                ]
+            }
+        }
     }
 
     pub fn can_jump(&self, player_number: i8, king: bool, game_state: &GameState) -> bool {
-        game_state.squares.iter().any(|s| {
-            self.magnitude(&s) == 2 &&
-                self.diagonal(&s) &&
-                s.in_direction(&self, player_number, king) &&
-                s.unoccupied() &&
-                match between(&game_state.squares, self.point(), s.point()) {
+        let potential_destinations = self.potential_jump_points(player_number, king);
+
+        game_state.squares.iter().any(|to| {
+            potential_destinations.iter().any(|p| p.x == to.x && p.y == to.y) &&
+                to.unoccupied() &&
+                match between(&game_state.squares, self.point(), to.point()) {
                     Some(b) => b.occupied_by_opponent(player_number),
                     None => false,
                 }
@@ -103,21 +118,18 @@ impl Square {
     }
 
     pub fn can_move(&self, player_number: i8, king: bool, game_state: &GameState) -> bool {
-        game_state.squares.iter().any(|s| {
-            self.magnitude(&s) == 1 &&
-                self.diagonal(&s) &&
-                s.in_direction(&self, player_number, king) &&
-                s.unoccupied()
+        let potential_destinations = self.potential_move_points(player_number, king);
+        game_state.squares.iter().any(|to| {
+            potential_destinations.iter().any(|p| p.x == to.x && p.y == to.y) && to.unoccupied()
         })
     }
 
     pub fn jump_destinations<'a>(&self, player_number: i8, king: bool, game_state: &'a GameState) -> Vec<&'a Square> {
-        game_state.squares.iter().filter(|s| {
-            self.magnitude(&s) == 2 &&
-                self.diagonal(&s) &&
-                s.in_direction(&self, player_number, king) &&
-                s.unoccupied() &&
-                match between(&game_state.squares, self.point(), s.point()) {
+        let potential_destinations = self.potential_jump_points(player_number, king);
+        game_state.squares.iter().filter(|to| {
+            potential_destinations.iter().any(|p| p.x == to.x && p.y == to.y) &&
+                to.unoccupied() &&
+                match between(&game_state.squares, self.point(), to.point()) {
                     Some(b) => b.occupied_by_opponent(player_number),
                     None => false,
                 }
@@ -125,11 +137,9 @@ impl Square {
     }
 
     pub fn move_destinations<'a>(&self, player_number: i8, king: bool, game_state: &'a GameState) -> Vec<&'a Square> {
-        game_state.squares.iter().filter(|s| {
-            self.magnitude(&s) == 1 &&
-                self.diagonal(&s) &&
-                s.in_direction(&self, player_number, king) &&
-                s.unoccupied()
+        let potential_destinations = self.potential_move_points(player_number, king);
+        game_state.squares.iter().filter(|to| {
+            potential_destinations.iter().any(|p| p.x == to.x && p.y == to.y) && to.unoccupied()
         }).collect()
     }
 
@@ -210,84 +220,85 @@ mod tests {
     }
 
     #[test]
-    fn moving_up_and_square_is_up_from_origin() {
-        let square = Square { id: 1, x: 4, y: 3, player_number: 0, king: false };
-        let from = Square { id: 2, x: 4, y: 4, player_number: 0, king: false };
-        let (player_number, king) = (1, false);
-        let result = square.in_direction(&from, player_number, king);
-        assert_eq!(result, true);
+    fn potential_jump_points_king_test() {
+        let player_number = 1;
+        let king = true;
+        let square = Square { id: 1, x: 4, y: 4, player_number, king };
+        let expected = vec![
+            Point { x: 2, y: 2 },
+            Point { x: 2, y: 6 },
+            Point { x: 6, y: 2 },
+            Point { x: 6, y: 6 }
+        ];
+        let result = square.potential_jump_points(player_number, king);
+        assert_eq!(result, expected);
     }
 
     #[test]
-    fn moving_up_and_square_is_down_from_origin() {
-        let square = Square { id: 1, x: 4, y: 5, player_number: 0, king: false };
-        let from = Square { id: 2, x: 4, y: 4, player_number: 0, king: false };
-        let (player_number, king) = (1, false);
-        let result = square.in_direction(&from, player_number, king);
-        assert_eq!(result, false);
+    fn potential_jump_points_player_one_test() {
+        let player_number = 1;
+        let king = false;
+        let square = Square { id: 1, x: 4, y: 4, player_number, king };
+        let expected = vec![
+            Point { x: 2, y: 2 },
+            Point { x: 6, y: 2 },
+        ];
+        let result = square.potential_jump_points(player_number, king);
+        assert_eq!(result, expected);
     }
 
     #[test]
-    fn moving_up_and_square_is_on_same_row_as_origin() {
-        let square = Square { id: 1, x: 4, y: 4, player_number: 0, king: false };
-        let from = Square { id: 2, x: 4, y: 4, player_number: 0, king: false };
-        let (player_number, king) = (2, false);
-        let result = square.in_direction(&from, player_number, king);
-        assert_eq!(result, false);
+    fn potential_jump_points_player_two_test() {
+        let player_number = 2;
+        let king = false;
+        let square = Square { id: 1, x: 4, y: 4, player_number, king };
+        let expected = vec![
+            Point { x: 2, y: 6 },
+            Point { x: 6, y: 6 },
+        ];
+        let result = square.potential_jump_points(player_number, king);
+        assert_eq!(result, expected);
     }
 
     #[test]
-    fn moving_down_and_square_is_up_from_origin() {
-        let square = Square { id: 1, x: 4, y: 3, player_number: 0, king: false };
-        let from = Square { id: 2, x: 4, y: 4, player_number: 0, king: false };
-        let (player_number, king) = (2, false);
-        let result = square.in_direction(&from, player_number, king);
-        assert_eq!(result, false);
+    fn potential_move_points_king_test() {
+        let player_number = 1;
+        let king = true;
+        let square = Square { id: 1, x: 4, y: 4, player_number, king };
+        let expected = vec![
+            Point { x: 3, y: 3 },
+            Point { x: 3, y: 5 },
+            Point { x: 5, y: 3 },
+            Point { x: 5, y: 5 }
+        ];
+        let result = square.potential_move_points(player_number, king);
+        assert_eq!(result, expected);
     }
 
     #[test]
-    fn moving_down_and_square_is_down_from_origin() {
-        let square = Square { id: 1, x: 4, y: 5, player_number: 0, king: false };
-        let from = Square { id: 2, x: 4, y: 4, player_number: 0, king: false };
-        let (player_number, king) = (2, false);
-        let result = square.in_direction(&from, player_number, king);
-        assert_eq!(result, true);
+    fn potential_move_points_player_one_test() {
+        let player_number = 1;
+        let king = false;
+        let square = Square { id: 1, x: 4, y: 4, player_number, king };
+        let expected = vec![
+            Point { x: 3, y: 3 },
+            Point { x: 5, y: 3 }
+        ];
+        let result = square.potential_move_points(player_number, king);
+        assert_eq!(result, expected);
     }
 
     #[test]
-    fn moving_down_and_square_is_in_same_row_as_origin() {
-        let square = Square { id: 1, x: 4, y: 4, player_number: 0, king: false };
-        let from = Square { id: 1, x: 4, y: 4, player_number: 0, king: false };
-        let (player_number, king) = (1, false);
-        let result = square.in_direction(&from, player_number, king);
-        assert_eq!(result, false);
-    }
-
-    #[test]
-    fn moving_any_and_square_is_up_from_origin() {
-        let square = Square { id: 1, x: 4, y: 3, player_number: 0, king: false };
-        let from = Square { id: 2, x: 4, y: 4, player_number: 0, king: false };
-        let (player_number, king) = (1, true);
-        let result = square.in_direction(&from, player_number, king);
-        assert_eq!(result, true);
-    }
-
-    #[test]
-    fn moving_any_and_square_is_down_from_origin() {
-        let square = Square { id: 1, x: 4, y: 5, player_number: 0, king: false };
-        let from = Square { id: 2, x: 4, y: 4, player_number: 0, king: false };
-        let (player_number, king) = (1, true);
-        let result = square.in_direction(&from, player_number, king);
-        assert_eq!(result, true);
-    }
-
-    #[test]
-    fn moving_any_and_square_is_in_same_row_as_origin() {
-        let square = Square { id: 1, x: 4, y: 4, player_number: 0, king: false };
-        let from = Square { id: 2, x: 4, y: 4, player_number: 0, king: false };
-        let (player_number, king) = (1, true);
-        let result = square.in_direction(&from, player_number, king);
-        assert_eq!(result, false);
+    fn potential_move_points_player_two_test() {
+        let player_number = 2;
+        let king = false;
+        let square = Square { id: 1, x: 4, y: 4, player_number, king };
+        let expected = vec![
+            Point { x: 3, y: 5 },
+            Point { x: 5, y: 5 }
+        ];
+        let result = square.potential_move_points(player_number, king);
+        assert_eq!(result, expected);
     }
 
     #[test]
