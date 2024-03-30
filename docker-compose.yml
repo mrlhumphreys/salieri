@@ -1,0 +1,13 @@
+version: "3.8"
+
+services:
+  api:
+    build:
+      context: .
+      target: builder
+    command: cargo run
+    ports:
+      - 7878:7878
+    volumes:
+      - .:/salieri
+
