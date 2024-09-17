@@ -50,8 +50,13 @@ assert_post_response "backgammon minimax" "http://localhost:7878/api/v0/backgamm
 assert_post_response "backgammon mcts" "http://localhost:7878/api/v0/backgammon/mcts" "0020000000000500300000005005000000030050000000000200121" "2-1: 19/21 21/22"
 
 # chess tests
-assert_post_response "chess move" "http://localhost:7878/api/v0/chess" "rnbqkb1r/pp3ppp/3p1n2/2pP4/8/2N5/PP2PPPP/R1BQKBNR w KQkq - 0" "Qb3"
+assert_post_response "chess move" "http://localhost:7878/api/v0/chess" "rnbqkb1r/pp3ppp/3p1n2/2pP4/8/2N5/PP2PPPP/R1BQKBNR w KQkq - 0" "e4"
 
 assert_post_response "chess openings db" "http://localhost:7878/api/v0/chess/openings_db" "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" "e4"
 
-assert_post_response "chess minimax" "http://localhost:7878/api/v0/chess/minimax" "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" "e4"
+assert_post_response "chess minimax" "http://localhost:7878/api/v0/chess/minimax" "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" "e3"
+
+# go tests
+assert_post_response "go move" "http://localhost:7878/api/v0/go" "PL[B]XB[0]XW[0]" "ss"
+
+assert_post_response "go minimax" "http://localhost:7878/api/v0/go/minimax" "PL[B]XB[0]XW[0]" "ss"

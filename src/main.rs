@@ -12,6 +12,9 @@ mod backgammon_controller;
 mod chess;
 mod chess_controller;
 
+mod go;
+mod go_controller;
+
 async fn index() -> impl Responder {
     HttpResponse::Ok().body("200 OK\n")
 }
@@ -38,6 +41,9 @@ async fn post_game_move(info: web::Path<String>, req_body: String) -> impl Respo
                 None => chess_controller::minimax(&req_body)
             }
         },
+        "go" => {
+            go_controller::minimax(&req_body)
+        }
         _ => return HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n")
     }
 }
@@ -70,6 +76,12 @@ async fn post_game_algorithm_move(info: web::Path<(String, String)>, req_body: S
                 _ => return HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n")
             }
         },
+        "go" => {
+            match algorithm.as_str() {
+                "minimax" => go_controller::minimax(&req_body),
+                _ => return HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n")
+            }
+        }
         _ => return HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n")
     }
 }
@@ -290,6 +302,60 @@ mod tests {
         let req = test::TestRequest::post()
             .insert_header(ContentType::plaintext())
             .uri("/api/v0/chess")
+            .set_payload(game_state)
+            .to_request();
+        let res = test::call_and_read_body(&app, req).await;
+        assert_eq!(res, Bytes::from_static(b"422 Unprocessable Entity\n"));
+    }
+
+    // go with valid params
+    #[actix_rt::test]
+    async fn test_go_status_with_valid_params() {
+        let game_state = String::from("PL[B]XB[0]XW[0]");
+        let app = test::init_service(App::new().route("/api/v0/{game_type}", web::post().to(post_game_move))).await;
+        let req = test::TestRequest::post()
+            .insert_header(ContentType::plaintext())
+            .uri("/api/v0/go")
+            .set_payload(game_state)
+            .to_request();
+        let res = test::call_service(&app, req).await;
+        assert!(res.status().is_success());
+    }
+
+    #[actix_rt::test]
+    async fn test_go_body_with_valid_params() {
+        let game_state = String::from("PL[B]XB[0]XW[0]");
+        let app = test::init_service(App::new().route("/api/v0/{game_type}", web::post().to(post_game_move))).await;
+        let req = test::TestRequest::post()
+            .insert_header(ContentType::plaintext())
+            .uri("/api/v0/go")
+            .set_payload(game_state)
+            .to_request();
+        let res = test::call_and_read_body(&app, req).await;
+        assert_eq!(res, Bytes::from_static(b"ss\n"));
+    }
+
+    // go with invalid params
+    #[actix_rt::test]
+    async fn test_go_status_with_invalid_params() {
+        let game_state = String::from("asdf");
+        let app = test::init_service(App::new().route("/api/v0/{game_type}", web::post().to(post_game_move))).await;
+        let req = test::TestRequest::post()
+            .insert_header(ContentType::plaintext())
+            .uri("/api/v0/go")
+            .set_payload(game_state)
+            .to_request();
+        let res = test::call_service(&app, req).await;
+        assert!(res.status().is_client_error());
+    }
+
+    #[actix_rt::test]
+    async fn test_go_body_with_invalid_params() {
+        let game_state = String::from("asdf");
+        let app = test::init_service(App::new().route("/api/v0/{game_type}", web::post().to(post_game_move))).await;
+        let req = test::TestRequest::post()
+            .insert_header(ContentType::plaintext())
+            .uri("/api/v0/go")
             .set_payload(game_state)
             .to_request();
         let res = test::call_and_read_body(&app, req).await;

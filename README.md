@@ -10,9 +10,10 @@ Board Game Move Recommender written in Rust.
 * Checkers - Common openings db
 * Checkers - Minimax algorithm with Alpha Beta Pruning
 * Checkers - Monte-Carlo Tree Search
-* Chess - Common openings db 
+* Chess - Common openings db
 * Chess - Minimax algorithm with Alpha Beta Pruning
 * Chess - Monte-Carlo Tree Search
+* Go - Minimax algorithm with Alpha Beta Pruning
 
 ## Config
 
@@ -32,6 +33,7 @@ Game Environment Variables:
 * `CHESS_MINIMAX_DEPTH` - How many layers the chess minimax algorithm will search, default: `3`
 * `CHESS_MCTS_SIMULATION_COUNT` - How many simulations the Monte Carlo Tree Search algorithm will search, default: `120`
 * `CHESS_MCTS_SIMULATION_DEPTH` - How many moves deep in the Monte Carlo Tree Search algorithm will search for each simulation, default: `60`
+* `GO_MINIMAX_DEPTH` - How many layers the chess minimax algorithm will search, default: `0`
 
 ## TODO
 
