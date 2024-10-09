@@ -251,7 +251,7 @@ pub fn populate_chains(points: &mut Vec<Point>) -> () {
                         Some(cid) => *cid,
                         None => 0
                     };
-                    other_chain_ids = chain_ids.as_slice()[1..chain_ids.len()-1].to_vec();
+                    other_chain_ids = chain_ids.as_slice()[1..chain_ids.len()].to_vec();
                 }
             }
 
@@ -841,27 +841,34 @@ mod tests {
             Point {
                 x: 1,
                 y: 0,
-                stone: Some(Stone { id: 1, player_number: 2, chain_id: 0 }),
-                territory_id: None
-            },
-            Point {
-                x: 0,
-                y: 1,
                 stone: Some(Stone { id: 1, player_number: 1, chain_id: 0 }),
                 territory_id: None
             },
             Point {
                 x: 1,
                 y: 1,
-                stone: Some(Stone { id: 1, player_number: 2, chain_id: 0 }),
+                stone: Some(Stone { id: 1, player_number: 1, chain_id: 0 }),
+                territory_id: None
+            },
+            Point {
+                x: 0,
+                y: 2,
+                stone: Some(Stone { id: 1, player_number: 1, chain_id: 0 }),
+                territory_id: None
+            },
+            Point {
+                x: 1,
+                y: 2,
+                stone: Some(Stone { id: 1, player_number: 1, chain_id: 0 }),
                 territory_id: None
             }
         ];
         populate_chains(&mut point_set);
         assert_eq!(point_set[0].stone.as_ref().unwrap().chain_id, 1);
-        assert_eq!(point_set[1].stone.as_ref().unwrap().chain_id, 2);
+        assert_eq!(point_set[1].stone.as_ref().unwrap().chain_id, 1);
         assert_eq!(point_set[2].stone.as_ref().unwrap().chain_id, 1);
-        assert_eq!(point_set[3].stone.as_ref().unwrap().chain_id, 2);
+        assert_eq!(point_set[3].stone.as_ref().unwrap().chain_id, 1);
+        assert_eq!(point_set[4].stone.as_ref().unwrap().chain_id, 1);
     }
 
     // +-B-+
