@@ -161,10 +161,10 @@ impl GameState {
 
                         match add_stone(&mut new_state, point.x, point.y, subject_player_number, self.max_stone_id) {
                             Ok(_) => {
-                                let doesnt_repeat_previous_state = self.previous_state != simplify(&new_state);
-                                if enemy_chain_has_only_one_liberty && doesnt_repeat_previous_state {
-                                    match remove_captured_stones(&mut new_state, point.x, point.y, self.opposing_player_number()) {
-                                        Ok(captures) => {
+                                match remove_captured_stones(&mut new_state, point.x, point.y, self.opposing_player_number()) {
+                                    Ok(captures) => {
+                                        let doesnt_repeat_previous_state = self.previous_state != simplify(&new_state);
+                                        if enemy_chain_has_only_one_liberty && doesnt_repeat_previous_state {
                                             // point is adjacent to enemy chain with currently 1 liberties
                                             // && adding stone doesn't repeat previous state
                                             let mov = Move {
@@ -174,9 +174,9 @@ impl GameState {
                                                 captures
                                             };
                                             moves.push(mov);
-                                        },
-                                        Err(_) => ()
-                                    }
+                                        }
+                                    },
+                                    Err(_) => ()
                                 }
                             },
                             Err(_) => ()
@@ -480,18 +480,14 @@ pub fn parse(encoded: &String) -> Result<GameState, &'static str> {
 
     // build previous state
     let mut previous_state = simplify(&points);
-    let other_player_number = match current_player_number {
-        1 => 2,
-        _ => 1
-    };
 
-    // add captured stones (not owned by current player)
+    // add captured stones (owned by current player)
     // and remove previous stone
     for x in 0..19 {
         for y in 0..19 {
             previous_captures.iter().for_each(|capture| {
                 if x == capture.0 as usize && y == capture.1 as usize {
-                    previous_state[y][x] = other_player_number;
+                    previous_state[y][x] = current_player_number;
                 }
 
                 if x == previous_player_last_stone_x as usize && y == previous_player_last_stone_y as usize {
@@ -1334,9 +1330,9 @@ mod tests {
             [ 0,0,1,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0 ],
             [ 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0 ],
             [ 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0 ],
-            [ 0,0,0,0,2, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0 ],
+            [ 0,0,0,0,1, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0 ],
 
-            [ 0,0,0,0,2, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0 ],
+            [ 0,0,0,0,1, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0 ],
             [ 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0 ],
             [ 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0 ],
             [ 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0 ],
