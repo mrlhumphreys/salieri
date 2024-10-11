@@ -9,7 +9,6 @@ use crate::go::state::point_set::filter_by_chain_id;
 use crate::go::state::point_set::populate_chains;
 use crate::go::state::point_set::simplify;
 use crate::go::state::point_set::max_chain_id;
-use crate::go::state::point_set::max_stone_id;
 use crate::go::state::point_set::mark_territories;
 use crate::go::state::point_set::players_territory_count;
 use crate::go::state::mov::Move;
@@ -20,8 +19,7 @@ pub struct GameState {
     pub current_player_number: i8,
     pub points: Vec<Point>,
     pub previous_state: Vec<Vec<i8>>,
-    pub player_stats: Vec<PlayerStat>,
-    pub max_stone_id: i8
+    pub player_stats: Vec<PlayerStat>
 }
 
 impl GameState {
@@ -54,7 +52,7 @@ impl GameState {
                 if adj.iter().any(|p| p.stone.is_none()) { // < 4
                     // point has at least one liberty
                     let mut new_state = self.points.clone();
-                    match add_stone(&mut new_state, point.x, point.y, subject_player_number, self.max_stone_id) {
+                    match add_stone(&mut new_state, point.x, point.y, subject_player_number) {
                         Ok(_) => {
                             match remove_captured_stones(&mut new_state, point.x, point.y, self.opposing_player_number()) {
                                 Ok(captures) => {
@@ -110,7 +108,7 @@ impl GameState {
                         // point is adjacent to own chain with currently 2 liberties
                         let mut new_state = self.points.clone(); // Clone
 
-                        match add_stone(&mut new_state, point.x, point.y, subject_player_number, self.max_stone_id) {
+                        match add_stone(&mut new_state, point.x, point.y, subject_player_number) {
                             Ok(_) => {
                                 match remove_captured_stones(&mut new_state, point.x, point.y, self.opposing_player_number()) {
                                     Ok(captures) => {
@@ -159,7 +157,7 @@ impl GameState {
 
                         let mut new_state = self.points.clone(); // clone
 
-                        match add_stone(&mut new_state, point.x, point.y, subject_player_number, self.max_stone_id) {
+                        match add_stone(&mut new_state, point.x, point.y, subject_player_number) {
                             Ok(_) => {
                                 match remove_captured_stones(&mut new_state, point.x, point.y, self.opposing_player_number()) {
                                     Ok(captures) => {
@@ -191,7 +189,7 @@ impl GameState {
 
     pub fn perform_move(&mut self, mov: &Move) -> Result<(), &'static str> {
         self.previous_state = simplify(&self.points);
-        match add_stone(&mut self.points, mov.x, mov.y, self.current_player_number, self.max_stone_id) {
+        match add_stone(&mut self.points, mov.x, mov.y, self.current_player_number) {
             Ok(chain_id) => {
                 if let Err(e) = self.update_joined_chains(mov.x, mov.y, chain_id, self.current_player_number) {
                     return Err(e)
@@ -205,7 +203,6 @@ impl GameState {
                     },
                     Err(e) => return Err(e)
                 }
-                self.max_stone_id += 1;
                 self.current_player_number = self.opposing_player_number();
                 Ok(())
             },
@@ -226,16 +223,11 @@ impl GameState {
         } // < N
         // add captured stones of current player number (will change player number later)
         let chain_id = max_chain_id(&self.points);
-        let mut stone_id = max_stone_id(&self.points);
         for p in self.points.iter_mut() {
             if mov.captures.contains(&(p.x, p.y)) {
-                p.stone = Some(Stone { id: stone_id, player_number: self.current_player_number, chain_id });
-                stone_id += 1;
+                p.stone = Some(Stone { player_number: self.current_player_number, chain_id });
             }
         } // N
-
-        // update max stone id
-        self.max_stone_id = stone_id;
 
         // update player stats - reduce prisoner count
         match self.player_stats.iter_mut().find(|ps| ps.player_number == other_player_number) {
@@ -312,7 +304,6 @@ pub fn parse(encoded: &String) -> Result<GameState, &'static str> {
 
     let mut x: i8 = 0;
     let mut y: i8 = 0;
-    let mut id: i8 = 0;
 
     let mut points = vec![];
     let mut previous_captures: Vec<(i8, i8)> = vec![];
@@ -399,11 +390,10 @@ pub fn parse(encoded: &String) -> Result<GameState, &'static str> {
                     let point = Point {
                         x,
                         y,
-                        stone: Some(Stone { id, player_number: stone_player_number, chain_id: 0 }),
+                        stone: Some(Stone { player_number: stone_player_number, chain_id: 0 }),
                         territory_id: None
                     };
                     points.push(point);
-                    id += 1;
 
                     // used to build previous state
                     if stone_player_number != current_player_number {
@@ -497,14 +487,11 @@ pub fn parse(encoded: &String) -> Result<GameState, &'static str> {
         }
     }
 
-    let max_stone_id = id;
-
     let game_state  = GameState {
         current_player_number,
         points,
         previous_state,
-        player_stats,
-        max_stone_id
+        player_stats
     };
     Ok(game_state)
 }
@@ -906,7 +893,6 @@ mod tests {
         assert_eq!(result.current_player_number, 1);
         assert_eq!(result.points, expected_points);
         assert_eq!(result.player_stats, expected_player_stats);
-        assert_eq!(result.max_stone_id, 0);
     }
 
     #[test]
@@ -918,8 +904,8 @@ mod tests {
             PlayerStat { player_number: 2, prisoner_count: 0, passed: false }
         ];
         let expected_points = vec![
-            Point { x: 2, y: 1, stone: Some(Stone { id: 0, player_number: 1, chain_id: 1 }), territory_id: None },
-            Point { x: 3, y: 4, stone: Some(Stone { id: 1, player_number: 2, chain_id: 2 }), territory_id: None },
+            Point { x: 2, y: 1, stone: Some(Stone { player_number: 1, chain_id: 1 }), territory_id: None },
+            Point { x: 3, y: 4, stone: Some(Stone { player_number: 2, chain_id: 2 }), territory_id: None },
             Point { x: 0, y: 0, stone: None, territory_id: None },
             Point { x: 0, y: 1, stone: None, territory_id: None },
             Point { x: 0, y: 2, stone: None, territory_id: None },
@@ -1301,7 +1287,6 @@ mod tests {
         assert_eq!(result.current_player_number, 1);
         assert_eq!(result.points, expected_points);
         assert_eq!(result.player_stats, expected_player_stats);
-        assert_eq!(result.max_stone_id, 2);
     }
 
     #[test]
@@ -1314,7 +1299,6 @@ mod tests {
         ];
         assert_eq!(result.current_player_number, 1);
         assert_eq!(result.player_stats, expected_player_stats);
-        assert_eq!(result.max_stone_id, 2);
     }
 
     #[test]
@@ -1512,7 +1496,7 @@ mod tests {
                     Some(p) => {
                         match &p.stone {
                             Some(s) => {
-                                let expected_stone = Stone { id: 1, player_number: 1, chain_id: 1 };
+                                let expected_stone = Stone { player_number: 1, chain_id: 1 };
                                 assert_eq!(s, &expected_stone);
                                 assert_eq!(game_state.current_player_number, 2);
                             },
@@ -1540,7 +1524,7 @@ mod tests {
                     Some(p) => {
                         match &p.stone {
                             Some(s) => {
-                                let expected_stone = Stone { id: 6, player_number: 1, chain_id: 6 };
+                                let expected_stone = Stone { player_number: 1, chain_id: 6 };
                                 assert_eq!(s, &expected_stone);
                                 assert_eq!(game_state.current_player_number, 2);
                             },
@@ -1608,7 +1592,7 @@ mod tests {
                     Some(p) => {
                         match &p.stone {
                             Some(s) => {
-                                let expected_stone = Stone { id: 4, player_number: 2, chain_id: 5 };
+                                let expected_stone = Stone { player_number: 2, chain_id: 5 };
                                 assert_eq!(s, &expected_stone)
                             },
                             None => assert!(false, "expected stone")

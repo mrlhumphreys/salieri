@@ -33,36 +33,7 @@ pub fn max_chain_id(points: &Vec<Point>) -> i8 {
     }
 }
 
-pub fn max_stone_id(points: &Vec<Point>) -> i8 {
-    let point_max = points.iter().max_by(|a, b| {
-        let a_stone_id = match &a.stone {
-            Some(s) => s.id,
-            None => 0
-        };
-
-        let b_stone_id = match &b.stone {
-            Some(s) => s.id,
-            None => 0
-        };
-
-        match a_stone_id.partial_cmp(&b_stone_id) {
-            Some(c) => c,
-            None => Ordering::Equal
-        }
-    });
-
-    match point_max {
-        Some(p) => {
-            match &p.stone {
-                Some(s) => s.id,
-                None => 0
-            }
-        },
-        None => 0
-    }
-}
-
-pub fn add_stone(points: &mut Vec<Point>, x: i8, y: i8, player_number: i8, max_stone_id: i8) -> Result<i8, &'static str> {
+pub fn add_stone(points: &mut Vec<Point>, x: i8, y: i8, player_number: i8) -> Result<i8, &'static str> {
     let adj = find_players_stone_adjacent_to_x_and_y(points, x, y, player_number);
 
     let chain_id = match adj {
@@ -77,7 +48,7 @@ pub fn add_stone(points: &mut Vec<Point>, x: i8, y: i8, player_number: i8, max_s
 
     match points.iter_mut().find(|p| p.x == x && p.y == y) {
         Some(p) => {
-            let stone = Stone { id: max_stone_id + 1, player_number, chain_id };
+            let stone = Stone { player_number, chain_id };
             p.stone = Some(stone);
             Ok(chain_id)
         },
@@ -423,37 +394,17 @@ mod tests {
             Point {
                 x: 0,
                 y: 0,
-                stone: Some(Stone { id: 0, player_number: 1, chain_id: 1 }),
+                stone: Some(Stone { player_number: 1, chain_id: 1 }),
                 territory_id: None
             },
             Point {
                 x: 0,
                 y: 1,
-                stone: Some(Stone { id: 1, player_number: 1, chain_id: 1 }),
+                stone: Some(Stone { player_number: 1, chain_id: 1 }),
                 territory_id: None
             }
         ];
         let result = max_chain_id(&point_set);
-        assert_eq!(result, 1);
-    }
-
-    #[test]
-    fn max_stone_id_test() {
-        let point_set = vec![
-            Point {
-                x: 0,
-                y: 0,
-                stone: Some(Stone { id: 0, player_number: 1, chain_id: 1 }),
-                territory_id: None
-            },
-            Point {
-                x: 0,
-                y: 1,
-                stone: Some(Stone { id: 1, player_number: 1, chain_id: 1 }),
-                territory_id: None
-            }
-        ];
-        let result = max_stone_id(&point_set);
         assert_eq!(result, 1);
     }
 
@@ -470,18 +421,14 @@ mod tests {
        let x = 0;
        let y = 0;
        let player_number = 1;
-       let max_stone_id = 1;
-       let result = add_stone(&mut points, x, y, player_number, max_stone_id);
+       let result = add_stone(&mut points, x, y, player_number);
        match result {
             Ok(chain_id) => {
                 assert_eq!(chain_id, 1);
                 match points.iter().find(|p| p.x == x && p.y == y ) {
                     Some(p) => {
                         match &p.stone {
-                            Some(s) => {
-                                assert_eq!(s.player_number, player_number);
-                                assert_eq!(s.id, max_stone_id + 1);
-                            },
+                            Some(s) => assert_eq!(s.player_number, player_number),
                             None => assert!(false, "expected stone")
                         }
                     },
@@ -496,15 +443,15 @@ mod tests {
     fn remove_captured_stones_test() {
         let mut points = vec![
             Point { x: 0, y: 0, stone: None, territory_id: None },
-            Point { x: 1, y: 0, stone: Some(Stone { id: 1, player_number: 1, chain_id: 1 }), territory_id: None },
+            Point { x: 1, y: 0, stone: Some(Stone { player_number: 1, chain_id: 1 }), territory_id: None },
             Point { x: 2, y: 0, stone: None, territory_id: None },
 
-            Point { x: 0, y: 1, stone: Some(Stone { id: 2, player_number: 1, chain_id: 2 }), territory_id: None },
-            Point { x: 1, y: 1, stone: Some(Stone { id: 3, player_number: 2, chain_id: 3 }), territory_id: None },
-            Point { x: 2, y: 1, stone: Some(Stone { id: 4, player_number: 1, chain_id: 4 }), territory_id: None },
+            Point { x: 0, y: 1, stone: Some(Stone { player_number: 1, chain_id: 2 }), territory_id: None },
+            Point { x: 1, y: 1, stone: Some(Stone { player_number: 2, chain_id: 3 }), territory_id: None },
+            Point { x: 2, y: 1, stone: Some(Stone { player_number: 1, chain_id: 4 }), territory_id: None },
 
             Point { x: 0, y: 2, stone: None, territory_id: None },
-            Point { x: 1, y: 2, stone: Some(Stone { id: 5, player_number: 1, chain_id: 5 }), territory_id: None },
+            Point { x: 1, y: 2, stone: Some(Stone { player_number: 1, chain_id: 5 }), territory_id: None },
             Point { x: 2, y: 2, stone: None, territory_id: None }
         ];
         match remove_captured_stones(&mut points,1,2,2) {
@@ -525,13 +472,13 @@ mod tests {
             Point {
                 x: 0,
                 y: 0,
-                stone: Some(Stone { id: 0, player_number: 1, chain_id: 1 }),
+                stone: Some(Stone { player_number: 1, chain_id: 1 }),
                 territory_id: None
             },
             Point {
                 x: 0,
                 y: 1,
-                stone: Some(Stone { id: 1, player_number: 1, chain_id: 2 }),
+                stone: Some(Stone { player_number: 1, chain_id: 2 }),
                 territory_id: None
             }
         ];
@@ -540,7 +487,7 @@ mod tests {
             &Point {
                 x: 0,
                 y: 0,
-                stone: Some(Stone { id: 0, player_number: 1, chain_id: 1 }),
+                stone: Some(Stone { player_number: 1, chain_id: 1 }),
                 territory_id: None
             }
         ];
@@ -553,7 +500,7 @@ mod tests {
             Point {
                 x: 0,
                 y: 0,
-                stone: Some(Stone { id: 0, player_number: 1, chain_id: 1 }),
+                stone: Some(Stone { player_number: 1, chain_id: 1 }),
                 territory_id: None
             },
             Point {
@@ -574,13 +521,13 @@ mod tests {
             Point {
                 x: 0,
                 y: 0,
-                stone: Some(Stone { id: 0, player_number: 1, chain_id: 1 }),
+                stone: Some(Stone { player_number: 1, chain_id: 1 }),
                 territory_id: None
             },
             Point {
                 x: 0,
                 y: 1,
-                stone: Some(Stone { id: 0, player_number: 2, chain_id: 2 }),
+                stone: Some(Stone { player_number: 2, chain_id: 2 }),
                 territory_id: None
             }
         ];
@@ -595,13 +542,13 @@ mod tests {
             &Point {
                 x: 0,
                 y: 0,
-                stone: Some(Stone { id: 0, player_number: 1, chain_id: 1 }),
+                stone: Some(Stone { player_number: 1, chain_id: 1 }),
                 territory_id: None
             },
             &Point {
                 x: 0,
                 y: 1,
-                stone: Some(Stone { id: 1, player_number: 1, chain_id: 2 }),
+                stone: Some(Stone { player_number: 1, chain_id: 2 }),
                 territory_id: None
             }
         ];
@@ -621,19 +568,19 @@ mod tests {
             Point {
                 x: 1,
                 y: 0,
-                stone: Some(Stone { id: 1, player_number: 1, chain_id: 1 }),
+                stone: Some(Stone { player_number: 1, chain_id: 1 }),
                 territory_id: None
             },
             Point {
                 x: 0,
                 y: 1,
-                stone: Some(Stone { id: 1, player_number: 2, chain_id: 2 }),
+                stone: Some(Stone { player_number: 2, chain_id: 2 }),
                 territory_id: None
             },
             Point {
                 x: 1,
                 y: 1,
-                stone: Some(Stone { id: 1, player_number: 1, chain_id: 1 }),
+                stone: Some(Stone { player_number: 1, chain_id: 1 }),
                 territory_id: None
             }
         ];
@@ -658,19 +605,19 @@ mod tests {
             Point {
                 x: 1,
                 y: 0,
-                stone: Some(Stone { id: 1, player_number: 1, chain_id: 1 }),
+                stone: Some(Stone { player_number: 1, chain_id: 1 }),
                 territory_id: None
             },
             Point {
                 x: 0,
                 y: 1,
-                stone: Some(Stone { id: 1, player_number: 2, chain_id: 2 }),
+                stone: Some(Stone { player_number: 2, chain_id: 2 }),
                 territory_id: None
             },
             Point {
                 x: 1,
                 y: 1,
-                stone: Some(Stone { id: 1, player_number: 1, chain_id: 1 }),
+                stone: Some(Stone { player_number: 1, chain_id: 1 }),
                 territory_id: None
             }
         ];
@@ -698,19 +645,19 @@ mod tests {
         let point_b = Point {
             x: 1,
             y: 0,
-            stone: Some(Stone { id: 1, player_number: 1, chain_id: 1 }),
+            stone: Some(Stone { player_number: 1, chain_id: 1 }),
             territory_id: None
         };
         let point_c = Point {
             x: 0,
             y: 1,
-            stone: Some(Stone { id: 1, player_number: 2, chain_id: 2 }),
+            stone: Some(Stone { player_number: 2, chain_id: 2 }),
             territory_id: None
         };
         let point_d = Point {
             x: 1,
             y: 1,
-            stone: Some(Stone { id: 1, player_number: 1, chain_id: 1 }),
+            stone: Some(Stone { player_number: 1, chain_id: 1 }),
             territory_id: None
         };
         let x = 0;
@@ -730,19 +677,19 @@ mod tests {
             Point {
                 x: 1,
                 y: 1,
-                stone: Some(Stone { id: 1, player_number: 1, chain_id: 1 }),
+                stone: Some(Stone { player_number: 1, chain_id: 1 }),
                 territory_id: None
             },
             Point {
                 x: 0,
                 y: 1,
-                stone: Some(Stone { id: 1, player_number: 2, chain_id: 2 }),
+                stone: Some(Stone { player_number: 2, chain_id: 2 }),
                 territory_id: None
             },
             Point {
                 x: 1,
                 y: 0,
-                stone: Some(Stone { id: 1, player_number: 1, chain_id: 3 }),
+                stone: Some(Stone { player_number: 1, chain_id: 3 }),
                 territory_id: None
             }
         ];
@@ -818,7 +765,7 @@ mod tests {
             Point {
                 x: 0,
                 y: 1,
-                stone: Some(Stone { id: 1, player_number: 2, chain_id: 1 }),
+                stone: Some(Stone { player_number: 2, chain_id: 1 }),
                 territory_id: Some(1)
             }
         ];
@@ -835,31 +782,31 @@ mod tests {
             Point {
                 x: 0,
                 y: 0,
-                stone: Some(Stone { id: 1, player_number: 1, chain_id: 0 }),
+                stone: Some(Stone { player_number: 1, chain_id: 0 }),
                 territory_id: None
             },
             Point {
                 x: 1,
                 y: 0,
-                stone: Some(Stone { id: 1, player_number: 1, chain_id: 0 }),
+                stone: Some(Stone { player_number: 1, chain_id: 0 }),
                 territory_id: None
             },
             Point {
                 x: 1,
                 y: 1,
-                stone: Some(Stone { id: 1, player_number: 1, chain_id: 0 }),
+                stone: Some(Stone { player_number: 1, chain_id: 0 }),
                 territory_id: None
             },
             Point {
                 x: 0,
                 y: 2,
-                stone: Some(Stone { id: 1, player_number: 1, chain_id: 0 }),
+                stone: Some(Stone { player_number: 1, chain_id: 0 }),
                 territory_id: None
             },
             Point {
                 x: 1,
                 y: 2,
-                stone: Some(Stone { id: 1, player_number: 1, chain_id: 0 }),
+                stone: Some(Stone { player_number: 1, chain_id: 0 }),
                 territory_id: None
             }
         ];
@@ -878,10 +825,10 @@ mod tests {
     fn mark_territories_test() {
         let mut point_set = vec![
             Point { x: 0, y: 0, stone: None, territory_id: None },
-            Point { x: 1, y: 0, stone: Some(Stone { id: 1, player_number: 1, chain_id: 1 }), territory_id: None },
+            Point { x: 1, y: 0, stone: Some(Stone { player_number: 1, chain_id: 1 }), territory_id: None },
             Point { x: 2, y: 0, stone: None, territory_id: None },
 
-            Point { x: 0, y: 1, stone: Some(Stone { id: 2, player_number: 1, chain_id: 2}), territory_id: None },
+            Point { x: 0, y: 1, stone: Some(Stone { player_number: 1, chain_id: 2}), territory_id: None },
             Point { x: 1, y: 1, stone: None, territory_id: None },
             Point { x: 2, y: 1, stone: None, territory_id: None },
 
@@ -911,22 +858,22 @@ mod tests {
         let point_set = vec![
             Point { x: 0, y: 0, stone: None, territory_id: Some(1) },
             Point { x: 1, y: 0, stone: None, territory_id: Some(1) },
-            Point { x: 2, y: 0, stone: Some(Stone { id: 1, player_number: 1, chain_id: 1}), territory_id: None },
+            Point { x: 2, y: 0, stone: Some(Stone { player_number: 1, chain_id: 1}), territory_id: None },
             Point { x: 3, y: 0, stone: None, territory_id: Some(2) },
-            Point { x: 4, y: 0, stone: Some(Stone { id: 2, player_number: 2, chain_id: 2}), territory_id: None },
-            Point { x: 5, y: 0, stone: Some(Stone { id: 3, player_number: 2, chain_id: 2}), territory_id: None },
+            Point { x: 4, y: 0, stone: Some(Stone { player_number: 2, chain_id: 2}), territory_id: None },
+            Point { x: 5, y: 0, stone: Some(Stone { player_number: 2, chain_id: 2}), territory_id: None },
 
             Point { x: 0, y: 1, stone: None, territory_id: Some(1) },
             Point { x: 1, y: 1, stone: None, territory_id: Some(1) },
-            Point { x: 2, y: 1, stone: Some(Stone { id: 4, player_number: 1, chain_id: 1}), territory_id: None },
-            Point { x: 3, y: 1, stone: Some(Stone { id: 5, player_number: 2, chain_id: 3}), territory_id: None },
+            Point { x: 2, y: 1, stone: Some(Stone { player_number: 1, chain_id: 1}), territory_id: None },
+            Point { x: 3, y: 1, stone: Some(Stone { player_number: 2, chain_id: 3}), territory_id: None },
             Point { x: 4, y: 1, stone: None, territory_id: Some(3) },
             Point { x: 5, y: 1, stone: None, territory_id: Some(3) },
 
-            Point { x: 0, y: 2, stone: Some(Stone { id: 6, player_number: 1, chain_id: 4}), territory_id: None },
-            Point { x: 1, y: 2, stone: Some(Stone { id: 7, player_number: 1, chain_id: 4}), territory_id: None },
+            Point { x: 0, y: 2, stone: Some(Stone { player_number: 1, chain_id: 4}), territory_id: None },
+            Point { x: 1, y: 2, stone: Some(Stone { player_number: 1, chain_id: 4}), territory_id: None },
             Point { x: 2, y: 2, stone: None, territory_id: Some(4) },
-            Point { x: 3, y: 2, stone: Some(Stone { id: 8, player_number: 2, chain_id: 3}), territory_id: None },
+            Point { x: 3, y: 2, stone: Some(Stone { player_number: 2, chain_id: 3}), territory_id: None },
             Point { x: 4, y: 2, stone: None, territory_id: Some(3) },
             Point { x: 5, y: 2, stone: None, territory_id: Some(3) }
         ];
@@ -940,8 +887,8 @@ mod tests {
     fn simplify_test() {
         let point_set = vec![
             Point { x: 0, y: 0, stone: None, territory_id: None },
-            Point { x: 1, y: 0, stone: Some(Stone { id: 1, player_number: 1, chain_id: 1 }), territory_id: None },
-            Point { x: 2, y: 0, stone: Some(Stone { id: 2, player_number: 2, chain_id: 2 }), territory_id: None },
+            Point { x: 1, y: 0, stone: Some(Stone { player_number: 1, chain_id: 1 }), territory_id: None },
+            Point { x: 2, y: 0, stone: Some(Stone { player_number: 2, chain_id: 2 }), territory_id: None },
         ];
         let expected = vec![
             [0,1,2,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0],
