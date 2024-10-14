@@ -311,32 +311,32 @@ pub fn territory_ids(points: &Vec<Point>) -> Vec<i8> {
 pub fn players_territory_count(points: &Vec<Point>, player_number: i8) -> i16 {
     let tids = territory_ids(points); // N
     let mut point_count: i16 = 0;
-    // tid, player_number, count
+
     for tid in tids.iter() {
         // player number
-        let mut player_one= false;
-        let mut player_two= false;
+        let mut this_player= false;
+        let mut other_player= false;
         for p in points.iter() {
             if p.territory_id == Some(*tid) {
                 let adjacent = adjacent_to_x_and_y(points, p.x, p.y); // N
                 for a in adjacent.iter() {
                     if let Some(s) = &a.stone {
-                        if s.player_number == 1 {
-                            player_one = true;
-                        } else if s.player_number == 2 {
-                            player_two = true;
+                        if s.player_number == player_number {
+                            this_player = true;
+                        } else {
+                            other_player = true;
                         }
                     }
                 } // 0 - 4
-                // if territory is not owned by one player, break;
-                if player_one && player_two {
+                // if territory is next to stone owned  by other player, break;
+                if other_player {
                     break;
                 }
             }
         }
 
         // if territory owned by requested player number
-        if (player_number == 1 && player_one && !player_two) || (player_number == 2 && !player_one && player_two) {
+        if this_player && !other_player {
             for p in points.iter() {
                 if p.territory_id == Some(*tid) {
                     point_count += 1;
