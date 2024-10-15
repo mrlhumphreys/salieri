@@ -186,12 +186,12 @@ pub fn players_stones_adjacent_to_x_and_y_chain_ids(points: &Vec<Point>, x: i8, 
     chain_ids
 }
 
-pub fn adjacent_to_x_and_y_territory_ids(points: &Vec<Point>, x: i8, y: i8) -> Vec<i8> {
-    let mut territory_ids = vec![];
+pub fn adjacent_to_x_and_y_territory_ids(points: &Vec<Point>, x: i8, y: i8) -> HashSet<i8> {
+    let mut territory_ids = HashSet::new();
     for p in points.iter() {
         if orthogonal(x, y, p.x, p.y) && magnitude(x, y, p.x, p.y) == 1 && p.stone.is_none() {
             if let Some(tid) = p.territory_id {
-                territory_ids.push(tid);
+                territory_ids.insert(tid);
             }
         }
     }
@@ -252,7 +252,7 @@ pub fn mark_territories(points: &mut Vec<Point>) -> () {
     for idx in 0..points.len() {
         let p = &points[idx];
         if p.stone == None && p.territory_id == None {
-            let territory_ids = adjacent_to_x_and_y_territory_ids(&points, p.x, p.y); // N
+            let territory_ids = adjacent_to_x_and_y_territory_ids(&points, p.x, p.y).into_iter().collect::<Vec<i8>>(); // N
             let new_territory_id: i8;
             let mut other_territory_ids = vec![];
 
@@ -262,13 +262,13 @@ pub fn mark_territories(points: &mut Vec<Point>) -> () {
                     territory_id_counter += 1;
                 },
                 1 => {
-                    new_territory_id = match territory_ids.first() {
+                    new_territory_id = match territory_ids.iter().min() {
                         Some(tid) => *tid,
                         None => 0
                     };
                 },
                 _ => {
-                    new_territory_id = match territory_ids.first() {
+                    new_territory_id = match territory_ids.iter().min() {
                         Some(tid) => *tid,
                         None => 0
                     };
@@ -720,7 +720,7 @@ mod tests {
         let x = 1;
         let y = 1;
         let result = adjacent_to_x_and_y_territory_ids(&point_set, x, y);
-        let expected = vec![2, 3];
+        let expected = HashSet::from([2, 3]);
         assert_eq!(result, expected);
     }
 
@@ -831,17 +831,20 @@ mod tests {
             Point { x: 2, y: 2, stone: None, territory_id: None }
         ];
         mark_territories(&mut point_set);
-        assert_eq!(point_set[0].territory_id, Some(1));
-        assert_eq!(point_set[1].territory_id, None);
-        assert_eq!(point_set[2].territory_id, Some(2));
+        let expected = vec![
+            Point { x: 0, y: 0, stone: None, territory_id: Some(1) },
+            Point { x: 1, y: 0, stone: Some(Stone { player_number: 1, chain_id: 1 }), territory_id: None },
+            Point { x: 2, y: 0, stone: None, territory_id: Some(2) },
 
-        assert_eq!(point_set[3].territory_id, None);
-        assert_eq!(point_set[4].territory_id, Some(2));
-        assert_eq!(point_set[5].territory_id, Some(2));
+            Point { x: 0, y: 1, stone: Some(Stone { player_number: 1, chain_id: 2}), territory_id: None },
+            Point { x: 1, y: 1, stone: None, territory_id: Some(2) },
+            Point { x: 2, y: 1, stone: None, territory_id: Some(2) },
 
-        assert_eq!(point_set[6].territory_id, Some(2));
-        assert_eq!(point_set[7].territory_id, Some(2));
-        assert_eq!(point_set[8].territory_id, Some(2));
+            Point { x: 0, y: 2, stone: None, territory_id: Some(2) },
+            Point { x: 1, y: 2, stone: None, territory_id: Some(2) },
+            Point { x: 2, y: 2, stone: None, territory_id: Some(2) }
+        ];
+        assert_eq!(point_set, expected);
     }
 
     // +-+-B-+-W-W
