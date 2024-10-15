@@ -1,4 +1,5 @@
 use std::cmp::Ordering;
+use std::collections::HashSet;
 use crate::go::state::vector::orthogonal;
 use crate::go::state::vector::magnitude;
 use crate::go::state::stone::Stone;
@@ -295,16 +296,13 @@ pub fn mark_territories(points: &mut Vec<Point>) -> () {
     } // N
 }
 
-pub fn territory_ids(points: &Vec<Point>) -> Vec<i8> {
-    let mut ids = vec![];
+pub fn territory_ids(points: &Vec<Point>) -> HashSet<i8> {
+    let mut ids = HashSet::new();
     for p in points.iter() {
-        match p.territory_id {
-            Some(tid) => ids.push(tid),
-            None => ()
+        if let Some(tid) = p.territory_id {
+            ids.insert(tid);
         }
     }
-    ids.sort();
-    ids.dedup();
     ids
 }
 
@@ -313,9 +311,9 @@ pub fn players_territory_count(points: &Vec<Point>, player_number: i8) -> i16 {
     let mut point_count: i16 = 0;
 
     for tid in tids.iter() {
-        // player number
-        let mut this_player= false;
-        let mut other_player= false;
+        let mut this_player = false;
+        let mut other_player = false;
+
         for p in points.iter() {
             if p.territory_id == Some(*tid) {
                 let adjacent = adjacent_to_x_and_y(points, p.x, p.y); // N
