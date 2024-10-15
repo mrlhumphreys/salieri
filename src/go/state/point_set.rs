@@ -223,27 +223,23 @@ pub fn populate_chains(points: &mut Vec<Point>) -> () {
                         Some(cid) => *cid,
                         None => 0
                     };
-                    other_chain_ids = chain_ids.as_slice()[1..chain_ids.len()].to_vec();
+                    other_chain_ids = chain_ids.as_slice()[1..].to_vec();
                 }
             }
 
             if other_chain_ids.len() > 0 {
                 for q in points.iter_mut() {
-                    match &mut q.stone {
-                        Some(s) => {
-                            if other_chain_ids.iter().any(|oci| *oci == s.chain_id ) {
-                                s.chain_id = new_chain_id;
-                            }
-                        },
-                        None => ()
+                    if let Some(s) = &mut q.stone {
+                        if other_chain_ids.iter().any(|oci| *oci == s.chain_id ) {
+                            s.chain_id = new_chain_id;
+                        }
                     }
                 } // N
             }
 
             let q = &mut points[idx];
-            match &mut q.stone {
-                Some(s) => s.chain_id = new_chain_id,
-                None => ()
+            if let Some(s) = &mut q.stone {
+                s.chain_id = new_chain_id;
             }
         }
     } // N
