@@ -54,18 +54,14 @@ impl GameState {
                     let mut new_state = self.points.clone();
                     match add_stone(&mut new_state, point.x, point.y, subject_player_number) {
                         Ok(_) => {
-                            match remove_captured_stones(&mut new_state, point.x, point.y, self.opposing_player_number()) {
-                                Ok(captures) => {
-                                    let mov = Move {
-                                        x: point.x,
-                                        y: point.y,
-                                        simplified_game_state: simplify(&self.points),
-                                        captures
-                                    };
-                                    moves.push(mov);
-                                },
-                                Err(_) => ()
-                            }
+                            let captures = remove_captured_stones(&mut new_state, point.x, point.y, self.opposing_player_number());
+                            let mov = Move {
+                                x: point.x,
+                                y: point.y,
+                                simplified_game_state: simplify(&self.points),
+                                captures
+                            };
+                            moves.push(mov);
                         },
                         Err(_) => ()
                     }
@@ -110,18 +106,14 @@ impl GameState {
 
                         match add_stone(&mut new_state, point.x, point.y, subject_player_number) {
                             Ok(_) => {
-                                match remove_captured_stones(&mut new_state, point.x, point.y, self.opposing_player_number()) {
-                                    Ok(captures) => {
-                                        let mov = Move {
-                                            x: point.x,
-                                            y: point.y,
-                                            simplified_game_state: simplify(&self.points),
-                                            captures
-                                        };
-                                        moves.push(mov);
-                                    },
-                                    Err(_) => ()
-                                }
+                                let captures = remove_captured_stones(&mut new_state, point.x, point.y, self.opposing_player_number());
+                                let mov = Move {
+                                    x: point.x,
+                                    y: point.y,
+                                    simplified_game_state: simplify(&self.points),
+                                    captures
+                                };
+                                moves.push(mov);
                             },
                             Err(_) => ()
                         }
@@ -159,23 +151,19 @@ impl GameState {
 
                         match add_stone(&mut new_state, point.x, point.y, subject_player_number) {
                             Ok(_) => {
-                                match remove_captured_stones(&mut new_state, point.x, point.y, self.opposing_player_number()) {
-                                    Ok(captures) => {
-                                        let doesnt_repeat_previous_state = self.previous_state != simplify(&new_state);
-                                        if enemy_chain_has_only_one_liberty && doesnt_repeat_previous_state {
-                                            // point is adjacent to enemy chain with currently 1 liberties
-                                            // && adding stone doesn't repeat previous state
-                                            let mov = Move {
-                                                x: point.x,
-                                                y: point.y,
-                                                simplified_game_state: simplify(&self.points),
-                                                captures
-                                            };
-                                            moves.push(mov);
-                                        }
-                                    },
-                                    Err(_) => ()
-                                }
+                                let captures = remove_captured_stones(&mut new_state, point.x, point.y, self.opposing_player_number());
+                                let doesnt_repeat_previous_state = self.previous_state != simplify(&new_state);
+                                if enemy_chain_has_only_one_liberty && doesnt_repeat_previous_state {
+                                    // point is adjacent to enemy chain with currently 1 liberties
+                                    // && adding stone doesn't repeat previous state
+                                    let mov = Move {
+                                        x: point.x,
+                                        y: point.y,
+                                        simplified_game_state: simplify(&self.points),
+                                        captures
+                                    };
+                                    moves.push(mov);
+                                    }
                             },
                             Err(_) => ()
                         };
@@ -195,13 +183,9 @@ impl GameState {
                     return Err(e)
                 }
                 let opposing_player_number = self.opposing_player_number();
-                match remove_captured_stones(&mut self.points, mov.x, mov.y, opposing_player_number) {
-                    Ok(stones_captured) => {
-                        if let Err(e) = self.update_player_stats(self.current_player_number, stones_captured.len() as i8) {
-                            return Err(e)
-                        }
-                    },
-                    Err(e) => return Err(e)
+                let stones_captured = remove_captured_stones(&mut self.points, mov.x, mov.y, opposing_player_number);
+                if let Err(e) = self.update_player_stats(self.current_player_number, stones_captured.len() as i8) {
+                    return Err(e);
                 }
                 self.current_player_number = self.opposing_player_number();
                 Ok(())

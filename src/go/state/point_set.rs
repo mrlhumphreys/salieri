@@ -57,11 +57,9 @@ pub fn add_stone(points: &mut Vec<Point>, x: i8, y: i8, player_number: i8) -> Re
     }
 }
 
-pub fn remove_captured_stones(points: &mut Vec<Point>, x: i8, y: i8, opposing_player_number: i8) -> Result<Vec<(i8, i8)>, &'static str> {
+pub fn remove_captured_stones(points: &mut Vec<Point>, x: i8, y: i8, opposing_player_number: i8) -> Vec<(i8, i8)> {
     // check if any opponent chains adjacent to point now have zero liberties?
-    let adj = players_stones_adjacent_to_x_and_y(points, x, y, opposing_player_number); // N
-
-    let adjacent_chain_ids = chain_ids(adj); // 0 - 4
+    let adjacent_chain_ids = players_stones_adjacent_to_x_and_y_chain_ids(points, x, y, opposing_player_number);
 
     let mut chains_to_remove = vec![];
 
@@ -89,7 +87,7 @@ pub fn remove_captured_stones(points: &mut Vec<Point>, x: i8, y: i8, opposing_pl
         } // N
     }
 
-    Ok(stones_captured)
+    stones_captured
 }
 
 pub fn filter_by_chain_id(points: &Vec<Point>, chain_id: i8) -> Vec<&Point> {
@@ -450,15 +448,11 @@ mod tests {
             Point { x: 1, y: 2, stone: Some(Stone { player_number: 1, chain_id: 5 }), territory_id: None },
             Point { x: 2, y: 2, stone: None, territory_id: None }
         ];
-        match remove_captured_stones(&mut points,1,2,2) {
-            Ok(result) => {
-                assert_eq!(result, vec![(1,1)]);
-                match points.iter().find(|p| p.x == 1 && p.y == 1) {
-                     Some(p) => assert_eq!(p.stone, None),
-                     None => assert!(false, "expected point")
-                }
-            },
-            Err(e) =>  assert!(false, "{}", e)
+        let result = remove_captured_stones(&mut points,1,2,2);
+        assert_eq!(result, vec![(1,1)]);
+        match points.iter().find(|p| p.x == 1 && p.y == 1) {
+             Some(p) => assert_eq!(p.stone, None),
+             None => assert!(false, "expected point")
         }
     }
 
