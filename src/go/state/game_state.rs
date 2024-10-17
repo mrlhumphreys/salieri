@@ -183,8 +183,10 @@ impl GameState {
                 }
                 let opposing_player_number = self.opposing_player_number();
                 let stones_captured = remove_captured_stones(&mut self.points, mov.x, mov.y, opposing_player_number);
-                if let Err(e) = self.update_player_stats(self.current_player_number, stones_captured.len() as i8) {
-                    return Err(e);
+                if !stones_captured.is_empty() {
+                    if let Err(e) = self.update_player_stats(self.current_player_number, stones_captured.len() as i8) {
+                        return Err(e);
+                    }
                 }
                 self.current_player_number = self.opposing_player_number();
                 Ok(())
