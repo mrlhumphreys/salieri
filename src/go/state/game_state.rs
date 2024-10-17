@@ -1,8 +1,7 @@
 use crate::go::state::stone::Stone;
 use crate::go::state::point::Point;
 use crate::go::state::point_set::adjacent_to_x_and_y;
-use crate::go::state::point_set::players_stones_adjacent_to_x_and_y;
-use crate::go::state::point_set::chain_ids;
+use crate::go::state::point_set::players_stones_adjacent_to_x_and_y_chain_ids;
 use crate::go::state::point_set::add_stone;
 use crate::go::state::point_set::remove_captured_stones;
 use crate::go::state::point_set::filter_by_chain_id;
@@ -229,19 +228,18 @@ impl GameState {
     // set stones chain id where current chain id is adjacent to point
     pub fn update_joined_chains(&mut self, x: i8, y: i8, chain_id: i8, player_number: i8) -> Result<(), &'static str> {
 
-        let adj = players_stones_adjacent_to_x_and_y(&self.points, x, y, player_number); // N
-        let adjacent_chain_ids = chain_ids(adj);
+        let adjacent_chain_ids = players_stones_adjacent_to_x_and_y_chain_ids(&self.points, x, y, player_number); // N
 
-        self.points.iter_mut().for_each(|p| {
-            match &mut p.stone {
-                Some(s) => {
+        if !adjacent_chain_ids.is_empty() {
+            self.points.iter_mut().for_each(|p| {
+                if let Some(s) = &mut p.stone {
                     if adjacent_chain_ids.iter().any(|cid| *cid == s.chain_id) {
                         s.chain_id = chain_id;
                     }
-                },
-                None => ()
-            }
-        }); // N
+                }
+            }); // N
+        }
+
         Ok(())
     }
 

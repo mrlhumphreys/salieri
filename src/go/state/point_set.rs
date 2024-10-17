@@ -71,7 +71,7 @@ pub fn remove_captured_stones(points: &mut Vec<Point>, x: i8, y: i8, opposing_pl
 
     let mut stones_captured = vec![];
 
-    if chains_to_remove.len() > 0 {
+    if !chains_to_remove.is_empty() {
         for p in points.iter_mut() {
             let cid = match &p.stone {
                 Some(s) => s.chain_id,
@@ -114,28 +114,6 @@ pub fn chain_has_liberties(points: &Vec<Point>, chain_id: i8) -> bool {
     }
 
     has_liberties
-}
-
-pub fn chain_ids(points: Vec<&Point>) -> Vec<i8> {
-   points.iter().map(|a| {
-       match &a.stone {
-           Some(s) => s.chain_id,
-           None => 0
-       }
-   }).collect()
-}
-
-pub fn players_stones_adjacent_to_x_and_y(points: &Vec<Point>, x: i8, y: i8, player_number: i8) -> Vec<&Point> {
-    points.iter().filter(|to| {
-        if orthogonal(x, y, to.x, to.y) && magnitude(x, y, to.x, to.y) == 1  {
-            match &to.stone {
-                Some(s) => s.player_number == player_number,
-                None => false
-            }
-        } else {
-            false
-        }
-    }).collect()
 }
 
 pub fn find_players_stone_adjacent_to_x_and_y(points: &Vec<Point>, x: i8, y: i8, player_number: i8) -> Option<&Point> {
@@ -276,7 +254,7 @@ pub fn mark_territories(points: &mut Vec<Point>) -> () {
                 }
             }
 
-            if other_territory_ids.len() > 0 {
+            if !other_territory_ids.is_empty() {
                 for q in points.iter_mut() {
                     if let Some(tid) = q.territory_id {
                         if other_territory_ids.iter().any(|oti| *oti == tid ) {
@@ -524,63 +502,6 @@ mod tests {
         let result = chain_has_liberties(&point_set, 1);
         let expected = false;
         assert_eq!(result, expected);
-    }
-
-    #[test]
-    fn chain_ids_test() {
-        let point_set = vec![
-            &Point {
-                x: 0,
-                y: 0,
-                stone: Some(Stone { player_number: 1, chain_id: 1 }),
-                territory_id: None
-            },
-            &Point {
-                x: 0,
-                y: 1,
-                stone: Some(Stone { player_number: 1, chain_id: 2 }),
-                territory_id: None
-            }
-        ];
-        let result = chain_ids(point_set);
-        assert_eq!(result, vec![1,2]);
-    }
-
-    #[test]
-    fn players_stones_adjacent_to_x_and_y_test() {
-        let point_set = vec![
-            Point {
-                x: 0,
-                y: 0,
-                stone: None,
-                territory_id: None
-            },
-            Point {
-                x: 1,
-                y: 0,
-                stone: Some(Stone { player_number: 1, chain_id: 1 }),
-                territory_id: None
-            },
-            Point {
-                x: 0,
-                y: 1,
-                stone: Some(Stone { player_number: 2, chain_id: 2 }),
-                territory_id: None
-            },
-            Point {
-                x: 1,
-                y: 1,
-                stone: Some(Stone { player_number: 1, chain_id: 1 }),
-                territory_id: None
-            }
-        ];
-        let x = 0;
-        let y = 0;
-        let player_number = 1;
-        let result = players_stones_adjacent_to_x_and_y(&point_set, x, y, player_number);
-        assert_eq!(result.len(), 1);
-        assert_eq!(result[0].x, 1);
-        assert_eq!(result[0].y, 0);
     }
 
     #[test]
