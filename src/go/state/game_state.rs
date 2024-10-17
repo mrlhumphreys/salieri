@@ -246,12 +246,11 @@ impl GameState {
     }
 
     pub fn update_player_stats(&mut self, player_number: i8, stones_captured: i8) -> Result<(), &'static str> {
-        match self.player_stats.iter_mut().find(|ps| ps.player_number == player_number) {
-            Some(ps) => {
-                ps.prisoner_count = stones_captured;
-                Ok(())
-            },
-            None => Err("No stats for player")
+        if let Some(ps) = self.player_stats.iter_mut().find(|ps| ps.player_number == player_number) {
+            ps.prisoner_count = stones_captured;
+            Ok(())
+        } else {
+            Err("No stats for player")
         } // < N
     }
 
