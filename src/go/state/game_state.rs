@@ -464,10 +464,10 @@ pub fn parse(encoded: &String) -> Result<GameState, &'static str> {
                     previous_state[y][x] = current_player_number;
                 }
 
-                if x == previous_player_last_stone_x as usize && y == previous_player_last_stone_y as usize {
-                    previous_state[y][x] = 0;
-                }
             });
+            if x == previous_player_last_stone_x as usize && y == previous_player_last_stone_y as usize {
+                previous_state[y][x] = 0;
+            }
         }
     }
 
