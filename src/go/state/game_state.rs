@@ -197,8 +197,6 @@ impl GameState {
         let other_player_number = self.opposing_player_number();
         self.previous_state = mov.simplified_game_state.clone(); // Clone
 
-        // undo move points
-        // let mut points = self.points.clone();
         // remove piece at x, y
         match self.points.iter_mut().find(|p| p.x == mov.x && p.y == mov.y ) {
             Some(p) => p.stone = None,
@@ -206,18 +204,21 @@ impl GameState {
         } // < N
         // add captured stones of current player number (will change player number later)
         let chain_id = max_chain_id(&self.points);
-        for p in self.points.iter_mut() {
-            if mov.captures.contains(&(p.x, p.y)) {
-                p.stone = Some(Stone { player_number: self.current_player_number, chain_id });
-            }
-        } // N
 
-        // update player stats - reduce prisoner count
-        match self.player_stats.iter_mut().find(|ps| ps.player_number == other_player_number) {
-            Some(ps) => {
-                ps.prisoner_count -= mov.captures.len() as i8;
-            },
-            None => return Err("No player stat found")
+        // if there are captures
+        if !mov.captures.is_empty() {
+            // add the captured stones back in
+            for p in self.points.iter_mut() {
+                if mov.captures.contains(&(p.x, p.y)) {
+                    p.stone = Some(Stone { player_number: self.current_player_number, chain_id });
+                }
+            } // N
+
+            // update player stats - reduce prisoner count
+            match self.player_stats.iter_mut().find(|ps| ps.player_number == other_player_number) {
+                Some(ps) => ps.prisoner_count -= mov.captures.len() as i8,
+                None => return Err("No player stat found")
+            }
         }
 
         // change player number
