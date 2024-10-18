@@ -105,8 +105,7 @@ pub fn chain_has_liberties(points: &Vec<Point>, chain_id: i8) -> bool {
     let mut has_liberties = false;
 
     for p in points.iter() {
-        let matches_chain = p.player_number != 0 && p.chain_id == chain_id;
-        if matches_chain && point_has_liberties(points, p.x, p.y) {
+        if p.player_number != 0 && p.chain_id == chain_id && point_has_liberties(points, p.x, p.y) {
            has_liberties = true;
            break;
         }
@@ -118,11 +117,7 @@ pub fn chain_has_liberties(points: &Vec<Point>, chain_id: i8) -> bool {
 pub fn find_players_stone_adjacent_to_x_and_y(points: &Vec<Point>, x: i8, y: i8, player_number: i8) -> Option<&Point> {
     points.iter().find(|to| {
         if orthogonal(x, y, to.x, to.y) && magnitude(x, y, to.x, to.y) == 1 {
-            if to.player_number != 0 {
-                to.player_number == player_number
-            } else {
-                false
-            }
+            to.player_number != 0 && to.player_number == player_number
         } else {
             false
         }
@@ -152,10 +147,8 @@ pub fn players_stones_adjacent_to_x_and_y_chain_ids(points: &Vec<Point>, x: i8, 
     let mut chain_ids = HashSet::new();
     for p in points.iter() {
         if orthogonal(x, y, p.x, p.y) && magnitude(x, y, p.x, p.y) == 1 {
-            if p.player_number != 0 {
-                if p.chain_id != 0 && p.player_number == player_number {
-                    chain_ids.insert(p.chain_id);
-                }
+            if p.player_number != 0 && p.chain_id != 0 && p.player_number == player_number {
+                chain_ids.insert(p.chain_id);
             }
         }
     }

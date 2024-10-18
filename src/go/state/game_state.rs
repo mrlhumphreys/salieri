@@ -66,11 +66,9 @@ impl GameState {
                     let mut friendly_chain_ids = HashSet::new();
 
                     for p in adj.iter() {
-                        if p.player_number != 0 {
-                            // friendly stones
-                            if p.player_number == subject_player_number {
-                                friendly_chain_ids.insert(p.chain_id);
-                            }
+                        // friendly stones
+                        if p.player_number != 0 && p.player_number == subject_player_number {
+                            friendly_chain_ids.insert(p.chain_id);
                         }
                     } // 2-4
 
@@ -114,11 +112,9 @@ impl GameState {
                         let mut enemy_chain_ids = HashSet::new();
 
                         for p in adj.iter() {
-                            if p.player_number != 0 {
-                                // enemy stones
-                                if p.player_number != subject_player_number {
-                                    enemy_chain_ids.insert(p.chain_id);
-                                }
+                            // enemy stones
+                            if p.player_number != 0 && p.player_number != subject_player_number {
+                                enemy_chain_ids.insert(p.chain_id);
                             }
                         } // N
 
@@ -228,10 +224,8 @@ impl GameState {
 
         if !adjacent_chain_ids.is_empty() {
             self.points.iter_mut().for_each(|p| {
-                if p.player_number != 0 {
-                    if adjacent_chain_ids.iter().any(|cid| *cid == p.chain_id) {
-                        p.chain_id = chain_id;
-                    }
+                if p.player_number != 0 && adjacent_chain_ids.iter().any(|cid| *cid == p.chain_id) {
+                    p.chain_id = chain_id;
                 }
             }); // N
         }
