@@ -44,60 +44,14 @@ impl GameState {
         let mut moves: Vec<Move> = vec![];
         // points that are emppty
 
-        for point in self.points.iter().flatten() {
-            if point.player_number == 0 {
-                let adj = adjacent_to_x_and_y(&self.points, point.x, point.y);
+        for row in &self.points {
+            for point in row {
+                if point.player_number == 0 {
+                    let adj = adjacent_to_x_and_y(&self.points, point.x, point.y);
 
-                if adj.iter().any(|p| p.player_number == 0) { // < 4
-                    // point has at least one liberty
-                    let mut new_state = self.points.clone();
-                    if add_stone(&mut new_state, point.x, point.y, subject_player_number).is_ok() {
-                        let captures = remove_captured_stones(&mut new_state, point.x, point.y, self.opposing_player_number());
-                        let mov = Move {
-                            x: point.x,
-                            y: point.y,
-                            simplified_game_state: simplify(&self.points),
-                            captures
-                        };
-                        moves.push(mov);
-                    }
-                } else {
-                    // point technically has no liberties
-                    let mut friendly_chain_ids = HashSet::new();
-
-                    for p in adj.iter() {
-                        // friendly stones
-                        if p.player_number != 0 && p.player_number == subject_player_number {
-                            friendly_chain_ids.insert(p.chain_id);
-                        }
-                    } // 2-4
-
-                    let friendly_chain_has_two_liberties = friendly_chain_ids.iter().any(|cid| {
-                        let chain_points = filter_by_chain_id(&self.points, *cid);
-                        let mut liberty_count: i8 = 0;
-                        let mut two_liberties = false;
-                        for p in chain_points.iter() {
-                            let adjacent = adjacent_to_x_and_y(&self.points, p.x, p.y);
-                            for a in adjacent.iter() {
-                                if a.player_number == 0 {
-                                    liberty_count += 1;
-                                    if liberty_count >= 2 {
-                                        two_liberties = true;
-                                        break;
-                                    }
-                                }
-                            } // < 4
-                            if two_liberties {
-                                break;
-                            }
-                        } // < N
-                        two_liberties
-                    }); // 0-4
-
-                    if friendly_chain_has_two_liberties {
-                        // point is adjacent to own chain with currently 2 liberties
-                        let mut new_state = self.points.clone(); // Clone
-
+                    if adj.iter().any(|p| p.player_number == 0) { // < 4
+                        // point has at least one liberty
+                        let mut new_state = self.points.clone();
                         if add_stone(&mut new_state, point.x, point.y, subject_player_number).is_ok() {
                             let captures = remove_captured_stones(&mut new_state, point.x, point.y, self.opposing_player_number());
                             let mov = Move {
@@ -109,39 +63,44 @@ impl GameState {
                             moves.push(mov);
                         }
                     } else {
-                        let mut enemy_chain_ids = HashSet::new();
+                        // point technically has no liberties
+                        let mut friendly_chain_ids = HashSet::new();
 
                         for p in adj.iter() {
-                            // enemy stones
-                            if p.player_number != 0 && p.player_number != subject_player_number {
-                                enemy_chain_ids.insert(p.chain_id);
+                            // friendly stones
+                            if p.player_number != 0 && p.player_number == subject_player_number {
+                                friendly_chain_ids.insert(p.chain_id);
                             }
-                        } // N
+                        } // 2-4
 
-                        let enemy_chain_has_only_one_liberty = enemy_chain_ids.iter().any(|cid| {
-                            let chain_points = filter_by_chain_id(&self.points, *cid); // N
-                            let mut liberties = 0;
-
+                        let friendly_chain_has_two_liberties = friendly_chain_ids.iter().any(|cid| {
+                            let chain_points = filter_by_chain_id(&self.points, *cid);
+                            let mut liberty_count: i8 = 0;
+                            let mut two_liberties = false;
                             for p in chain_points.iter() {
-                                let adjacent = adjacent_to_x_and_y(&self.points, p.x, p.y);  // N
+                                let adjacent = adjacent_to_x_and_y(&self.points, p.x, p.y);
                                 for a in adjacent.iter() {
                                     if a.player_number == 0 {
-                                        liberties += 1;
+                                        liberty_count += 1;
+                                        if liberty_count >= 2 {
+                                            two_liberties = true;
+                                            break;
+                                        }
                                     }
-                                } // 1-4
+                                } // < 4
+                                if two_liberties {
+                                    break;
+                                }
                             } // < N
-
-                            liberties == 1
+                            two_liberties
                         }); // 0-4
 
-                        let mut new_state = self.points.clone(); // clone
+                        if friendly_chain_has_two_liberties {
+                            // point is adjacent to own chain with currently 2 liberties
+                            let mut new_state = self.points.clone(); // Clone
 
-                        if add_stone(&mut new_state, point.x, point.y, subject_player_number).is_ok() {
-                            let captures = remove_captured_stones(&mut new_state, point.x, point.y, self.opposing_player_number());
-                            let doesnt_repeat_previous_state = self.previous_state != simplify(&new_state);
-                            if enemy_chain_has_only_one_liberty && doesnt_repeat_previous_state {
-                                // point is adjacent to enemy chain with currently 1 liberties
-                                // && adding stone doesn't repeat previous state
+                            if add_stone(&mut new_state, point.x, point.y, subject_player_number).is_ok() {
+                                let captures = remove_captured_stones(&mut new_state, point.x, point.y, self.opposing_player_number());
                                 let mov = Move {
                                     x: point.x,
                                     y: point.y,
@@ -149,6 +108,49 @@ impl GameState {
                                     captures
                                 };
                                 moves.push(mov);
+                            }
+                        } else {
+                            let mut enemy_chain_ids = HashSet::new();
+
+                            for p in adj.iter() {
+                                // enemy stones
+                                if p.player_number != 0 && p.player_number != subject_player_number {
+                                    enemy_chain_ids.insert(p.chain_id);
+                                }
+                            } // N
+
+                            let enemy_chain_has_only_one_liberty = enemy_chain_ids.iter().any(|cid| {
+                                let chain_points = filter_by_chain_id(&self.points, *cid); // N
+                                let mut liberties = 0;
+
+                                for p in chain_points.iter() {
+                                    let adjacent = adjacent_to_x_and_y(&self.points, p.x, p.y);  // N
+                                    for a in adjacent.iter() {
+                                        if a.player_number == 0 {
+                                            liberties += 1;
+                                        }
+                                    } // 1-4
+                                } // < N
+
+                                liberties == 1
+                            }); // 0-4
+
+                            let mut new_state = self.points.clone(); // clone
+
+                            if add_stone(&mut new_state, point.x, point.y, subject_player_number).is_ok() {
+                                let captures = remove_captured_stones(&mut new_state, point.x, point.y, self.opposing_player_number());
+                                let doesnt_repeat_previous_state = self.previous_state != simplify(&new_state);
+                                if enemy_chain_has_only_one_liberty && doesnt_repeat_previous_state {
+                                    // point is adjacent to enemy chain with currently 1 liberties
+                                    // && adding stone doesn't repeat previous state
+                                    let mov = Move {
+                                        x: point.x,
+                                        y: point.y,
+                                        simplified_game_state: simplify(&self.points),
+                                        captures
+                                    };
+                                    moves.push(mov);
+                                }
                             }
                         }
                     }
@@ -185,23 +187,21 @@ impl GameState {
         self.previous_state = mov.simplified_game_state.clone(); // Clone
 
         // remove piece at x, y
-        match self.points.iter_mut().flatten().find(|p| p.x == mov.x && p.y == mov.y ) {
-            Some(p) => {
-                p.player_number = 0;
-                p.chain_id = 0;
-            },
-            None => return Err("No point found")
-        } // < N
+        let p = &mut self.points[mov.y as usize][mov.x as usize];
+        p.player_number = 0;
+        p.chain_id = 0;
         // add captured stones of current player number (will change player number later)
         let chain_id = max_chain_id(&self.points);
 
         // if there are captures
         if !mov.captures.is_empty() {
             // add the captured stones back in
-            for p in self.points.iter_mut().flatten() {
-                if mov.captures.contains(&(p.x, p.y)) {
-                    p.player_number = self.current_player_number;
-                    p.chain_id = chain_id;
+            for row in &mut self.points {
+                for p in row {
+                    if mov.captures.contains(&(p.x, p.y)) {
+                        p.player_number = self.current_player_number;
+                        p.chain_id = chain_id;
+                    }
                 }
             } // N
 
@@ -223,11 +223,13 @@ impl GameState {
         let adjacent_chain_ids = players_stones_adjacent_to_x_and_y_chain_ids(&self.points, x, y, player_number); // N
 
         if !adjacent_chain_ids.is_empty() {
-            self.points.iter_mut().flatten().for_each(|p| {
-                if p.player_number != 0 && adjacent_chain_ids.iter().any(|cid| *cid == p.chain_id) {
-                    p.chain_id = chain_id;
+            for row in &mut self.points {
+                for p in row {
+                    if p.player_number != 0 && adjacent_chain_ids.iter().any(|cid| *cid == p.chain_id) {
+                        p.chain_id = chain_id;
+                    }
                 }
-            }); // N
+            }
         }
 
         Ok(())
@@ -1500,17 +1502,13 @@ mod tests {
         let mov = Move { x, y, simplified_game_state: simplify(&game_state.points), captures: vec![] };
         match game_state.perform_move(&mov) {
             Ok(_) => {
-                match game_state.points.iter().flatten().find(|p| p.x == x && p.y == y) {
-                    Some(p) => {
-                        if p.player_number != 0 {
-                            assert_eq!(p.player_number, 1);
-                            assert_eq!(p.chain_id, 1);
-                            assert_eq!(game_state.current_player_number, 2);
-                        } else {
-                            assert!(false, "expected stone")
-                        }
-                    },
-                    None => assert!(false, "expected point")
+                let p = &game_state.points[y as usize][x as usize];
+                if p.player_number != 0 {
+                    assert_eq!(p.player_number, 1);
+                    assert_eq!(p.chain_id, 1);
+                    assert_eq!(game_state.current_player_number, 2);
+                } else {
+                    assert!(false, "expected stone")
                 }
             },
             Err(e) => assert!(false, "{}", e)
@@ -1527,24 +1525,18 @@ mod tests {
         match game_state.perform_move(&mov) {
             Ok(_) => {
                 // placed stone
-                match game_state.points.iter().flatten().find(|p| p.x == x && p.y == y) {
-                    Some(p) => {
-                        if p.player_number != 0 {
-                            assert_eq!(p.player_number, 1);
-                            assert_eq!(p.chain_id, 6);
-                            assert_eq!(game_state.current_player_number, 2);
-                        } else {
-                            assert!(false, "expected stone")
-                        }
-                    },
-                    None => assert!(false, "expected point")
+                let placed = &game_state.points[y as usize][x as usize];
+                if placed.player_number != 0 {
+                    assert_eq!(placed.player_number, 1);
+                    assert_eq!(placed.chain_id, 6);
+                    assert_eq!(game_state.current_player_number, 2);
+                } else {
+                    assert!(false, "expected stone")
                 }
 
                 // capotured stone
-                match game_state.points.iter().flatten().find(|p| p.x == 1 && p.y == 1) {
-                    Some(p) => assert_eq!(p.player_number, 0),
-                    None => assert!(false, "expected point")
-                }
+                let captured = &game_state.points[1][1];
+                assert_eq!(captured.player_number, 0);
 
                 // player stats
                 match game_state.player_stats.iter().find(|p| p.player_number == 1) {
@@ -1567,10 +1559,8 @@ mod tests {
         let mov = Move { x, y, simplified_game_state: simplify(&old_game_state.points), captures: vec![] };
         match game_state.undo_move(&mov) {
             Ok(_) => {
-                match game_state.points.iter().flatten().find(|p| p.x == x && p.y == y) {
-                    Some(p) => assert_eq!(p.player_number, 0),
-                    None => assert!(false, "expected point")
-                }
+                let p = &game_state.points[y as usize][x as usize];
+                assert_eq!(p.player_number, 0);
             },
             Err(e) => assert!(false, "{}", e)
         }
@@ -1588,22 +1578,16 @@ mod tests {
         match game_state.undo_move(&mov) {
             Ok(_) => {
                 // remove last placed stone
-                match game_state.points.iter().flatten().find(|p| p.x == x && p.y == y) {
-                    Some(p) => assert_eq!(p.player_number, 0),
-                    None => assert!(false, "expected point")
-                }
+                let placed = &game_state.points[y as usize][x as usize];
+                assert_eq!(placed.player_number, 0);
 
                 // add last captured stones
-                match game_state.points.iter().flatten().find(|p| p.x == 1 && p.y == 1) {
-                    Some(p) => {
-                        if p.player_number != 0 {
-                            assert_eq!(p.player_number, 2);
-                            assert_eq!(p.chain_id, 5);
-                        } else {
-                            assert!(false, "expected stone")
-                        }
-                    },
-                    None => assert!(false, "expected point")
+                let captured = &game_state.points[1][1];
+                if captured.player_number != 0 {
+                    assert_eq!(captured.player_number, 2);
+                    assert_eq!(captured.chain_id, 5);
+                } else {
+                    assert!(false, "expected stone")
                 }
 
                 // player stats
@@ -1623,15 +1607,11 @@ mod tests {
         let mut game_state = parse(&encoded).unwrap();
         match game_state.update_joined_chains(0, 1, chain_id, 1) {
             Ok(_) => {
-                match game_state.points.iter().flatten().find(|p| p.x == 0 && p.y == 0 ) {
-                     Some(p) => {
-                         if p.player_number != 0 {
-                             assert_eq!(p.chain_id, chain_id)
-                         } else {
-                             assert!(false, "expected stone")
-                         }
-                     },
-                     None => assert!(false, "expected point")
+                let p = &game_state.points[0][0];
+                if p.player_number != 0 {
+                    assert_eq!(p.chain_id, chain_id)
+                } else {
+                    assert!(false, "expected stone")
                 }
             },
             Err(e) => assert!(false, "{}", e)
