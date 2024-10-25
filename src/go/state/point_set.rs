@@ -4,8 +4,8 @@ use crate::go::state::vector::orthogonal;
 use crate::go::state::vector::magnitude;
 use crate::go::state::point::Point;
 
-pub fn max_chain_id(points: &Vec<Point>) -> i8 {
-    let point_max = points.iter().max_by(|a, b| {
+pub fn max_chain_id(points: &Vec<Vec<Point>>) -> i8 {
+    let point_max = points.iter().flatten().max_by(|a, b| {
         let a_chain_id = if a.player_number != 0 {
             a.chain_id
         } else {
@@ -36,7 +36,7 @@ pub fn max_chain_id(points: &Vec<Point>) -> i8 {
     }
 }
 
-pub fn add_stone(points: &mut Vec<Point>, x: i8, y: i8, player_number: i8) -> Result<i8, &'static str> {
+pub fn add_stone(points: &mut Vec<Vec<Point>>, x: i8, y: i8, player_number: i8) -> Result<i8, &'static str> {
     let adj = find_players_stone_adjacent_to_x_and_y(points, x, y, player_number);
 
     let chain_id = match adj {
@@ -50,7 +50,7 @@ pub fn add_stone(points: &mut Vec<Point>, x: i8, y: i8, player_number: i8) -> Re
         None => max_chain_id(points) + 1
     };
 
-    match points.iter_mut().find(|p| p.x == x && p.y == y) {
+    match points.iter_mut().flatten().find(|p| p.x == x && p.y == y) {
         Some(p) => {
             p.player_number = player_number;
             p.chain_id = chain_id;
@@ -60,7 +60,7 @@ pub fn add_stone(points: &mut Vec<Point>, x: i8, y: i8, player_number: i8) -> Re
     }
 }
 
-pub fn remove_captured_stones(points: &mut Vec<Point>, x: i8, y: i8, opposing_player_number: i8) -> Vec<(i8, i8)> {
+pub fn remove_captured_stones(points: &mut Vec<Vec<Point>>, x: i8, y: i8, opposing_player_number: i8) -> Vec<(i8, i8)> {
     // check if any opponent chains adjacent to point now have zero liberties?
     let adjacent_chain_ids = players_stones_adjacent_to_x_and_y_chain_ids(points, x, y, opposing_player_number);
 
@@ -75,7 +75,7 @@ pub fn remove_captured_stones(points: &mut Vec<Point>, x: i8, y: i8, opposing_pl
     let mut stones_captured = vec![];
 
     if !chains_to_remove.is_empty() {
-        for p in points.iter_mut() {
+        for p in points.iter_mut().flatten() {
 
             let cid = if p.player_number != 0 {
                 p.chain_id
@@ -95,16 +95,16 @@ pub fn remove_captured_stones(points: &mut Vec<Point>, x: i8, y: i8, opposing_pl
     stones_captured
 }
 
-pub fn filter_by_chain_id(points: &Vec<Point>, chain_id: i8) -> Vec<&Point> {
-    points.iter().filter(|p| {
+pub fn filter_by_chain_id(points: &Vec<Vec<Point>>, chain_id: i8) -> Vec<&Point> {
+    points.iter().flatten().filter(|p| {
         p.player_number != 0 && p.chain_id == chain_id
     }).collect()
 }
 
-pub fn chain_has_liberties(points: &Vec<Point>, chain_id: i8) -> bool {
+pub fn chain_has_liberties(points: &Vec<Vec<Point>>, chain_id: i8) -> bool {
     let mut has_liberties = false;
 
-    for p in points.iter() {
+    for p in points.iter().flatten() {
         if p.player_number != 0 && p.chain_id == chain_id && point_has_liberties(points, p.x, p.y) {
            has_liberties = true;
            break;
@@ -114,8 +114,8 @@ pub fn chain_has_liberties(points: &Vec<Point>, chain_id: i8) -> bool {
     has_liberties
 }
 
-pub fn find_players_stone_adjacent_to_x_and_y(points: &Vec<Point>, x: i8, y: i8, player_number: i8) -> Option<&Point> {
-    points.iter().find(|to| {
+pub fn find_players_stone_adjacent_to_x_and_y(points: &Vec<Vec<Point>>, x: i8, y: i8, player_number: i8) -> Option<&Point> {
+    points.iter().flatten().find(|to| {
         if orthogonal(x, y, to.x, to.y) && magnitude(x, y, to.x, to.y) == 1 {
             to.player_number != 0 && to.player_number == player_number
         } else {
@@ -124,16 +124,16 @@ pub fn find_players_stone_adjacent_to_x_and_y(points: &Vec<Point>, x: i8, y: i8,
     })
 }
 
-pub fn adjacent_to_x_and_y(points: &Vec<Point>, x: i8, y: i8) -> Vec<&Point> {
-    points.iter().filter(|p| {
+pub fn adjacent_to_x_and_y(points: &Vec<Vec<Point>>, x: i8, y: i8) -> Vec<&Point> {
+    points.iter().flatten().filter(|p| {
         orthogonal(x, y, p.x, p.y) && magnitude(x, y, p.x, p.y) == 1
     }).collect()
 }
 
-pub fn point_has_liberties(points: &Vec<Point>, x: i8, y: i8) -> bool {
+pub fn point_has_liberties(points: &Vec<Vec<Point>>, x: i8, y: i8) -> bool {
     let mut has_liberties = false;
 
-    for p in points.iter() {
+    for p in points.iter().flatten() {
         if orthogonal(x, y, p.x, p.y) && magnitude(x, y, p.x, p.y) == 1 && p.player_number == 0 {
             has_liberties = true;
             break;
@@ -143,9 +143,9 @@ pub fn point_has_liberties(points: &Vec<Point>, x: i8, y: i8) -> bool {
     has_liberties
 }
 
-pub fn players_stones_adjacent_to_x_and_y_chain_ids(points: &Vec<Point>, x: i8, y: i8, player_number: i8) -> HashSet<i8> {
+pub fn players_stones_adjacent_to_x_and_y_chain_ids(points: &Vec<Vec<Point>>, x: i8, y: i8, player_number: i8) -> HashSet<i8> {
     let mut chain_ids = HashSet::new();
-    for p in points.iter() {
+    for p in points.iter().flatten() {
         if orthogonal(x, y, p.x, p.y) && magnitude(x, y, p.x, p.y) == 1 {
             if p.player_number != 0 && p.chain_id != 0 && p.player_number == player_number {
                 chain_ids.insert(p.chain_id);
@@ -155,9 +155,9 @@ pub fn players_stones_adjacent_to_x_and_y_chain_ids(points: &Vec<Point>, x: i8, 
     chain_ids
 }
 
-pub fn adjacent_to_x_and_y_territory_ids(points: &Vec<Point>, x: i8, y: i8) -> HashSet<i8> {
+pub fn adjacent_to_x_and_y_territory_ids(points: &Vec<Vec<Point>>, x: i8, y: i8) -> HashSet<i8> {
     let mut territory_ids = HashSet::new();
-    for p in points.iter() {
+    for p in points.iter().flatten() {
         if orthogonal(x, y, p.x, p.y) && magnitude(x, y, p.x, p.y) == 1 && p.player_number == 0 {
             if let Some(tid) = p.territory_id {
                 territory_ids.insert(tid);
@@ -167,105 +167,109 @@ pub fn adjacent_to_x_and_y_territory_ids(points: &Vec<Point>, x: i8, y: i8) -> H
     territory_ids
 }
 
-pub fn populate_chains(points: &mut Vec<Point>) -> () {
+pub fn populate_chains(points: &mut Vec<Vec<Point>>) -> () {
     let mut chain_id_counter = 1;
-    for idx in 0..points.len() {
-        let p = &points[idx];
-        if p.player_number != 0 {
-            let mut chain_ids = players_stones_adjacent_to_x_and_y_chain_ids(&points, p.x, p.y, p.player_number).into_iter().collect::<Vec<i8>>();  // N
-            let new_chain_id;
-            let mut other_chain_ids = vec![];
+    for y in 0..points.len() {
+        for x in 0..points[0].len() {
+            let p = &points[y][x];
+            if p.player_number != 0 {
+                let mut chain_ids = players_stones_adjacent_to_x_and_y_chain_ids(&points, p.x, p.y, p.player_number).into_iter().collect::<Vec<i8>>();  // N
+                let new_chain_id;
+                let mut other_chain_ids = vec![];
 
-            match chain_ids.len() {
-                0 => {
-                    new_chain_id = chain_id_counter;
-                    chain_id_counter += 1;
-                },
-                1 => {
-                    new_chain_id = match chain_ids.first() {
-                        Some(cid) => *cid,
-                        None => 0
-                    };
-                },
-                _ => {
-                    chain_ids.sort();
-                    new_chain_id = match chain_ids.first() {
-                        Some(cid) => *cid,
-                        None => 0
-                    };
-                    other_chain_ids = chain_ids.as_slice()[1..].to_vec();
-                }
-            }
-
-            if other_chain_ids.len() > 0 {
-                for q in points.iter_mut() {
-                    if q.player_number != 0 {
-                        if other_chain_ids.iter().any(|oci| *oci == q.chain_id ) {
-                            q.chain_id = new_chain_id;
-                        }
+                match chain_ids.len() {
+                    0 => {
+                        new_chain_id = chain_id_counter;
+                        chain_id_counter += 1;
+                    },
+                    1 => {
+                        new_chain_id = match chain_ids.first() {
+                            Some(cid) => *cid,
+                            None => 0
+                        };
+                    },
+                    _ => {
+                        chain_ids.sort();
+                        new_chain_id = match chain_ids.first() {
+                            Some(cid) => *cid,
+                            None => 0
+                        };
+                        other_chain_ids = chain_ids.as_slice()[1..].to_vec();
                     }
-                } // N
-            }
+                }
 
-            let q = &mut points[idx];
-            if q.player_number != 0 {
-                q.chain_id = new_chain_id;
+                if other_chain_ids.len() > 0 {
+                    for q in points.iter_mut().flatten() {
+                        if q.player_number != 0 {
+                            if other_chain_ids.iter().any(|oci| *oci == q.chain_id ) {
+                                q.chain_id = new_chain_id;
+                            }
+                        }
+                    } // N
+                }
+
+                let q = &mut points[y][x];
+                if q.player_number != 0 {
+                    q.chain_id = new_chain_id;
+                }
             }
         }
     } // N
 }
 
-pub fn mark_territories(points: &mut Vec<Point>) -> () {
-    points.iter_mut().for_each(|p| p.territory_id = None);
+pub fn mark_territories(points: &mut Vec<Vec<Point>>) -> () {
+    points.iter_mut().flatten().for_each(|p| p.territory_id = None);
 
     let mut territory_id_counter = 1;
-    for idx in 0..points.len() {
-        let p = &points[idx];
-        if p.player_number == 0 && p.territory_id == None {
-            let mut territory_ids = adjacent_to_x_and_y_territory_ids(&points, p.x, p.y).into_iter().collect::<Vec<i8>>(); // N
-            let new_territory_id: i8;
-            let mut other_territory_ids = vec![];
+    for y in 0..points.len() {
+        for x in 0..points[0].len() {
+            let p = &points[y][x];
+            if p.player_number == 0 && p.territory_id == None {
+                let mut territory_ids = adjacent_to_x_and_y_territory_ids(&points, p.x, p.y).into_iter().collect::<Vec<i8>>(); // N
+                let new_territory_id: i8;
+                let mut other_territory_ids = vec![];
 
-            match territory_ids.len() {
-                0 => {
-                    new_territory_id = territory_id_counter;
-                    territory_id_counter += 1;
-                },
-                1 => {
-                    new_territory_id = match territory_ids.first() {
-                        Some(tid) => *tid,
-                        None => 0
-                    };
-                },
-                _ => {
-                    territory_ids.sort();
-                    new_territory_id = match territory_ids.first() {
-                        Some(tid) => *tid,
-                        None => 0
-                    };
-                    other_territory_ids = territory_ids[1..].to_vec();
-                }
-            }
-
-            if !other_territory_ids.is_empty() {
-                for q in points.iter_mut() {
-                    if let Some(tid) = q.territory_id {
-                        if other_territory_ids.iter().any(|oti| *oti == tid ) {
-                            q.territory_id = Some(new_territory_id);
-                        }
+                match territory_ids.len() {
+                    0 => {
+                        new_territory_id = territory_id_counter;
+                        territory_id_counter += 1;
+                    },
+                    1 => {
+                        new_territory_id = match territory_ids.first() {
+                            Some(tid) => *tid,
+                            None => 0
+                        };
+                    },
+                    _ => {
+                        territory_ids.sort();
+                        new_territory_id = match territory_ids.first() {
+                            Some(tid) => *tid,
+                            None => 0
+                        };
+                        other_territory_ids = territory_ids[1..].to_vec();
                     }
-                } // N
-            }
+                }
 
-            let q = &mut points[idx];
-            q.territory_id = Some(new_territory_id);
+                if !other_territory_ids.is_empty() {
+                    for q in points.iter_mut().flatten() {
+                        if let Some(tid) = q.territory_id {
+                            if other_territory_ids.iter().any(|oti| *oti == tid ) {
+                                q.territory_id = Some(new_territory_id);
+                            }
+                        }
+                    } // N
+                }
+
+                let q = &mut points[y][x];
+                q.territory_id = Some(new_territory_id);
+            }
         }
     } // N
 }
 
-pub fn territory_ids(points: &Vec<Point>) -> HashSet<i8> {
+pub fn territory_ids(points: &Vec<Vec<Point>>) -> HashSet<i8> {
     let mut ids = HashSet::new();
-    for p in points.iter() {
+    for p in points.iter().flatten() {
         if let Some(tid) = p.territory_id {
             ids.insert(tid);
         }
@@ -273,7 +277,7 @@ pub fn territory_ids(points: &Vec<Point>) -> HashSet<i8> {
     ids
 }
 
-pub fn players_territory_count(points: &Vec<Point>, player_number: i8) -> i16 {
+pub fn players_territory_count(points: &Vec<Vec<Point>>, player_number: i8) -> i16 {
     let tids = territory_ids(points); // N
     let mut point_count: i16 = 0;
 
@@ -281,7 +285,7 @@ pub fn players_territory_count(points: &Vec<Point>, player_number: i8) -> i16 {
         let mut this_player = false;
         let mut other_player = false;
 
-        for p in points.iter() {
+        for p in points.iter().flatten() {
             if p.territory_id == Some(*tid) {
                 let adjacent = adjacent_to_x_and_y(points, p.x, p.y); // N
                 for a in adjacent.iter() {
@@ -302,7 +306,7 @@ pub fn players_territory_count(points: &Vec<Point>, player_number: i8) -> i16 {
 
         // if territory owned by requested player number
         if this_player && !other_player {
-            for p in points.iter() {
+            for p in points.iter().flatten() {
                 if p.territory_id == Some(*tid) {
                     point_count += 1;
                 }
@@ -313,7 +317,7 @@ pub fn players_territory_count(points: &Vec<Point>, player_number: i8) -> i16 {
     point_count
 }
 
-pub fn simplify(points: &Vec<Point>) -> Vec<Vec<i8>> {
+pub fn simplify(points: &Vec<Vec<Point>>) -> Vec<Vec<i8>> {
     let mut result = vec![
         vec![0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0],
         vec![0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0],
@@ -338,7 +342,7 @@ pub fn simplify(points: &Vec<Point>) -> Vec<Vec<i8>> {
         vec![0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0],
         vec![0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0]
     ];
-    points.iter().for_each(|p| {
+    points.iter().flatten().for_each(|p| {
        if p.player_number != 0 {
             result[p.y as usize][p.x as usize] = p.player_number;
        }
@@ -353,8 +357,8 @@ mod tests {
     #[test]
     fn max_chain_id_test() {
         let point_set = vec![
-            Point { x: 0, y: 0, player_number: 1, chain_id: 1, territory_id: None },
-            Point { x: 0, y: 1, player_number: 1, chain_id: 1, territory_id: None }
+            vec![Point { x: 0, y: 0, player_number: 1, chain_id: 1, territory_id: None }],
+            vec![Point { x: 0, y: 1, player_number: 1, chain_id: 1, territory_id: None }]
         ];
         let result = max_chain_id(&point_set);
         assert_eq!(result, 1);
@@ -363,7 +367,7 @@ mod tests {
     #[test]
     fn add_stone_test() {
        let mut points = vec![
-            Point { x: 0, y: 0, player_number: 0, chain_id: 0, territory_id: None }
+            vec![Point { x: 0, y: 0, player_number: 0, chain_id: 0, territory_id: None }]
        ];
        let x = 0;
        let y = 0;
@@ -372,7 +376,7 @@ mod tests {
        match result {
             Ok(chain_id) => {
                 assert_eq!(chain_id, 1);
-                match points.iter().find(|p| p.x == x && p.y == y ) {
+                match points.iter().flatten().find(|p| p.x == x && p.y == y ) {
                     Some(p) => {
                         if p.player_number != 0 {
                             assert_eq!(p.player_number, player_number)
@@ -390,21 +394,25 @@ mod tests {
     #[test]
     fn remove_captured_stones_test() {
         let mut points = vec![
-            Point { x: 0, y: 0, player_number: 0, chain_id: 0, territory_id: None },
-            Point { x: 1, y: 0, player_number: 1, chain_id: 1, territory_id: None },
-            Point { x: 2, y: 0, player_number: 0, chain_id: 0, territory_id: None },
-
-            Point { x: 0, y: 1, player_number: 1, chain_id: 2, territory_id: None },
-            Point { x: 1, y: 1, player_number: 2, chain_id: 3, territory_id: None },
-            Point { x: 2, y: 1, player_number: 1, chain_id: 4, territory_id: None },
-
-            Point { x: 0, y: 2, player_number: 0, chain_id: 0, territory_id: None },
-            Point { x: 1, y: 2, player_number: 1, chain_id: 5, territory_id: None },
-            Point { x: 2, y: 2, player_number: 0, chain_id: 0, territory_id: None }
+            vec![
+                Point { x: 0, y: 0, player_number: 0, chain_id: 0, territory_id: None },
+                Point { x: 1, y: 0, player_number: 1, chain_id: 1, territory_id: None },
+                Point { x: 2, y: 0, player_number: 0, chain_id: 0, territory_id: None }
+            ],
+            vec![
+                Point { x: 0, y: 1, player_number: 1, chain_id: 2, territory_id: None },
+                Point { x: 1, y: 1, player_number: 2, chain_id: 3, territory_id: None },
+                Point { x: 2, y: 1, player_number: 1, chain_id: 4, territory_id: None }
+            ],
+            vec![
+                Point { x: 0, y: 2, player_number: 0, chain_id: 0, territory_id: None },
+                Point { x: 1, y: 2, player_number: 1, chain_id: 5, territory_id: None },
+                Point { x: 2, y: 2, player_number: 0, chain_id: 0, territory_id: None }
+            ]
         ];
         let result = remove_captured_stones(&mut points,1,2,2);
         assert_eq!(result, vec![(1,1)]);
-        match points.iter().find(|p| p.x == 1 && p.y == 1) {
+        match points.iter().flatten().find(|p| p.x == 1 && p.y == 1) {
              Some(p) => assert_eq!(p.player_number, 0),
              None => assert!(false, "expected point")
         }
@@ -413,8 +421,8 @@ mod tests {
     #[test]
     fn filter_by_chain_id_test() {
         let point_set = vec![
-            Point { x: 0, y: 0, player_number: 1, chain_id: 1, territory_id: None },
-            Point { x: 0, y: 1, player_number: 1, chain_id: 2, territory_id: None }
+            vec![Point { x: 0, y: 0, player_number: 1, chain_id: 1, territory_id: None }],
+            vec![Point { x: 0, y: 1, player_number: 1, chain_id: 2, territory_id: None }]
         ];
         let result = filter_by_chain_id(&point_set, 1);
         let expected = vec![
@@ -426,8 +434,8 @@ mod tests {
     #[test]
     fn chain_has_liberties_test() {
         let point_set = vec![
-            Point { x: 0, y: 0, player_number: 1, chain_id: 1, territory_id: None },
-            Point { x: 0, y: 1, player_number: 0, chain_id: 0, territory_id: None }
+            vec![Point { x: 0, y: 0, player_number: 1, chain_id: 1, territory_id: None }],
+            vec![Point { x: 0, y: 1, player_number: 0, chain_id: 0, territory_id: None }]
         ];
         let result = chain_has_liberties(&point_set, 1);
         let expected = true;
@@ -437,8 +445,8 @@ mod tests {
     #[test]
     fn chain_has_no_liberties_test() {
         let point_set = vec![
-            Point { x: 0, y: 0, player_number: 1, chain_id: 1, territory_id: None },
-            Point { x: 0, y: 1, player_number: 2, chain_id: 2, territory_id: None }
+            vec![Point { x: 0, y: 0, player_number: 1, chain_id: 1, territory_id: None }],
+            vec![Point { x: 0, y: 1, player_number: 2, chain_id: 2, territory_id: None }]
         ];
         let result = chain_has_liberties(&point_set, 1);
         let expected = false;
@@ -448,10 +456,14 @@ mod tests {
     #[test]
     fn find_players_stone_adjacent_to_x_and_y_test() {
         let point_set = vec![
-            Point { x: 0, y: 0, player_number: 0, chain_id: 0, territory_id: None },
-            Point { x: 1, y: 0, player_number: 1, chain_id: 1, territory_id: None },
-            Point { x: 0, y: 1, player_number: 2, chain_id: 2, territory_id: None },
-            Point { x: 1, y: 1, player_number: 1, chain_id: 1, territory_id: None }
+            vec![
+                Point { x: 0, y: 0, player_number: 0, chain_id: 0, territory_id: None },
+                Point { x: 1, y: 0, player_number: 1, chain_id: 1, territory_id: None }
+            ],
+            vec![
+                Point { x: 0, y: 1, player_number: 2, chain_id: 2, territory_id: None },
+                Point { x: 1, y: 1, player_number: 1, chain_id: 1, territory_id: None }
+            ]
         ];
         let x = 0;
         let y = 0;
@@ -468,13 +480,18 @@ mod tests {
 
     #[test]
     fn adjacent_to_x_and_y_test() {
-        let point_a = Point { x: 0, y: 0, player_number: 0, chain_id: 0, territory_id: None };
-        let point_b = Point { x: 1, y: 0, player_number: 1, chain_id: 1, territory_id: None };
-        let point_c = Point { x: 0, y: 1, player_number: 2, chain_id: 2, territory_id: None };
-        let point_d = Point { x: 1, y: 1, player_number: 1, chain_id: 1, territory_id: None };
         let x = 0;
         let y = 0;
-        let point_set = vec![point_a, point_b, point_c, point_d];
+        let point_set = vec![
+            vec![
+                Point { x: 0, y: 0, player_number: 0, chain_id: 0, territory_id: None },
+                Point { x: 1, y: 0, player_number: 1, chain_id: 1, territory_id: None }
+            ],
+            vec![
+                Point { x: 0, y: 1, player_number: 2, chain_id: 2, territory_id: None },
+                Point { x: 1, y: 1, player_number: 1, chain_id: 1, territory_id: None }
+            ]
+        ];
         let result = adjacent_to_x_and_y(&point_set, x, y);
         assert_eq!(result.len(), 2);
         assert_eq!(result[0].x, 1);
@@ -486,9 +503,13 @@ mod tests {
     #[test]
     fn players_stones_adjacent_to_x_and_y_chain_ids_test() {
         let point_set = vec![
-            Point { x: 1, y: 1, player_number: 1, chain_id: 1, territory_id: None },
-            Point { x: 0, y: 1, player_number: 2, chain_id: 2, territory_id: None },
-            Point { x: 1, y: 0, player_number: 1, chain_id: 3, territory_id: None }
+            vec![
+                Point { x: 1, y: 0, player_number: 1, chain_id: 3, territory_id: None }
+            ],
+            vec![
+                Point { x: 1, y: 1, player_number: 1, chain_id: 1, territory_id: None },
+                Point { x: 0, y: 1, player_number: 2, chain_id: 2, territory_id: None }
+            ]
         ];
         let x = 1;
         let y = 1;
@@ -501,9 +522,13 @@ mod tests {
     #[test]
     fn adjacent_to_x_and_y_territory_ids_test() {
         let point_set = vec![
-            Point { x: 1, y: 1, player_number: 0, chain_id: 0, territory_id: Some(1) },
-            Point { x: 0, y: 1, player_number: 0, chain_id: 0, territory_id: Some(2) },
-            Point { x: 1, y: 0, player_number: 0, chain_id: 0, territory_id: Some(3) }
+            vec![
+                Point { x: 1, y: 0, player_number: 0, chain_id: 0, territory_id: Some(3) }
+            ],
+            vec![
+                Point { x: 1, y: 1, player_number: 0, chain_id: 0, territory_id: Some(1) },
+                Point { x: 0, y: 1, player_number: 0, chain_id: 0, territory_id: Some(2) }
+            ]
         ];
         let x = 1;
         let y = 1;
@@ -515,8 +540,10 @@ mod tests {
     #[test]
     fn point_has_liberties_test() {
         let point_set = vec![
-            Point { x: 1, y: 1, player_number: 0, chain_id: 0, territory_id: Some(1) },
-            Point { x: 0, y: 1, player_number: 0, chain_id: 0, territory_id: Some(1) }
+            vec![
+                Point { x: 1, y: 1, player_number: 0, chain_id: 0, territory_id: Some(1) },
+                Point { x: 0, y: 1, player_number: 0, chain_id: 0, territory_id: Some(1) }
+            ]
         ];
         let x = 1;
         let y = 1;
@@ -528,8 +555,10 @@ mod tests {
     #[test]
     fn point_has_no_liberties_test() {
         let point_set = vec![
-            Point { x: 1, y: 1, player_number: 0, chain_id: 0, territory_id: Some(1) },
-            Point { x: 0, y: 1, player_number: 2, chain_id: 1, territory_id: Some(1) }
+            vec![
+                Point { x: 1, y: 1, player_number: 0, chain_id: 0, territory_id: Some(1) },
+                Point { x: 0, y: 1, player_number: 2, chain_id: 1, territory_id: Some(1) }
+            ]
         ];
         let x = 1;
         let y = 1;
@@ -541,19 +570,33 @@ mod tests {
     #[test]
     fn populate_chains_test() {
         let mut point_set = vec![
-            Point { x: 0, y: 0, player_number: 1, chain_id: 0, territory_id: None },
-            Point { x: 1, y: 0, player_number: 1, chain_id: 0, territory_id: None },
-            Point { x: 1, y: 1, player_number: 1, chain_id: 0, territory_id: None },
-            Point { x: 0, y: 2, player_number: 1, chain_id: 0, territory_id: None },
-            Point { x: 1, y: 2, player_number: 1, chain_id: 0, territory_id: None }
+            vec![
+                Point { x: 0, y: 0, player_number: 1, chain_id: 0, territory_id: None },
+                Point { x: 1, y: 0, player_number: 1, chain_id: 0, territory_id: None }
+            ],
+            vec![
+                Point { x: 0, y: 1, player_number: 0, chain_id: 0, territory_id: None },
+                Point { x: 1, y: 1, player_number: 1, chain_id: 0, territory_id: None },
+            ],
+            vec![
+                Point { x: 0, y: 2, player_number: 1, chain_id: 0, territory_id: None },
+                Point { x: 1, y: 2, player_number: 1, chain_id: 0, territory_id: None }
+            ]
         ];
         populate_chains(&mut point_set);
         let expected = vec![
-            Point { x: 0, y: 0, player_number: 1, chain_id: 1, territory_id: None },
-            Point { x: 1, y: 0, player_number: 1, chain_id: 1, territory_id: None },
-            Point { x: 1, y: 1, player_number: 1, chain_id: 1, territory_id: None },
-            Point { x: 0, y: 2, player_number: 1, chain_id: 1, territory_id: None },
-            Point { x: 1, y: 2, player_number: 1, chain_id: 1, territory_id: None }
+            vec![
+                Point { x: 0, y: 0, player_number: 1, chain_id: 1, territory_id: None },
+                Point { x: 1, y: 0, player_number: 1, chain_id: 1, territory_id: None }
+            ],
+            vec![
+                Point { x: 0, y: 1, player_number: 0, chain_id: 0, territory_id: None },
+                Point { x: 1, y: 1, player_number: 1, chain_id: 1, territory_id: None },
+            ],
+            vec![
+                Point { x: 0, y: 2, player_number: 1, chain_id: 1, territory_id: None },
+                Point { x: 1, y: 2, player_number: 1, chain_id: 1, territory_id: None }
+            ]
         ];
         assert_eq!(point_set, expected);
     }
@@ -564,31 +607,39 @@ mod tests {
     #[test]
     fn mark_territories_test() {
         let mut point_set = vec![
-            Point { x: 0, y: 0, player_number: 0, chain_id: 0, territory_id: None },
-            Point { x: 1, y: 0, player_number: 1, chain_id: 1, territory_id: None },
-            Point { x: 2, y: 0, player_number: 0, chain_id: 0, territory_id: None },
-
-            Point { x: 0, y: 1, player_number: 1, chain_id: 2, territory_id: None },
-            Point { x: 1, y: 1, player_number: 0, chain_id: 0, territory_id: None },
-            Point { x: 2, y: 1, player_number: 0, chain_id: 0, territory_id: None },
-
-            Point { x: 0, y: 2, player_number: 0, chain_id: 0, territory_id: None },
-            Point { x: 1, y: 2, player_number: 0, chain_id: 0, territory_id: None },
-            Point { x: 2, y: 2, player_number: 0, chain_id: 0, territory_id: None }
+            vec![
+                Point { x: 0, y: 0, player_number: 0, chain_id: 0, territory_id: None },
+                Point { x: 1, y: 0, player_number: 1, chain_id: 1, territory_id: None },
+                Point { x: 2, y: 0, player_number: 0, chain_id: 0, territory_id: None }
+            ],
+            vec![
+                Point { x: 0, y: 1, player_number: 1, chain_id: 2, territory_id: None },
+                Point { x: 1, y: 1, player_number: 0, chain_id: 0, territory_id: None },
+                Point { x: 2, y: 1, player_number: 0, chain_id: 0, territory_id: None }
+            ],
+            vec![
+                Point { x: 0, y: 2, player_number: 0, chain_id: 0, territory_id: None },
+                Point { x: 1, y: 2, player_number: 0, chain_id: 0, territory_id: None },
+                Point { x: 2, y: 2, player_number: 0, chain_id: 0, territory_id: None }
+            ]
         ];
         mark_territories(&mut point_set);
         let expected = vec![
-            Point { x: 0, y: 0, player_number: 0, chain_id: 0, territory_id: Some(1) },
-            Point { x: 1, y: 0, player_number: 1, chain_id: 1, territory_id: None },
-            Point { x: 2, y: 0, player_number: 0, chain_id: 0, territory_id: Some(2) },
-
-            Point { x: 0, y: 1, player_number: 1, chain_id: 2, territory_id: None },
-            Point { x: 1, y: 1, player_number: 0, chain_id: 0, territory_id: Some(2) },
-            Point { x: 2, y: 1, player_number: 0, chain_id: 0, territory_id: Some(2) },
-
-            Point { x: 0, y: 2, player_number: 0, chain_id: 0, territory_id: Some(2) },
-            Point { x: 1, y: 2, player_number: 0, chain_id: 0, territory_id: Some(2) },
-            Point { x: 2, y: 2, player_number: 0, chain_id: 0, territory_id: Some(2) }
+            vec![
+                Point { x: 0, y: 0, player_number: 0, chain_id: 0, territory_id: Some(1) },
+                Point { x: 1, y: 0, player_number: 1, chain_id: 1, territory_id: None },
+                Point { x: 2, y: 0, player_number: 0, chain_id: 0, territory_id: Some(2) }
+            ],
+            vec![
+                Point { x: 0, y: 1, player_number: 1, chain_id: 2, territory_id: None },
+                Point { x: 1, y: 1, player_number: 0, chain_id: 0, territory_id: Some(2) },
+                Point { x: 2, y: 1, player_number: 0, chain_id: 0, territory_id: Some(2) }
+            ],
+            vec![
+                Point { x: 0, y: 2, player_number: 0, chain_id: 0, territory_id: Some(2) },
+                Point { x: 1, y: 2, player_number: 0, chain_id: 0, territory_id: Some(2) },
+                Point { x: 2, y: 2, player_number: 0, chain_id: 0, territory_id: Some(2) }
+            ]
         ];
         assert_eq!(point_set, expected);
     }
@@ -599,26 +650,30 @@ mod tests {
     #[test]
     fn players_territory_count_test() {
         let point_set = vec![
-            Point { x: 0, y: 0, player_number: 0, chain_id: 0, territory_id: Some(1) },
-            Point { x: 1, y: 0, player_number: 0, chain_id: 0, territory_id: Some(1) },
-            Point { x: 2, y: 0, player_number: 1, chain_id: 1, territory_id: None },
-            Point { x: 3, y: 0, player_number: 0, chain_id: 0, territory_id: Some(2) },
-            Point { x: 4, y: 0, player_number: 2, chain_id: 2, territory_id: None },
-            Point { x: 5, y: 0, player_number: 2, chain_id: 2, territory_id: None },
-
-            Point { x: 0, y: 1, player_number: 0, chain_id: 0, territory_id: Some(1) },
-            Point { x: 1, y: 1, player_number: 0, chain_id: 0, territory_id: Some(1) },
-            Point { x: 2, y: 1, player_number: 1, chain_id: 1, territory_id: None },
-            Point { x: 3, y: 1, player_number: 2, chain_id: 3, territory_id: None },
-            Point { x: 4, y: 1, player_number: 0, chain_id: 0, territory_id: Some(3) },
-            Point { x: 5, y: 1, player_number: 0, chain_id: 0, territory_id: Some(3) },
-
-            Point { x: 0, y: 2, player_number: 1, chain_id: 4, territory_id: None },
-            Point { x: 1, y: 2, player_number: 1, chain_id: 4, territory_id: None },
-            Point { x: 2, y: 2, player_number: 0, chain_id: 0, territory_id: Some(4) },
-            Point { x: 3, y: 2, player_number: 2, chain_id: 3, territory_id: None },
-            Point { x: 4, y: 2, player_number: 0, chain_id: 0, territory_id: Some(3) },
-            Point { x: 5, y: 2, player_number: 0, chain_id: 0, territory_id: Some(3) }
+            vec![
+                Point { x: 0, y: 0, player_number: 0, chain_id: 0, territory_id: Some(1) },
+                Point { x: 1, y: 0, player_number: 0, chain_id: 0, territory_id: Some(1) },
+                Point { x: 2, y: 0, player_number: 1, chain_id: 1, territory_id: None },
+                Point { x: 3, y: 0, player_number: 0, chain_id: 0, territory_id: Some(2) },
+                Point { x: 4, y: 0, player_number: 2, chain_id: 2, territory_id: None },
+                Point { x: 5, y: 0, player_number: 2, chain_id: 2, territory_id: None }
+            ],
+            vec![
+                Point { x: 0, y: 1, player_number: 0, chain_id: 0, territory_id: Some(1) },
+                Point { x: 1, y: 1, player_number: 0, chain_id: 0, territory_id: Some(1) },
+                Point { x: 2, y: 1, player_number: 1, chain_id: 1, territory_id: None },
+                Point { x: 3, y: 1, player_number: 2, chain_id: 3, territory_id: None },
+                Point { x: 4, y: 1, player_number: 0, chain_id: 0, territory_id: Some(3) },
+                Point { x: 5, y: 1, player_number: 0, chain_id: 0, territory_id: Some(3) }
+            ],
+            vec![
+                Point { x: 0, y: 2, player_number: 1, chain_id: 4, territory_id: None },
+                Point { x: 1, y: 2, player_number: 1, chain_id: 4, territory_id: None },
+                Point { x: 2, y: 2, player_number: 0, chain_id: 0, territory_id: Some(4) },
+                Point { x: 3, y: 2, player_number: 2, chain_id: 3, territory_id: None },
+                Point { x: 4, y: 2, player_number: 0, chain_id: 0, territory_id: Some(3) },
+                Point { x: 5, y: 2, player_number: 0, chain_id: 0, territory_id: Some(3) }
+            ]
         ];
 
         let expected = 4;
@@ -629,9 +684,11 @@ mod tests {
     #[test]
     fn simplify_test() {
         let point_set = vec![
-            Point { x: 0, y: 0, player_number: 0, chain_id: 0, territory_id: None },
-            Point { x: 1, y: 0, player_number: 1, chain_id: 1, territory_id: None },
-            Point { x: 2, y: 0, player_number: 2, chain_id: 2, territory_id: None },
+            vec![
+                Point { x: 0, y: 0, player_number: 0, chain_id: 0, territory_id: None },
+                Point { x: 1, y: 0, player_number: 1, chain_id: 1, territory_id: None },
+                Point { x: 2, y: 0, player_number: 2, chain_id: 2, territory_id: None }
+            ]
         ];
         let expected = vec![
             [0,1,2,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0],
