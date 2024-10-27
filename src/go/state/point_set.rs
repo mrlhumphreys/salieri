@@ -34,7 +34,7 @@ pub fn max_chain_id(points: &Vec<Vec<Point>>) -> i8 {
     }
 }
 
-pub fn add_stone(points: &mut Vec<Vec<Point>>, x: i8, y: i8, player_number: i8) -> Result<i8, &'static str> {
+pub fn add_stone(points: &mut Vec<Vec<Point>>, x: usize, y: usize, player_number: i8) -> Result<i8, &'static str> {
     let adj = find_players_stone_adjacent_to_x_and_y(points, x, y, player_number);
 
     let chain_id = match adj {
@@ -48,13 +48,13 @@ pub fn add_stone(points: &mut Vec<Vec<Point>>, x: i8, y: i8, player_number: i8) 
         None => max_chain_id(points) + 1
     };
 
-    let p = &mut points[y as usize][x as usize];
+    let p = &mut points[y][x];
     p.player_number = player_number;
     p.chain_id = chain_id;
     Ok(chain_id)
 }
 
-pub fn remove_captured_stones(points: &mut Vec<Vec<Point>>, x: i8, y: i8, opposing_player_number: i8) -> Vec<(i8, i8)> {
+pub fn remove_captured_stones(points: &mut Vec<Vec<Point>>, x: usize, y: usize, opposing_player_number: i8) -> Vec<(usize, usize)> {
     // check if any opponent chains adjacent to point now have zero liberties?
     let adjacent_chain_ids = players_stones_adjacent_to_x_and_y_chain_ids(points, x, y, opposing_player_number);
 
@@ -80,7 +80,7 @@ pub fn remove_captured_stones(points: &mut Vec<Vec<Point>>, x: i8, y: i8, opposi
                 for remove_id in chains_to_remove.iter() {
                     if cid == **remove_id {
                         p.player_number = 0;
-                        stones_captured.push((x as i8, y as i8));
+                        stones_captured.push((x, y));
                     }
                 }
             }
@@ -95,7 +95,7 @@ pub fn chain_has_liberties(points: &Vec<Vec<Point>>, chain_id: i8) -> bool {
 
     for (y, row) in points.iter().enumerate() {
         for (x, p) in row.iter().enumerate() {
-            if p.player_number != 0 && p.chain_id == chain_id && point_has_liberties(points, x as i8, y as i8) {
+            if p.player_number != 0 && p.chain_id == chain_id && point_has_liberties(points, x, y) {
                has_liberties = true;
                break;
             }
@@ -116,7 +116,7 @@ pub fn chain_has_two_liberties(points: &Vec<Vec<Point>>, chain_id: i8) -> bool {
     for (y, row) in points.iter().enumerate() {
         for (x, p) in row.iter().enumerate() {
             if p.chain_id == chain_id {
-                let adjacent = adjacent_to_x_and_y(points, x as i8, y as i8);
+                let adjacent = adjacent_to_x_and_y(points, x, y);
 
                 for a in adjacent.iter() {
                     if a.player_number == 0 {
@@ -144,7 +144,7 @@ pub fn chain_has_only_one_liberty(points: &Vec<Vec<Point>>, chain_id: i8) -> boo
     for (y, row) in points.iter().enumerate() {
         for (x, p) in row.iter().enumerate() {
             if p.chain_id == chain_id {
-                let adjacent = adjacent_to_x_and_y(points, x as i8, y as i8);
+                let adjacent = adjacent_to_x_and_y(points, x, y);
                 for a in adjacent.iter() {
                     if a.player_number == 0 {
                         liberty_count += 1;
@@ -157,22 +157,82 @@ pub fn chain_has_only_one_liberty(points: &Vec<Vec<Point>>, chain_id: i8) -> boo
     liberty_count == 1
 }
 
-pub fn adjacent_coordinates(points: &Vec<Vec<Point>>, x: i8, y: i8) -> Vec<(i8,i8)> {
-    let board_size = points.len() as i8;
-    vec![
-        (x, y - 1),
-        (x - 1, y),
-        (x + 1, y),
-        (x, y + 1)
-    ].into_iter().filter(|c| c.0 >= 0 && c.0 < board_size && c.1 >= 0 && c.1 < board_size).collect::<Vec<(i8, i8)>>()
+pub fn adjacent_coordinates(points: &Vec<Vec<Point>>, x: usize, y: usize) -> Vec<(usize,usize)> {
+    let max = points.len() - 1;
+    if y == 0 {
+        if x == 0 {
+            vec![
+                (x + 1, y),
+                (x, y + 1)
+            ]
+        } else if x < max {
+            vec![
+                (x - 1, y),
+                (x + 1, y),
+                (x, y + 1)
+            ]
+        } else if x == max {
+            vec![
+                (x - 1, y),
+                (x, y + 1)
+            ]
+        } else {
+            vec![]
+        }
+    } else if y < max {
+        if x == 0 {
+            vec![
+                (x, y - 1),
+                (x + 1, y),
+                (x, y + 1)
+            ]
+        } else if x < max {
+            vec![
+                (x, y - 1),
+                (x - 1, y),
+                (x + 1, y),
+                (x, y + 1)
+            ]
+        } else if x == max {
+            vec![
+                (x, y - 1),
+                (x - 1, y),
+                (x, y + 1)
+            ]
+        } else {
+            vec![]
+        }
+    } else if y == max {
+        if x == 0 {
+            vec![
+                (x, y - 1),
+                (x + 1, y)
+            ]
+        } else if x < max {
+            vec![
+                (x, y - 1),
+                (x - 1, y),
+                (x + 1, y)
+            ]
+        } else if x == max {
+            vec![
+                (x, y - 1),
+                (x - 1, y)
+            ]
+        } else {
+            vec![]
+        }
+    } else {
+        vec![]
+    }
 }
 
-pub fn find_players_stone_adjacent_to_x_and_y(points: &Vec<Vec<Point>>, x: i8, y: i8, player_number: i8) -> Option<&Point> {
+pub fn find_players_stone_adjacent_to_x_and_y(points: &Vec<Vec<Point>>, x: usize, y: usize, player_number: i8) -> Option<&Point> {
     let mut found_point = None;
 
     let coordinates = adjacent_coordinates(points, x, y);
     for coordinate in coordinates {
-        let to = &points[coordinate.1 as usize][coordinate.0 as usize];
+        let to = &points[coordinate.1][coordinate.0];
         if to.player_number == player_number {
             found_point = Some(to);
             break;
@@ -182,24 +242,24 @@ pub fn find_players_stone_adjacent_to_x_and_y(points: &Vec<Vec<Point>>, x: i8, y
     found_point
 }
 
-pub fn adjacent_to_x_and_y(points: &Vec<Vec<Point>>, x: i8, y: i8) -> Vec<&Point> {
+pub fn adjacent_to_x_and_y(points: &Vec<Vec<Point>>, x: usize, y: usize) -> Vec<&Point> {
     let mut adjacent = vec![];
 
     let coordinates = adjacent_coordinates(points, x, y);
     for coordinate in coordinates {
-        let p = &points[coordinate.1 as usize][coordinate.0 as usize];
+        let p = &points[coordinate.1][coordinate.0];
         adjacent.push(p);
     }
 
     adjacent
 }
 
-pub fn point_has_liberties(points: &Vec<Vec<Point>>, x: i8, y: i8) -> bool {
+pub fn point_has_liberties(points: &Vec<Vec<Point>>, x: usize, y: usize) -> bool {
     let mut has_liberties = false;
 
     let coordinates = adjacent_coordinates(points, x, y);
     for coordinate in coordinates {
-        let p = &points[coordinate.1 as usize][coordinate.0 as usize];
+        let p = &points[coordinate.1][coordinate.0];
         if p.player_number == 0 {
             has_liberties = true;
             break;
@@ -209,12 +269,12 @@ pub fn point_has_liberties(points: &Vec<Vec<Point>>, x: i8, y: i8) -> bool {
     has_liberties
 }
 
-pub fn players_stones_adjacent_to_x_and_y_chain_ids(points: &Vec<Vec<Point>>, x: i8, y: i8, player_number: i8) -> HashSet<i8> {
+pub fn players_stones_adjacent_to_x_and_y_chain_ids(points: &Vec<Vec<Point>>, x: usize, y: usize, player_number: i8) -> HashSet<i8> {
     let mut chain_ids = HashSet::new();
 
     let coordinates = adjacent_coordinates(points, x, y);
     for coordinate in coordinates {
-        let p = &points[coordinate.1 as usize][coordinate.0 as usize];
+        let p = &points[coordinate.1][coordinate.0];
         if p.player_number != 0 && p.chain_id != 0 && p.player_number == player_number {
             chain_ids.insert(p.chain_id);
         }
@@ -223,12 +283,12 @@ pub fn players_stones_adjacent_to_x_and_y_chain_ids(points: &Vec<Vec<Point>>, x:
     chain_ids
 }
 
-pub fn adjacent_to_x_and_y_territory_ids(points: &Vec<Vec<Point>>, x: i8, y: i8) -> HashSet<i8> {
+pub fn adjacent_to_x_and_y_territory_ids(points: &Vec<Vec<Point>>, x: usize, y: usize) -> HashSet<i8> {
     let mut territory_ids = HashSet::new();
 
     let coordinates = adjacent_coordinates(points, x, y);
     for coordinate in coordinates {
-        let p = &points[coordinate.1 as usize][coordinate.0 as usize];
+        let p = &points[coordinate.1][coordinate.0];
         if p.player_number == 0 {
             if let Some(tid) = p.territory_id {
                 territory_ids.insert(tid);
@@ -248,7 +308,7 @@ pub fn populate_chains(points: &mut Vec<Vec<Point>>) -> () {
         for x in 0..board_size {
             let p = &points[y][x];
             if p.player_number != 0 {
-                let mut chain_ids = players_stones_adjacent_to_x_and_y_chain_ids(&points, x as i8, y as i8, p.player_number).into_iter().collect::<Vec<i8>>();
+                let mut chain_ids = players_stones_adjacent_to_x_and_y_chain_ids(&points, x, y, p.player_number).into_iter().collect::<Vec<i8>>();
                 let new_chain_id;
                 let mut other_chain_ids = vec![];
 
@@ -308,7 +368,7 @@ pub fn mark_territories(points: &mut Vec<Vec<Point>>) -> () {
         for x in 0..board_size {
             let p = &points[y][x];
             if p.player_number == 0 && p.territory_id == None {
-                let mut territory_ids = adjacent_to_x_and_y_territory_ids(&points, x as i8, y as i8).into_iter().collect::<Vec<i8>>();
+                let mut territory_ids = adjacent_to_x_and_y_territory_ids(&points, x, y).into_iter().collect::<Vec<i8>>();
                 let new_territory_id: i8;
                 let mut other_territory_ids = vec![];
 
@@ -377,7 +437,7 @@ pub fn players_territory_count(points: &Vec<Vec<Point>>, player_number: i8) -> i
         for (y, row) in points.iter().enumerate() {
             for (x, p) in row.iter().enumerate() {
                 if p.territory_id == Some(*tid) {
-                    let adjacent = adjacent_to_x_and_y(points, x as i8, y as i8);
+                    let adjacent = adjacent_to_x_and_y(points, x, y);
                     for a in adjacent.iter() {
                         if a.player_number != 0 {
                             if a.player_number == player_number {
@@ -386,7 +446,7 @@ pub fn players_territory_count(points: &Vec<Vec<Point>>, player_number: i8) -> i
                                 other_player = true;
                             }
                         }
-                    } // 0 - 4
+                    }
                     // if territory is next to stone owned  by other player, break;
                     if other_player {
                         break;
@@ -437,7 +497,14 @@ mod tests {
     #[test]
     fn add_stone_test() {
        let mut points = vec![
-            vec![Point { player_number: 0, chain_id: 0, territory_id: None }]
+            vec![
+                Point { player_number: 0, chain_id: 0, territory_id: None },
+                Point { player_number: 0, chain_id: 0, territory_id: None }
+            ],
+            vec![
+                Point { player_number: 0, chain_id: 0, territory_id: None },
+                Point { player_number: 0, chain_id: 0, territory_id: None }
+            ]
        ];
        let x = 0;
        let y = 0;

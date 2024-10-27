@@ -1,22 +1,18 @@
-use std::convert::TryFrom;
-
 const FORMAT: [char; 19] = [
     'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's'
 ];
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Move {
-    pub x: i8,
-    pub y: i8,
+    pub x: usize,
+    pub y: usize,
     pub simplified_game_state: Vec<Vec<i8>>,
-    pub captures: Vec<(i8, i8)>
+    pub captures: Vec<(usize, usize)>
 }
 
 impl Move {
     pub fn format(&self) -> String {
-        let x = usize::try_from(self.x).unwrap_or(0);
-        let y = usize::try_from(self.y).unwrap_or(0);
-        String::from(format!("{}{}", FORMAT[x], FORMAT[y]))
+        String::from(format!("{}{}", FORMAT[self.x], FORMAT[self.y]))
     }
 }
 
