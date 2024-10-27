@@ -53,16 +53,15 @@ impl GameState {
                     if adj.iter().any(|p| p.player_number == 0) {
                         // point has at least one liberty
                         let mut new_state = self.points.clone();
-                        if add_stone(&mut new_state, x, y, subject_player_number).is_ok() {
-                            let captures = remove_captured_stones(&mut new_state, x, y, self.opposing_player_number());
-                            let mov = Move {
-                                x,
-                                y,
-                                simplified_game_state: simplify(&self.points),
-                                captures
-                            };
-                            moves.push(mov);
-                        }
+                        add_stone(&mut new_state, x, y, subject_player_number);
+                        let captures = remove_captured_stones(&mut new_state, x, y, self.opposing_player_number());
+                        let mov = Move {
+                            x,
+                            y,
+                            simplified_game_state: simplify(&self.points),
+                            captures
+                        };
+                        moves.push(mov);
                     } else {
                         // point technically has no liberties
                         let mut friendly_chain_ids = HashSet::new();
@@ -82,16 +81,15 @@ impl GameState {
                             // point is adjacent to own chain with currently 2 liberties
                             let mut new_state = self.points.clone(); // Clone
 
-                            if add_stone(&mut new_state, x, y, subject_player_number).is_ok() {
-                                let captures = remove_captured_stones(&mut new_state, x, y, self.opposing_player_number());
-                                let mov = Move {
-                                    x,
-                                    y,
-                                    simplified_game_state: simplify(&self.points),
-                                    captures
-                                };
-                                moves.push(mov);
-                            }
+                            add_stone(&mut new_state, x, y, subject_player_number);
+                            let captures = remove_captured_stones(&mut new_state, x, y, self.opposing_player_number());
+                            let mov = Move {
+                                x,
+                                y,
+                                simplified_game_state: simplify(&self.points),
+                                captures
+                            };
+                            moves.push(mov);
                         } else {
                             let mut enemy_chain_ids = HashSet::new();
 
@@ -108,20 +106,19 @@ impl GameState {
 
                             let mut new_state = self.points.clone(); // clone
 
-                            if add_stone(&mut new_state, x, y, subject_player_number).is_ok() {
-                                let captures = remove_captured_stones(&mut new_state, x, y, self.opposing_player_number());
-                                let doesnt_repeat_previous_state = self.previous_state != simplify(&new_state);
-                                if enemy_chain_has_only_one_liberty && doesnt_repeat_previous_state {
-                                    // point is adjacent to enemy chain with currently 1 liberties
-                                    // && adding stone doesn't repeat previous state
-                                    let mov = Move {
-                                        x,
-                                        y,
-                                        simplified_game_state: simplify(&self.points),
-                                        captures
-                                    };
-                                    moves.push(mov);
-                                }
+                            add_stone(&mut new_state, x, y, subject_player_number);
+                            let captures = remove_captured_stones(&mut new_state, x, y, self.opposing_player_number());
+                            let doesnt_repeat_previous_state = self.previous_state != simplify(&new_state);
+                            if enemy_chain_has_only_one_liberty && doesnt_repeat_previous_state {
+                                // point is adjacent to enemy chain with currently 1 liberties
+                                // && adding stone doesn't repeat previous state
+                                let mov = Move {
+                                    x,
+                                    y,
+                                    simplified_game_state: simplify(&self.points),
+                                    captures
+                                };
+                                moves.push(mov);
                             }
                         }
                     }
@@ -134,23 +131,19 @@ impl GameState {
 
     pub fn perform_move(&mut self, mov: &Move) -> Result<(), &'static str> {
         self.previous_state = simplify(&self.points);
-        match add_stone(&mut self.points, mov.x, mov.y, self.current_player_number) {
-            Ok(chain_id) => {
-                if let Err(e) = self.update_joined_chains(mov.x, mov.y, chain_id, self.current_player_number) {
-                    return Err(e)
-                }
-                let opposing_player_number = self.opposing_player_number();
-                let stones_captured = remove_captured_stones(&mut self.points, mov.x, mov.y, opposing_player_number);
-                if !stones_captured.is_empty() {
-                    if let Err(e) = self.update_player_stats(self.current_player_number, stones_captured.len() as i8) {
-                        return Err(e);
-                    }
-                }
-                self.current_player_number = self.opposing_player_number();
-                Ok(())
-            },
-            Err(e) => Err(e)
+        let chain_id = add_stone(&mut self.points, mov.x, mov.y, self.current_player_number);
+        if let Err(e) = self.update_joined_chains(mov.x, mov.y, chain_id, self.current_player_number) {
+            return Err(e)
         }
+        let opposing_player_number = self.opposing_player_number();
+        let stones_captured = remove_captured_stones(&mut self.points, mov.x, mov.y, opposing_player_number);
+        if !stones_captured.is_empty() {
+            if let Err(e) = self.update_player_stats(self.current_player_number, stones_captured.len() as i8) {
+                return Err(e);
+            }
+        }
+        self.current_player_number = self.opposing_player_number();
+        Ok(())
     }
 
     pub fn undo_move(&mut self, mov: &Move) -> Result<(), &'static str> {

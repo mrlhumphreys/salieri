@@ -34,24 +34,18 @@ pub fn max_chain_id(points: &Vec<Vec<Point>>) -> i8 {
     }
 }
 
-pub fn add_stone(points: &mut Vec<Vec<Point>>, x: usize, y: usize, player_number: i8) -> Result<i8, &'static str> {
+pub fn add_stone(points: &mut Vec<Vec<Point>>, x: usize, y: usize, player_number: i8) -> i8 {
     let adj = find_players_stone_adjacent_to_x_and_y(points, x, y, player_number);
 
     let chain_id = match adj {
-        Some(a) => {
-            if a.player_number != 0 {
-                a.chain_id
-            } else {
-                max_chain_id(points) + 1
-            }
-        },
+        Some(a) => a.chain_id,
         None => max_chain_id(points) + 1
     };
 
     let p = &mut points[y][x];
     p.player_number = player_number;
     p.chain_id = chain_id;
-    Ok(chain_id)
+    chain_id
 }
 
 pub fn remove_captured_stones(points: &mut Vec<Vec<Point>>, x: usize, y: usize, opposing_player_number: i8) -> Vec<(usize, usize)> {
@@ -61,7 +55,7 @@ pub fn remove_captured_stones(points: &mut Vec<Vec<Point>>, x: usize, y: usize, 
     let mut chains_to_remove = vec![];
 
     for cid in adjacent_chain_ids.iter() {
-        if chain_has_liberties(points, *cid) == false {
+        if !chain_has_liberties(points, *cid) {
             chains_to_remove.push(cid);
         }
     }
@@ -71,14 +65,8 @@ pub fn remove_captured_stones(points: &mut Vec<Vec<Point>>, x: usize, y: usize, 
     if !chains_to_remove.is_empty() {
         for (y, row) in points.iter_mut().enumerate() {
             for (x, p) in row.iter_mut().enumerate() {
-                let cid = if p.player_number != 0 {
-                    p.chain_id
-                } else {
-                    0
-                };
-
                 for remove_id in chains_to_remove.iter() {
-                    if cid == **remove_id {
+                    if p.chain_id == **remove_id {
                         p.player_number = 0;
                         stones_captured.push((x, y));
                     }
@@ -151,6 +139,12 @@ pub fn chain_has_only_one_liberty(points: &Vec<Vec<Point>>, chain_id: i8) -> boo
                     }
                 }
             }
+            if liberty_count > 1 {
+                break;
+            }
+        }
+        if liberty_count > 1 {
+            break;
         }
     }
 
@@ -275,7 +269,7 @@ pub fn players_stones_adjacent_to_x_and_y_chain_ids(points: &Vec<Vec<Point>>, x:
     let coordinates = adjacent_coordinates(points, x, y);
     for coordinate in coordinates {
         let p = &points[coordinate.1][coordinate.0];
-        if p.player_number != 0 && p.chain_id != 0 && p.player_number == player_number {
+        if p.chain_id != 0 && p.player_number == player_number {
             chain_ids.insert(p.chain_id);
         }
     }
@@ -402,14 +396,14 @@ pub fn mark_territories(points: &mut Vec<Vec<Point>>) -> () {
                                 }
                             }
                         }
-                    } // N
+                    }
                 }
 
                 let q = &mut points[y][x];
                 q.territory_id = Some(new_territory_id);
             }
         }
-    } // N
+    }
 }
 
 pub fn territory_ids(points: &Vec<Vec<Point>>) -> HashSet<i8> {
@@ -509,19 +503,15 @@ mod tests {
        let x = 0;
        let y = 0;
        let player_number = 1;
-       let result = add_stone(&mut points, x, y, player_number);
-       match result {
-            Ok(chain_id) => {
-                assert_eq!(chain_id, 1);
-                let p = &points[y as usize][x as usize];
 
-                if p.player_number != 0 {
-                    assert_eq!(p.player_number, player_number)
-                } else {
-                    assert!(false, "expected stone")
-                }
-            },
-            Err(_) => assert!(false, "expected chain_id")
+       let result = add_stone(&mut points, x, y, player_number);
+       assert_eq!(result, 1);
+
+       let p = &points[y as usize][x as usize];
+       if p.player_number != 0 {
+           assert_eq!(p.player_number, player_number)
+       } else {
+           assert!(false, "expected stone")
        }
     }
 
