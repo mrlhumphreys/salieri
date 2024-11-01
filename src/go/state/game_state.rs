@@ -1433,6 +1433,19 @@ mod tests {
     }
 
     #[test]
+    fn possible_moves_ko_rule_test() {
+        // +-1-+
+        // 1-+-1
+        // 2-1-2
+        // +-2-+
+        let encoded = String::from("PL[W]AB[ba][ab][cb][bc]AW[ac][cc][bd]XB[0]XW[1]XS[bb]");
+        let mut game_state = parse(&encoded).unwrap();
+        let moves = game_state.possible_moves();
+        let result = moves.iter().find(|m| { m.x == 1 && m.y == 1 }).is_none();
+        assert_eq!(result, true);
+    }
+
+    #[test]
     fn perform_move_test() {
         let encoded = String::from("PL[B]XB[0]XW[0]");
         let mut game_state = parse(&encoded).unwrap();
