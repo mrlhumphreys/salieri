@@ -1,9 +1,16 @@
-const FORMAT: [char; 19] = [
-    'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's'
+const FORMAT: [char; 20] = [
+    'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't'
 ];
 
 #[derive(Clone, Debug, PartialEq)]
+pub enum MoveKind {
+    Place,
+    Pass
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct Move {
+    pub kind: MoveKind,
     pub x: usize,
     pub y: usize,
     pub simplified_game_state: Vec<Vec<i8>>,
@@ -23,10 +30,11 @@ mod tests {
     #[test]
     fn format_test() {
         let mov = Move {
-           x: 3,
-           y: 4,
-           simplified_game_state: vec![],
-           captures: vec![]
+            kind: MoveKind::Place,
+            x: 3,
+            y: 4,
+            simplified_game_state: vec![],
+            captures: vec![]
         };
         let expected = "de";
         let result = mov.format();

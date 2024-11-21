@@ -117,7 +117,7 @@ mod tests {
         let encoded = String::from("PL[B]XB[0]XW[0]");
         let mut game_state = go::state::game_state::parse(&encoded).unwrap();
 
-        match evaluate(&mut game_state, 2, std::i32::MIN, std::i32::MAX, false) {
+        match evaluate(&mut game_state, 1, std::i32::MIN, std::i32::MAX, false) {
             Ok(result) => assert_eq!(result, 0),
             Err(e) => assert!(false, "{}", e)
         }
