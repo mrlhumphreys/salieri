@@ -43,6 +43,10 @@ impl GameState {
     }
 
     pub fn possible_moves_for_player(&mut self, subject_player_number: i8) -> Vec<Move> {
+        if self.player_stats.iter().all(|ps| ps.passed) {
+            return vec![];
+        }
+
         let mut moves: Vec<Move> = vec![];
         let simplified_game_state = simplify(&self.points);
 
@@ -248,6 +252,7 @@ impl GameState {
 // AB[bb:ee]AW[bb][ee][dc][cd][cb][bc][be][eb][ed][de] - Setup board
 // XS[ab][cd]  - Previously Captured Pieces
 // XW[0] XB[0] - Number of stones captured
+// AB[tt] - Player 1 passed
 pub fn parse(encoded: &String) -> Result<GameState, &'static str> {
     let mut read_player = false;
     let mut read_board = false;
@@ -266,6 +271,8 @@ pub fn parse(encoded: &String) -> Result<GameState, &'static str> {
     let mut previous_captures: Vec<(usize, usize)> = vec![];
     let mut current_player_number: i8 = 0;
     let mut player_stats = vec![]; // XW XB
+    let mut black_passed = false;
+    let mut white_passed = false;
     let mut raw_prisoner_count = String::from("");
     let mut previous_player_last_stone_x = 0;
     let mut previous_player_last_stone_y = 0;
@@ -368,12 +375,18 @@ pub fn parse(encoded: &String) -> Result<GameState, &'static str> {
                         1
                     };
 
+                    let passed = if read_white {
+                        white_passed
+                    } else {
+                        black_passed
+                    };
+
                     let prisoner_count = match raw_prisoner_count.parse::<i8>() {
                         Ok(n) => n,
                         Err(_) => 0
                     };
 
-                    let player_stat = PlayerStat { player_number, prisoner_count, passed: false };
+                    let player_stat = PlayerStat { player_number, prisoner_count, passed };
                     player_stats.push(player_stat);
                     raw_prisoner_count = String::from("");
                 } else {
@@ -389,6 +402,17 @@ pub fn parse(encoded: &String) -> Result<GameState, &'static str> {
                 } else if read_y {
                     let integer = c as usize; // column/x
                     y = integer - 97;
+                } else {
+                    error = true;
+                }
+            },
+            't' => {
+                if read_x || read_y {
+                    if read_white {
+                        white_passed = true;
+                    } else if read_black {
+                        black_passed = true;
+                    }
                 } else {
                     error = true;
                 }
@@ -1280,6 +1304,18 @@ mod tests {
         let expected_player_stats = vec![
             PlayerStat { player_number: 1, prisoner_count: 2, passed: false },
             PlayerStat { player_number: 2, prisoner_count: 1, passed: false }
+        ];
+        assert_eq!(result.current_player_number, 1);
+        assert_eq!(result.player_stats, expected_player_stats);
+    }
+
+    #[test]
+    fn parse_passed_test() {
+        let encoded = String::from("PL[B]AB[cb]AW[de][tt]XB[2]XW[1]");
+        let result = parse(&encoded).unwrap();
+        let expected_player_stats = vec![
+            PlayerStat { player_number: 1, prisoner_count: 2, passed: false },
+            PlayerStat { player_number: 2, prisoner_count: 1, passed: true }
         ];
         assert_eq!(result.current_player_number, 1);
         assert_eq!(result.player_stats, expected_player_stats);
