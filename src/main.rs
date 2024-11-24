@@ -42,7 +42,10 @@ async fn post_game_move(info: web::Path<String>, req_body: String) -> impl Respo
             }
         },
         "go" => {
-            go_controller::minimax(&req_body)
+            match go::openings::recommended_move(&req_body) {
+                Some(m) => HttpResponse::Ok().body(format!("{}\n", m)),
+                None => go_controller::minimax(&req_body)
+            }
         }
         _ => return HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n")
     }
@@ -78,6 +81,7 @@ async fn post_game_algorithm_move(info: web::Path<(String, String)>, req_body: S
         },
         "go" => {
             match algorithm.as_str() {
+                "openings_db" => go_controller::opening(&req_body),
                 "minimax" => go_controller::minimax(&req_body),
                 _ => return HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n")
             }

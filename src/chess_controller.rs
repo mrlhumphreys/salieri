@@ -1,7 +1,5 @@
 use std::env;
-
 use actix_web::HttpResponse;
-
 use super::chess;
 
 pub fn opening(game_data: &String) -> HttpResponse {

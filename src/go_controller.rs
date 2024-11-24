@@ -2,6 +2,13 @@ use std::env;
 use actix_web::HttpResponse;
 use super::go;
 
+pub fn opening(game_data: &String) -> HttpResponse {
+   match go::openings::recommended_move(game_data) {
+        Some(m) => HttpResponse::Ok().body(format!("{}\n", m)),
+        None => HttpResponse::NotFound().body("404 Not Found\n")
+    }
+}
+
 pub fn minimax(game_data: &String) -> HttpResponse {
     let mut game_state = match go::state::game_state::parse(game_data) {
         Ok(gs) => gs,
@@ -27,6 +34,37 @@ pub fn minimax(game_data: &String) -> HttpResponse {
 mod tests {
     use super::*;
     use actix_web::body::MessageBody;
+
+    #[test]
+    fn opening_valid_test() {
+        let game_state = String::from("PL[B]ABAWXB[0]XW[0]XS");
+        let result = opening(&game_state);
+
+        assert_eq!(result.status(), 200);
+        match result.into_body().try_into_bytes() {
+           Ok(bytes) => {
+               let option_a = bytes == "dd\n";
+               let option_b = bytes == "pd\n";
+               let option_c = bytes == "dp\n";
+               let option_d = bytes == "pp\n";
+               let result = option_a || option_b || option_c || option_d;
+               assert!(result);
+           },
+           Err(_) => assert!(false, "unexpected body")
+        };
+    }
+
+     #[test]
+     fn opening_no_moves_test() {
+         let game_state = String::from("PL[W]AB[aa]AWXB[0]XW[0]XS");
+         let result = opening(&game_state);
+
+         assert_eq!(result.status(), 404);
+         match result.into_body().try_into_bytes() {
+            Ok(bytes) => assert_eq!(bytes, "404 Not Found\n"),
+            Err(_) => assert!(false, "unexpected body")
+         };
+     }
 
     #[test]
     fn minimax_valid_test() {
