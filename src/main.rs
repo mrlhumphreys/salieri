@@ -337,7 +337,7 @@ mod tests {
             .set_payload(game_state)
             .to_request();
         let res = test::call_and_read_body(&app, req).await;
-        assert_eq!(res, Bytes::from_static(b"tt\n"));
+        assert_eq!(res, Bytes::from_static(b"ss\n"));
     }
 
     // go with invalid params

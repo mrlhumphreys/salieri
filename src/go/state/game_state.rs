@@ -30,6 +30,8 @@ impl GameState {
             let white_score = self.players_score(2);
             if black_score > white_score {
                 Some(1)
+            } else if white_score > black_score {
+                Some(2)
             } else {
                 None
             }
@@ -1382,10 +1384,19 @@ mod tests {
     }
 
     #[test]
-    fn winner_passed_test() {
+    fn winner_player_one_test() {
         let encoded = String::from("PL[B]AB[ba][ab][tt]AW[de][tt]XB[4]XW[1]");
         let mut game_state = parse(&encoded).unwrap();
         let expected = Some(1);
+        let result = game_state.winner();
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn winner_player_two_test() {
+        let encoded = String::from("PL[B]AB[ba][ab][tt]AW[de][tt]XB[0]XW[10]");
+        let mut game_state = parse(&encoded).unwrap();
+        let expected = Some(2);
         let result = game_state.winner();
         assert_eq!(result, expected);
     }
