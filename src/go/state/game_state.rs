@@ -15,6 +15,8 @@ use crate::go::state::mov::Move;
 use crate::go::state::mov::MoveKind;
 use crate::go::state::player_stat::PlayerStat;
 
+const KOMI: f32 = 6.5;
+
 #[derive(Clone)]
 pub struct GameState {
     pub current_player_number: i8,
@@ -40,11 +42,15 @@ impl GameState {
         }
     }
 
-    pub fn players_score(&mut self, player_number: i8) -> i16 {
+    pub fn players_score(&mut self, player_number: i8) -> f32 {
         mark_territories(&mut self.points);
-        let territory_count = players_territory_count(&self.points, player_number);
-        let prisoner_count = self.players_prisoner_count(player_number) as i16;
-        territory_count + prisoner_count
+        let territory_count = players_territory_count(&self.points, player_number) as f32;
+        let prisoner_count = self.players_prisoner_count(player_number) as f32;
+        if player_number == 1 {
+            territory_count + prisoner_count
+        } else {
+            territory_count + prisoner_count + KOMI
+        }
     }
 
     pub fn players_prisoner_count(&self, player_number: i8) -> i8 {
@@ -1385,7 +1391,7 @@ mod tests {
 
     #[test]
     fn winner_player_one_test() {
-        let encoded = String::from("PL[B]AB[ba][ab][tt]AW[de][tt]XB[4]XW[1]");
+        let encoded = String::from("PL[B]AB[ba][bb][bc][bd][ae][tt]AW[de][tt]XB[4]XW[1]");
         let mut game_state = parse(&encoded).unwrap();
         let expected = Some(1);
         let result = game_state.winner();
@@ -1402,11 +1408,20 @@ mod tests {
     }
 
     #[test]
-    fn players_score_test() {
+    fn players_player_one_score_test() {
         let encoded = String::from("PL[B]AB[ba][ab]AW[de]XB[4]XW[1]");
         let mut game_state = parse(&encoded).unwrap();
-        let expected = 5;
+        let expected = 5.0;
         let result = game_state.players_score(1);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn players_player_two_score_test() {
+        let encoded = String::from("PL[B]AB[ba][ab]AW[de]XB[4]XW[1]");
+        let mut game_state = parse(&encoded).unwrap();
+        let expected = 7.5;
+        let result = game_state.players_score(2);
         assert_eq!(result, expected);
     }
 

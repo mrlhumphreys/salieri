@@ -105,7 +105,7 @@ pub fn evaluate(game_state: &mut go::state::game_state::GameState, depth: i8, mu
 // negative -> b
 // Piece Scores
 pub fn static_evaluation(game_state: &mut go::state::game_state::GameState) -> i32 {
-    (game_state.players_score(1) - game_state.players_score(2)) as i32
+    ((game_state.players_score(1) - game_state.players_score(2)) * 2.0) as i32
 }
 
 #[cfg(test)]
@@ -118,7 +118,7 @@ mod tests {
         let mut game_state = go::state::game_state::parse(&encoded).unwrap();
 
         match evaluate(&mut game_state, 1, std::i32::MIN, std::i32::MAX, false) {
-            Ok(result) => assert_eq!(result, 0),
+            Ok(result) => assert_eq!(result, -13),
             Err(e) => assert!(false, "{}", e)
         }
     }
