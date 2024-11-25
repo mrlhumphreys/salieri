@@ -24,6 +24,20 @@ pub struct GameState {
 }
 
 impl GameState {
+    pub fn winner(&mut self) -> Option<i8> {
+        if self.player_stats.iter().all(|ps| ps.passed) {
+            let black_score = self.players_score(1);
+            let white_score = self.players_score(2);
+            if black_score > white_score {
+                Some(1)
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
+
     pub fn players_score(&mut self, player_number: i8) -> i16 {
         mark_territories(&mut self.points);
         let territory_count = players_territory_count(&self.points, player_number);
@@ -1356,6 +1370,24 @@ mod tests {
         assert_eq!(result.current_player_number, 1);
         assert_eq!(result.player_stats, expected_player_stats);
         assert_eq!(result.previous_state, expected_previous_state);
+    }
+
+    #[test]
+    fn winner_not_passed_test() {
+        let encoded = String::from("PL[B]AB[ba][ab]AW[de]XB[4]XW[1]");
+        let mut game_state = parse(&encoded).unwrap();
+        let expected = None;
+        let result = game_state.winner();
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn winner_passed_test() {
+        let encoded = String::from("PL[B]AB[ba][ab][tt]AW[de][tt]XB[4]XW[1]");
+        let mut game_state = parse(&encoded).unwrap();
+        let expected = Some(1);
+        let result = game_state.winner();
+        assert_eq!(result, expected);
     }
 
     #[test]

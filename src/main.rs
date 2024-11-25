@@ -83,6 +83,7 @@ async fn post_game_algorithm_move(info: web::Path<(String, String)>, req_body: S
             match algorithm.as_str() {
                 "openings_db" => go_controller::opening(&req_body),
                 "minimax" => go_controller::minimax(&req_body),
+                "mcts" => go_controller::mcts(&req_body),
                 _ => return HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n")
             }
         }
@@ -336,7 +337,7 @@ mod tests {
             .set_payload(game_state)
             .to_request();
         let res = test::call_and_read_body(&app, req).await;
-        assert_eq!(res, Bytes::from_static(b"ss\n"));
+        assert_eq!(res, Bytes::from_static(b"tt\n"));
     }
 
     // go with invalid params
