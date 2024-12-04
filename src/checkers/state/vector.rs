@@ -4,7 +4,12 @@ use crate::checkers::state::point::Point;
 
 pub struct Vector {
     pub from: Point,
-    pub to: Point,
+    pub to: Point
+}
+
+pub struct DirectionUnit {
+    pub x: i8,
+    pub y: i8
 }
 
 #[derive(PartialEq)]
@@ -36,14 +41,14 @@ impl Vector {
         }
     }
 
-    pub fn direction_unit(&self) -> Point {
-        let dx = self.to.x - self.from.x;
-        let dy = self.to.y - self.from.y;
+    pub fn direction_unit(&self) -> DirectionUnit {
+        let dx = self.to.x as i8 - self.from.x as i8;
+        let dy = self.to.y as i8 - self.from.y as i8;
         let ux = if let Some(c) = dx.partial_cmp(&0) {
             match c {
                 Ordering::Less => -1,
                 Ordering::Greater => 1,
-                Ordering::Equal => 0,
+                Ordering::Equal => 0
             }
         } else {
             0
@@ -52,18 +57,18 @@ impl Vector {
             match c {
                 Ordering::Less => -1,
                 Ordering::Greater => 1,
-                Ordering::Equal => 0,
+                Ordering::Equal => 0
             }
         } else {
             0
         };
 
-        Point { x: ux, y: uy }
+        DirectionUnit { x: ux , y: uy }
     }
 
     pub fn diagonal(&self) -> bool {
-        let abs_dx = (self.to.x - self.from.x).abs();
-        abs_dx != 0 && abs_dx == (self.to.y - self.from.y).abs()
+        let abs_dx = (self.to.x as i8 - self.from.x as i8).abs();
+        abs_dx != 0 && abs_dx == (self.to.y as i8 - self.from.y as i8).abs()
     }
 
     pub fn orthogonal(&self) -> bool {

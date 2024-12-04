@@ -7,8 +7,8 @@ use crate::checkers::state::mov::MoveKind;
 #[derive(Clone, Copy, Debug)]
 pub struct Square {
     pub id: i8,
-    pub x: i8,
-    pub y: i8,
+    pub x: usize,
+    pub y: usize,
     pub player_number: i8,
     pub king: bool
 }
@@ -39,7 +39,7 @@ impl Square {
     }
 
     pub fn point(&self) -> Point {
-        Point { x: self.x, y: self.y, }
+        Point { x: self.x as i8, y: self.y as i8 }
     }
 
     pub fn occupied(&self) -> bool {
@@ -61,21 +61,21 @@ impl Square {
     pub fn potential_jump_points(&self, player_number: i8, king: bool) -> Vec<Point> {
         if king {
             vec![
-                Point { x: self.x - 2, y: self.y - 2 },
-                Point { x: self.x - 2, y: self.y + 2 },
-                Point { x: self.x + 2, y: self.y - 2 },
-                Point { x: self.x + 2, y: self.y + 2 }
+                Point { x: self.x as i8 - 2, y: self.y as i8 - 2 },
+                Point { x: self.x as i8 - 2, y: self.y as i8 + 2 },
+                Point { x: self.x as i8 + 2, y: self.y as i8 - 2 },
+                Point { x: self.x as i8 + 2, y: self.y as i8 + 2 }
             ]
         } else {
             if player_number == 2 {
                 vec![
-                    Point { x: self.x - 2, y: self.y + 2 },
-                    Point { x: self.x + 2, y: self.y + 2 }
+                    Point { x: self.x as i8 - 2, y: self.y as i8 + 2 },
+                    Point { x: self.x as i8 + 2, y: self.y as i8 + 2 }
                 ]
             } else {
                 vec![
-                    Point { x: self.x - 2, y: self.y - 2 },
-                    Point { x: self.x + 2, y: self.y - 2 }
+                    Point { x: self.x as i8 - 2, y: self.y as i8 - 2 },
+                    Point { x: self.x as i8 + 2, y: self.y as i8 - 2 }
                 ]
             }
         }
@@ -84,21 +84,21 @@ impl Square {
     pub fn potential_move_points(&self, player_number: i8, king: bool) -> Vec<Point> {
         if king {
             vec![
-                Point { x: self.x - 1, y: self.y - 1 },
-                Point { x: self.x - 1, y: self.y + 1 },
-                Point { x: self.x + 1, y: self.y - 1 },
-                Point { x: self.x + 1, y: self.y + 1 }
+                Point { x: self.x as i8 - 1, y: self.y as i8 - 1 },
+                Point { x: self.x as i8 - 1, y: self.y as i8 + 1 },
+                Point { x: self.x as i8 + 1, y: self.y as i8 - 1 },
+                Point { x: self.x as i8 + 1, y: self.y as i8 + 1 }
             ]
         } else {
             if player_number == 2 {
                 vec![
-                    Point { x: self.x - 1, y: self.y + 1 },
-                    Point { x: self.x + 1, y: self.y + 1 }
+                    Point { x: self.x as i8 - 1, y: self.y as i8 + 1 },
+                    Point { x: self.x as i8 + 1, y: self.y as i8 + 1 }
                 ]
             } else {
                 vec![
-                    Point { x: self.x - 1, y: self.y - 1 },
-                    Point { x: self.x + 1, y: self.y - 1 }
+                    Point { x: self.x as i8 - 1, y: self.y as i8 - 1 },
+                    Point { x: self.x as i8 + 1, y: self.y as i8 - 1 }
                 ]
             }
         }
@@ -107,40 +107,66 @@ impl Square {
     pub fn can_jump(&self, player_number: i8, king: bool, game_state: &GameState) -> bool {
         let potential_destinations = self.potential_jump_points(player_number, king);
 
-        game_state.squares.iter().any(|to| {
-            potential_destinations.iter().any(|p| p.x == to.x && p.y == to.y) &&
-                to.unoccupied() &&
-                match between(&game_state.squares, self.point(), to.point()) {
-                    Some(b) => b.occupied_by_opponent(player_number),
-                    None => false,
+        let mut can_jump = false;
+        for row in game_state.squares.iter() {
+            for to in row {
+                if potential_destinations.iter().any(|p| p.x as usize == to.x && p.y as usize == to.y) &&
+                    to.unoccupied() &&
+                    match between(&game_state.squares, self.point(), to.point()) {
+                        Some(b) => b.occupied_by_opponent(player_number),
+                        None => false,
+                    } {
+                    can_jump = true;
                 }
-        })
+            }
+        }
+        can_jump
     }
 
     pub fn can_move(&self, player_number: i8, king: bool, game_state: &GameState) -> bool {
+        let mut can_move = false;
         let potential_destinations = self.potential_move_points(player_number, king);
-        game_state.squares.iter().any(|to| {
-            potential_destinations.iter().any(|p| p.x == to.x && p.y == to.y) && to.unoccupied()
-        })
+        for row in game_state.squares.iter() {
+            for to in row {
+                if potential_destinations.iter().any(|p| p.x as usize == to.x && p.y as usize == to.y) && to.unoccupied() {
+                    can_move = true;
+                }
+            }
+        }
+        can_move
     }
 
     pub fn jump_destinations<'a>(&self, player_number: i8, king: bool, game_state: &'a GameState) -> Vec<&'a Square> {
+        let mut destinations = vec![];
         let potential_destinations = self.potential_jump_points(player_number, king);
-        game_state.squares.iter().filter(|to| {
-            potential_destinations.iter().any(|p| p.x == to.x && p.y == to.y) &&
-                to.unoccupied() &&
-                match between(&game_state.squares, self.point(), to.point()) {
-                    Some(b) => b.occupied_by_opponent(player_number),
-                    None => false,
+
+        for row in game_state.squares.iter() {
+            for to in row {
+                if potential_destinations.iter().any(|p| p.x as usize == to.x && p.y as usize == to.y) &&
+                    to.unoccupied() &&
+                    match between(&game_state.squares, self.point(), to.point()) {
+                        Some(b) => b.occupied_by_opponent(player_number),
+                        None => false
+                    } {
+                    destinations.push(to);
                 }
-        }).collect()
+            }
+        }
+        destinations
     }
 
     pub fn move_destinations<'a>(&self, player_number: i8, king: bool, game_state: &'a GameState) -> Vec<&'a Square> {
+        let mut destinations = vec![];
         let potential_destinations = self.potential_move_points(player_number, king);
-        game_state.squares.iter().filter(|to| {
-            potential_destinations.iter().any(|p| p.x == to.x && p.y == to.y) && to.unoccupied()
-        }).collect()
+
+        for row in game_state.squares.iter() {
+            for to in row {
+                if potential_destinations.iter().any(|p| p.x as usize == to.x && p.y as usize == to.y) && to.unoccupied() {
+                    destinations.push(to);
+                }
+            }
+        }
+        destinations
     }
 
     pub fn jump_legs<'a>(&self, player_number: i8, king: bool, game_state: &GameState, mut accumulator: &'a mut Vec<Vec<i8>>, mut current_leg: &mut Vec<i8>) -> &'a mut Vec<Vec<i8>> {
@@ -304,201 +330,1007 @@ mod tests {
     #[test]
     fn pieces_can_jump() {
         let (player_number, king) = (2, false);
-        let from = Square { id: 1, x: 4, y: 4, player_number: 0, king: false };
-        let between_square = Square { id: 2, x: 3, y: 5, player_number: 1, king: false };
-        let to = Square { id: 3, x: 2, y: 6, player_number: 0, king: false };
-        let squares = vec![from, between_square, to];
+        let squares = vec![
+            vec![
+                Square { id: 0, x: 0, y: 0, player_number: 0, king: false },
+                Square { id: 32, x: 1, y: 0, player_number: 0, king: false },
+                Square { id: 0, x: 2, y: 0, player_number: 0, king: false },
+                Square { id: 31, x: 3, y: 0, player_number: 0, king: false },
+                Square { id: 0, x: 4, y: 0, player_number: 0, king: false },
+                Square { id: 30, x: 5, y: 0, player_number: 0, king: false },
+                Square { id: 0, x: 6, y: 0, player_number: 0, king: false },
+                Square { id: 29, x: 7, y: 0, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 28, x: 0, y: 1, player_number: 0, king: false },
+                Square { id: 0, x: 1, y: 1, player_number: 0, king: false },
+                Square { id: 27, x: 2, y: 1, player_number: 0, king: false },
+                Square { id: 0, x: 3, y: 1, player_number: 0, king: false },
+                Square { id: 26, x: 4, y: 1, player_number: 0, king: false },
+                Square { id: 0, x: 5, y: 1, player_number: 0, king: false },
+                Square { id: 25, x: 6, y: 1, player_number: 0, king: false },
+                Square { id: 0, x: 7, y: 1, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 0, x: 0, y: 2, player_number: 0, king: false },
+                Square { id: 24, x: 1, y: 2, player_number: 0, king: false },
+                Square { id: 0, x: 2, y: 2, player_number: 0, king: false },
+                Square { id: 23, x: 3, y: 2, player_number: 0, king: false },
+                Square { id: 0, x: 4, y: 2, player_number: 0, king: false },
+                Square { id: 22, x: 5, y: 2, player_number: 0, king: false },
+                Square { id: 0, x: 6, y: 2, player_number: 0, king: false },
+                Square { id: 21, x: 7, y: 2, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 20, x: 0, y: 3, player_number: 0, king: false },
+                Square { id: 0, x: 1, y: 3, player_number: 0, king: false },
+                Square { id: 19, x: 2, y: 3, player_number: 0, king: false },
+                Square { id: 0, x: 3, y: 3, player_number: 0, king: false },
+                Square { id: 18, x: 4, y: 3, player_number: 0, king: false },
+                Square { id: 0, x: 5, y: 3, player_number: 0, king: false },
+                Square { id: 17, x: 6, y: 3, player_number: 0, king: false },
+                Square { id: 0, x: 7, y: 3, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 0, x: 0, y: 4, player_number: 0, king: false },
+                Square { id: 16, x: 1, y: 4, player_number: 0, king: false },
+                Square { id: 0, x: 2, y: 4, player_number: 0, king: false },
+                Square { id: 15, x: 3, y: 4, player_number: 0, king: false },
+                Square { id: 0, x: 4, y: 4, player_number: 0, king: false },
+                Square { id: 14, x: 5, y: 4, player_number: 0, king: false },
+                Square { id: 0, x: 6, y: 4, player_number: 0, king: false },
+                Square { id: 13, x: 7, y: 4, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 12, x: 0, y: 5, player_number: 0, king: false },
+                Square { id: 0, x: 1, y: 5, player_number: 0, king: false },
+                Square { id: 11, x: 2, y: 5, player_number: 0, king: false },
+                Square { id: 0, x: 3, y: 5, player_number: 0, king: false },
+                Square { id: 10, x: 4, y: 5, player_number: 1, king: false },
+                Square { id: 0, x: 5, y: 5, player_number: 0, king: false },
+                Square { id: 9, x: 6, y: 5, player_number: 0, king: false },
+                Square { id: 0, x: 7, y: 5, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 0, x: 0, y: 6, player_number: 0, king: false },
+                Square { id: 8, x: 1, y: 6, player_number: 0, king: false },
+                Square { id: 0, x: 2, y: 6, player_number: 0, king: false },
+                Square { id: 7, x: 3, y: 6, player_number: 0, king: false },
+                Square { id: 0, x: 4, y: 6, player_number: 0, king: false },
+                Square { id: 6, x: 5, y: 6, player_number: 0, king: false },
+                Square { id: 0, x: 6, y: 6, player_number: 0, king: false },
+                Square { id: 5, x: 7, y: 6, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 4, x: 0, y: 7, player_number: 0, king: false },
+                Square { id: 0, x: 1, y: 7, player_number: 0, king: false },
+                Square { id: 3, x: 2, y: 7, player_number: 0, king: false },
+                Square { id: 0, x: 3, y: 7, player_number: 0, king: false },
+                Square { id: 2, x: 4, y: 7, player_number: 0, king: false },
+                Square { id: 0, x: 5, y: 7, player_number: 0, king: false },
+                Square { id: 1, x: 6, y: 7, player_number: 0, king: false },
+                Square { id: 0, x: 7, y: 7, player_number: 0, king: false }
+            ]
+        ];
         let game_state = GameState { current_player_number: 1, squares };
 
-        let result = from.can_jump(player_number, king, &game_state);
-        assert_eq!(result, true);
-
-        let destinations = from.jump_destinations(player_number, king, &game_state);
-        assert_eq!(destinations.len(), 1);
-
-        let square = &destinations[0];
-        assert_eq!(square.x, 2);
-        assert_eq!(square.y, 6);
+        for row in game_state.squares.iter() {
+            for from in row {
+                if from.id == 14 {
+                    let result = from.can_jump(player_number, king, &game_state);
+                    assert_eq!(result, true);
+                    let destinations = from.jump_destinations(player_number, king, &game_state);
+                    assert_eq!(destinations.len(), 1);
+                    let square = &destinations[0];
+                    assert_eq!(square.x, 3);
+                    assert_eq!(square.y, 6);
+                }
+            }
+        }
     }
 
     #[test]
     fn pieces_can_move() {
         let (player_number, king) = (2, false);
-        let from = Square { id: 1, x: 4, y: 4, player_number: 2, king: false };
-        let to = Square { id: 2, x: 5, y: 5, player_number: 0, king: false };
-        let cant_to = Square { id: 4, x: 3, y: 5, player_number: 1, king: false };
-        let squares = vec![from, to, cant_to];
+        let squares = vec![
+            vec![
+                Square { id: 0, x: 0, y: 0, player_number: 0, king: false },
+                Square { id: 32, x: 1, y: 0, player_number: 0, king: false },
+                Square { id: 0, x: 2, y: 0, player_number: 0, king: false },
+                Square { id: 31, x: 3, y: 0, player_number: 0, king: false },
+                Square { id: 0, x: 4, y: 0, player_number: 0, king: false },
+                Square { id: 30, x: 5, y: 0, player_number: 0, king: false },
+                Square { id: 0, x: 6, y: 0, player_number: 0, king: false },
+                Square { id: 29, x: 7, y: 0, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 28, x: 0, y: 1, player_number: 0, king: false },
+                Square { id: 0, x: 1, y: 1, player_number: 0, king: false },
+                Square { id: 27, x: 2, y: 1, player_number: 0, king: false },
+                Square { id: 0, x: 3, y: 1, player_number: 0, king: false },
+                Square { id: 26, x: 4, y: 1, player_number: 0, king: false },
+                Square { id: 0, x: 5, y: 1, player_number: 0, king: false },
+                Square { id: 25, x: 6, y: 1, player_number: 0, king: false },
+                Square { id: 0, x: 7, y: 1, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 0, x: 0, y: 2, player_number: 0, king: false },
+                Square { id: 24, x: 1, y: 2, player_number: 0, king: false },
+                Square { id: 0, x: 2, y: 2, player_number: 0, king: false },
+                Square { id: 23, x: 3, y: 2, player_number: 0, king: false },
+                Square { id: 0, x: 4, y: 2, player_number: 0, king: false },
+                Square { id: 22, x: 5, y: 2, player_number: 0, king: false },
+                Square { id: 0, x: 6, y: 2, player_number: 0, king: false },
+                Square { id: 21, x: 7, y: 2, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 20, x: 0, y: 3, player_number: 0, king: false },
+                Square { id: 0, x: 1, y: 3, player_number: 0, king: false },
+                Square { id: 19, x: 2, y: 3, player_number: 0, king: false },
+                Square { id: 0, x: 3, y: 3, player_number: 0, king: false },
+                Square { id: 18, x: 4, y: 3, player_number: 0, king: false },
+                Square { id: 0, x: 5, y: 3, player_number: 0, king: false },
+                Square { id: 17, x: 6, y: 3, player_number: 0, king: false },
+                Square { id: 0, x: 7, y: 3, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 0, x: 0, y: 4, player_number: 0, king: false },
+                Square { id: 16, x: 1, y: 4, player_number: 0, king: false },
+                Square { id: 0, x: 2, y: 4, player_number: 0, king: false },
+                Square { id: 15, x: 3, y: 4, player_number: 0, king: false },
+                Square { id: 0, x: 4, y: 4, player_number: 0, king: false },
+                Square { id: 14, x: 5, y: 4, player_number: 2, king: false },
+                Square { id: 0, x: 6, y: 4, player_number: 0, king: false },
+                Square { id: 13, x: 7, y: 4, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 12, x: 0, y: 5, player_number: 0, king: false },
+                Square { id: 0, x: 1, y: 5, player_number: 0, king: false },
+                Square { id: 11, x: 2, y: 5, player_number: 0, king: false },
+                Square { id: 0, x: 3, y: 5, player_number: 0, king: false },
+                Square { id: 10, x: 4, y: 5, player_number: 1, king: false },
+                Square { id: 0, x: 5, y: 5, player_number: 0, king: false },
+                Square { id: 9, x: 6, y: 5, player_number: 0, king: false },
+                Square { id: 0, x: 7, y: 5, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 0, x: 0, y: 6, player_number: 0, king: false },
+                Square { id: 8, x: 1, y: 6, player_number: 0, king: false },
+                Square { id: 0, x: 2, y: 6, player_number: 0, king: false },
+                Square { id: 7, x: 3, y: 6, player_number: 0, king: false },
+                Square { id: 0, x: 4, y: 6, player_number: 0, king: false },
+                Square { id: 6, x: 5, y: 6, player_number: 0, king: false },
+                Square { id: 0, x: 6, y: 6, player_number: 0, king: false },
+                Square { id: 5, x: 7, y: 6, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 4, x: 0, y: 7, player_number: 0, king: false },
+                Square { id: 0, x: 1, y: 7, player_number: 0, king: false },
+                Square { id: 3, x: 2, y: 7, player_number: 0, king: false },
+                Square { id: 0, x: 3, y: 7, player_number: 0, king: false },
+                Square { id: 2, x: 4, y: 7, player_number: 0, king: false },
+                Square { id: 0, x: 5, y: 7, player_number: 0, king: false },
+                Square { id: 1, x: 6, y: 7, player_number: 0, king: false },
+                Square { id: 0, x: 7, y: 7, player_number: 0, king: false }
+            ]
+        ];
         let game_state = GameState { current_player_number: 1, squares };
 
-        let result = from.can_move(player_number, king, &game_state);
-        assert_eq!(result, true);
-
-        let destinations = from.move_destinations(player_number, king, &game_state);
-        assert_eq!(destinations.len(), 1);
-
-        let square = &destinations[0];
-        assert_eq!(square.x, 5);
-        assert_eq!(square.y, 5);
+        for row in game_state.squares.iter() {
+            for from in row {
+                if from.id == 14 {
+                    let result = from.can_move(player_number, king, &game_state);
+                    assert_eq!(result, true);
+                    let destinations = from.move_destinations(player_number, king, &game_state);
+                    assert_eq!(destinations.len(), 1);
+                    let square = &destinations[0];
+                    assert_eq!(square.x, 6);
+                    assert_eq!(square.y, 5);
+                }
+            }
+        }
     }
 
     #[test]
     fn pieces_cannot_jump_over_friendly() {
         let (player_number, king) = (1, false);
-        let from = Square { id: 1, x: 4, y: 4, player_number: 0, king: false };
-        let between_square = Square { id: 2, x: 3, y: 5, player_number: 1, king: false };
-        let to = Square { id: 3, x: 2, y: 6, player_number: 0, king: false };
-        let squares = vec![from, between_square, to];
+        let squares = vec![
+            vec![
+                Square { id: 0, x: 0, y: 0, player_number: 0, king: false },
+                Square { id: 32, x: 1, y: 0, player_number: 0, king: false },
+                Square { id: 0, x: 2, y: 0, player_number: 0, king: false },
+                Square { id: 31, x: 3, y: 0, player_number: 0, king: false },
+                Square { id: 0, x: 4, y: 0, player_number: 0, king: false },
+                Square { id: 30, x: 5, y: 0, player_number: 0, king: false },
+                Square { id: 0, x: 6, y: 0, player_number: 0, king: false },
+                Square { id: 29, x: 7, y: 0, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 28, x: 0, y: 1, player_number: 0, king: false },
+                Square { id: 0, x: 1, y: 1, player_number: 0, king: false },
+                Square { id: 27, x: 2, y: 1, player_number: 0, king: false },
+                Square { id: 0, x: 3, y: 1, player_number: 0, king: false },
+                Square { id: 26, x: 4, y: 1, player_number: 0, king: false },
+                Square { id: 0, x: 5, y: 1, player_number: 0, king: false },
+                Square { id: 25, x: 6, y: 1, player_number: 0, king: false },
+                Square { id: 0, x: 7, y: 1, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 0, x: 0, y: 2, player_number: 0, king: false },
+                Square { id: 24, x: 1, y: 2, player_number: 0, king: false },
+                Square { id: 0, x: 2, y: 2, player_number: 0, king: false },
+                Square { id: 23, x: 3, y: 2, player_number: 0, king: false },
+                Square { id: 0, x: 4, y: 2, player_number: 0, king: false },
+                Square { id: 22, x: 5, y: 2, player_number: 0, king: false },
+                Square { id: 0, x: 6, y: 2, player_number: 0, king: false },
+                Square { id: 21, x: 7, y: 2, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 20, x: 0, y: 3, player_number: 0, king: false },
+                Square { id: 0, x: 1, y: 3, player_number: 0, king: false },
+                Square { id: 19, x: 2, y: 3, player_number: 0, king: false },
+                Square { id: 0, x: 3, y: 3, player_number: 0, king: false },
+                Square { id: 18, x: 4, y: 3, player_number: 0, king: false },
+                Square { id: 0, x: 5, y: 3, player_number: 0, king: false },
+                Square { id: 17, x: 6, y: 3, player_number: 0, king: false },
+                Square { id: 0, x: 7, y: 3, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 0, x: 0, y: 4, player_number: 0, king: false },
+                Square { id: 16, x: 1, y: 4, player_number: 0, king: false },
+                Square { id: 0, x: 2, y: 4, player_number: 0, king: false },
+                Square { id: 15, x: 3, y: 4, player_number: 0, king: false },
+                Square { id: 0, x: 4, y: 4, player_number: 0, king: false },
+                Square { id: 14, x: 5, y: 4, player_number: 0, king: false },
+                Square { id: 0, x: 6, y: 4, player_number: 0, king: false },
+                Square { id: 13, x: 7, y: 4, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 12, x: 0, y: 5, player_number: 0, king: false },
+                Square { id: 0, x: 1, y: 5, player_number: 0, king: false },
+                Square { id: 11, x: 2, y: 5, player_number: 0, king: false },
+                Square { id: 0, x: 3, y: 5, player_number: 0, king: false },
+                Square { id: 10, x: 4, y: 5, player_number: 1, king: false },
+                Square { id: 0, x: 5, y: 5, player_number: 0, king: false },
+                Square { id: 9, x: 6, y: 5, player_number: 1, king: false },
+                Square { id: 0, x: 7, y: 5, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 0, x: 0, y: 6, player_number: 0, king: false },
+                Square { id: 8, x: 1, y: 6, player_number: 0, king: false },
+                Square { id: 0, x: 2, y: 6, player_number: 0, king: false },
+                Square { id: 7, x: 3, y: 6, player_number: 0, king: false },
+                Square { id: 0, x: 4, y: 6, player_number: 0, king: false },
+                Square { id: 6, x: 5, y: 6, player_number: 0, king: false },
+                Square { id: 0, x: 6, y: 6, player_number: 0, king: false },
+                Square { id: 5, x: 7, y: 6, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 4, x: 0, y: 7, player_number: 0, king: false },
+                Square { id: 0, x: 1, y: 7, player_number: 0, king: false },
+                Square { id: 3, x: 2, y: 7, player_number: 0, king: false },
+                Square { id: 0, x: 3, y: 7, player_number: 0, king: false },
+                Square { id: 2, x: 4, y: 7, player_number: 0, king: false },
+                Square { id: 0, x: 5, y: 7, player_number: 0, king: false },
+                Square { id: 1, x: 6, y: 7, player_number: 0, king: false },
+                Square { id: 0, x: 7, y: 7, player_number: 0, king: false }
+            ]
+        ];
         let game_state = GameState { current_player_number: 1, squares };
 
-        let result = from.can_jump(player_number, king, &game_state);
-        assert_eq!(result, false);
-
-        let destinations = from.jump_destinations(player_number, king, &game_state);
-        assert_eq!(destinations.len(), 0);
+        for row in game_state.squares.iter() {
+            for from in row {
+                if from.id == 14 {
+                    let result = from.can_jump(player_number, king, &game_state);
+                    assert_eq!(result, false);
+                    let destinations = from.jump_destinations(player_number, king, &game_state);
+                    assert_eq!(destinations.len(), 0);
+                }
+            }
+        }
     }
 
     #[test]
     fn pieces_cannot_jump_over_empty() {
         let (player_number, king) = (1, false);
-        let from = Square { id: 1, x: 4, y: 4, player_number: 0, king: false };
-        let between_square = Square { id: 2, x: 3, y: 5, player_number: 0, king: false };
-        let to = Square { id: 3, x: 2, y: 6, player_number: 0, king: false };
-        let squares = vec![from, between_square, to];
+        let squares = vec![
+            vec![
+                Square { id: 0, x: 0, y: 0, player_number: 0, king: false },
+                Square { id: 32, x: 1, y: 0, player_number: 0, king: false },
+                Square { id: 0, x: 2, y: 0, player_number: 0, king: false },
+                Square { id: 31, x: 3, y: 0, player_number: 0, king: false },
+                Square { id: 0, x: 4, y: 0, player_number: 0, king: false },
+                Square { id: 30, x: 5, y: 0, player_number: 0, king: false },
+                Square { id: 0, x: 6, y: 0, player_number: 0, king: false },
+                Square { id: 29, x: 7, y: 0, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 28, x: 0, y: 1, player_number: 0, king: false },
+                Square { id: 0, x: 1, y: 1, player_number: 0, king: false },
+                Square { id: 27, x: 2, y: 1, player_number: 0, king: false },
+                Square { id: 0, x: 3, y: 1, player_number: 0, king: false },
+                Square { id: 26, x: 4, y: 1, player_number: 0, king: false },
+                Square { id: 0, x: 5, y: 1, player_number: 0, king: false },
+                Square { id: 25, x: 6, y: 1, player_number: 0, king: false },
+                Square { id: 0, x: 7, y: 1, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 0, x: 0, y: 2, player_number: 0, king: false },
+                Square { id: 24, x: 1, y: 2, player_number: 0, king: false },
+                Square { id: 0, x: 2, y: 2, player_number: 0, king: false },
+                Square { id: 23, x: 3, y: 2, player_number: 0, king: false },
+                Square { id: 0, x: 4, y: 2, player_number: 0, king: false },
+                Square { id: 22, x: 5, y: 2, player_number: 0, king: false },
+                Square { id: 0, x: 6, y: 2, player_number: 0, king: false },
+                Square { id: 21, x: 7, y: 2, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 20, x: 0, y: 3, player_number: 0, king: false },
+                Square { id: 0, x: 1, y: 3, player_number: 0, king: false },
+                Square { id: 19, x: 2, y: 3, player_number: 0, king: false },
+                Square { id: 0, x: 3, y: 3, player_number: 0, king: false },
+                Square { id: 18, x: 4, y: 3, player_number: 0, king: false },
+                Square { id: 0, x: 5, y: 3, player_number: 0, king: false },
+                Square { id: 17, x: 6, y: 3, player_number: 0, king: false },
+                Square { id: 0, x: 7, y: 3, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 0, x: 0, y: 4, player_number: 0, king: false },
+                Square { id: 16, x: 1, y: 4, player_number: 0, king: false },
+                Square { id: 0, x: 2, y: 4, player_number: 0, king: false },
+                Square { id: 15, x: 3, y: 4, player_number: 0, king: false },
+                Square { id: 0, x: 4, y: 4, player_number: 0, king: false },
+                Square { id: 14, x: 5, y: 4, player_number: 0, king: false },
+                Square { id: 0, x: 6, y: 4, player_number: 0, king: false },
+                Square { id: 13, x: 7, y: 4, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 12, x: 0, y: 5, player_number: 0, king: false },
+                Square { id: 0, x: 1, y: 5, player_number: 0, king: false },
+                Square { id: 11, x: 2, y: 5, player_number: 0, king: false },
+                Square { id: 0, x: 3, y: 5, player_number: 0, king: false },
+                Square { id: 10, x: 4, y: 5, player_number: 0, king: false },
+                Square { id: 0, x: 5, y: 5, player_number: 0, king: false },
+                Square { id: 9, x: 6, y: 5, player_number: 0, king: false },
+                Square { id: 0, x: 7, y: 5, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 0, x: 0, y: 6, player_number: 0, king: false },
+                Square { id: 8, x: 1, y: 6, player_number: 0, king: false },
+                Square { id: 0, x: 2, y: 6, player_number: 0, king: false },
+                Square { id: 7, x: 3, y: 6, player_number: 0, king: false },
+                Square { id: 0, x: 4, y: 6, player_number: 0, king: false },
+                Square { id: 6, x: 5, y: 6, player_number: 0, king: false },
+                Square { id: 0, x: 6, y: 6, player_number: 0, king: false },
+                Square { id: 5, x: 7, y: 6, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 4, x: 0, y: 7, player_number: 0, king: false },
+                Square { id: 0, x: 1, y: 7, player_number: 0, king: false },
+                Square { id: 3, x: 2, y: 7, player_number: 0, king: false },
+                Square { id: 0, x: 3, y: 7, player_number: 0, king: false },
+                Square { id: 2, x: 4, y: 7, player_number: 0, king: false },
+                Square { id: 0, x: 5, y: 7, player_number: 0, king: false },
+                Square { id: 1, x: 6, y: 7, player_number: 0, king: false },
+                Square { id: 0, x: 7, y: 7, player_number: 0, king: false }
+            ]
+        ];
         let game_state = GameState { current_player_number: 1, squares };
 
-        let result = from.can_jump(player_number, king, &game_state);
-        assert_eq!(result, false);
-
-        let destinations = from.jump_destinations(player_number, king, &game_state);
-        assert_eq!(destinations.len(), 0);
+        for row in game_state.squares.iter() {
+            for from in row {
+                if from.id == 14 {
+                    let result = from.can_jump(player_number, king, &game_state);
+                    assert_eq!(result, false);
+                    let destinations = from.jump_destinations(player_number, king, &game_state);
+                    assert_eq!(destinations.len(), 0);
+                }
+            }
+        }
     }
 
     #[test]
     fn pieces_cannot_jump_backwards() {
         let (player_number, king) = (1, false);
-        let from = Square { id: 1, x: 4, y: 4, player_number: 0, king: false };
-        let between_square = Square { id: 2, x: 3, y: 3, player_number: 1, king: false };
-        let to = Square { id: 3, x: 2, y: 2, player_number: 0, king: false };
-        let squares = vec![from, between_square, to];
+        let squares = vec![
+            vec![
+                Square { id: 0, x: 0, y: 0, player_number: 0, king: false },
+                Square { id: 32, x: 1, y: 0, player_number: 0, king: false },
+                Square { id: 0, x: 2, y: 0, player_number: 0, king: false },
+                Square { id: 31, x: 3, y: 0, player_number: 0, king: false },
+                Square { id: 0, x: 4, y: 0, player_number: 0, king: false },
+                Square { id: 30, x: 5, y: 0, player_number: 0, king: false },
+                Square { id: 0, x: 6, y: 0, player_number: 0, king: false },
+                Square { id: 29, x: 7, y: 0, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 28, x: 0, y: 1, player_number: 0, king: false },
+                Square { id: 0, x: 1, y: 1, player_number: 0, king: false },
+                Square { id: 27, x: 2, y: 1, player_number: 0, king: false },
+                Square { id: 0, x: 3, y: 1, player_number: 0, king: false },
+                Square { id: 26, x: 4, y: 1, player_number: 0, king: false },
+                Square { id: 0, x: 5, y: 1, player_number: 0, king: false },
+                Square { id: 25, x: 6, y: 1, player_number: 0, king: false },
+                Square { id: 0, x: 7, y: 1, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 0, x: 0, y: 2, player_number: 0, king: false },
+                Square { id: 24, x: 1, y: 2, player_number: 0, king: false },
+                Square { id: 0, x: 2, y: 2, player_number: 0, king: false },
+                Square { id: 23, x: 3, y: 2, player_number: 0, king: false },
+                Square { id: 0, x: 4, y: 2, player_number: 0, king: false },
+                Square { id: 22, x: 5, y: 2, player_number: 0, king: false },
+                Square { id: 0, x: 6, y: 2, player_number: 0, king: false },
+                Square { id: 21, x: 7, y: 2, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 20, x: 0, y: 3, player_number: 0, king: false },
+                Square { id: 0, x: 1, y: 3, player_number: 0, king: false },
+                Square { id: 19, x: 2, y: 3, player_number: 0, king: false },
+                Square { id: 0, x: 3, y: 3, player_number: 0, king: false },
+                Square { id: 18, x: 4, y: 3, player_number: 1, king: false },
+                Square { id: 0, x: 5, y: 3, player_number: 0, king: false },
+                Square { id: 17, x: 6, y: 3, player_number: 0, king: false },
+                Square { id: 0, x: 7, y: 3, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 0, x: 0, y: 4, player_number: 0, king: false },
+                Square { id: 16, x: 1, y: 4, player_number: 0, king: false },
+                Square { id: 0, x: 2, y: 4, player_number: 0, king: false },
+                Square { id: 15, x: 3, y: 4, player_number: 0, king: false },
+                Square { id: 0, x: 4, y: 4, player_number: 0, king: false },
+                Square { id: 14, x: 5, y: 4, player_number: 0, king: false },
+                Square { id: 0, x: 6, y: 4, player_number: 0, king: false },
+                Square { id: 13, x: 7, y: 4, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 12, x: 0, y: 5, player_number: 0, king: false },
+                Square { id: 0, x: 1, y: 5, player_number: 0, king: false },
+                Square { id: 11, x: 2, y: 5, player_number: 0, king: false },
+                Square { id: 0, x: 3, y: 5, player_number: 0, king: false },
+                Square { id: 10, x: 4, y: 5, player_number: 0, king: false },
+                Square { id: 0, x: 5, y: 5, player_number: 0, king: false },
+                Square { id: 9, x: 6, y: 5, player_number: 1, king: false },
+                Square { id: 0, x: 7, y: 5, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 0, x: 0, y: 6, player_number: 0, king: false },
+                Square { id: 8, x: 1, y: 6, player_number: 0, king: false },
+                Square { id: 0, x: 2, y: 6, player_number: 0, king: false },
+                Square { id: 7, x: 3, y: 6, player_number: 0, king: false },
+                Square { id: 0, x: 4, y: 6, player_number: 0, king: false },
+                Square { id: 6, x: 5, y: 6, player_number: 0, king: false },
+                Square { id: 0, x: 6, y: 6, player_number: 0, king: false },
+                Square { id: 5, x: 7, y: 6, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 4, x: 0, y: 7, player_number: 0, king: false },
+                Square { id: 0, x: 1, y: 7, player_number: 0, king: false },
+                Square { id: 3, x: 2, y: 7, player_number: 0, king: false },
+                Square { id: 0, x: 3, y: 7, player_number: 0, king: false },
+                Square { id: 2, x: 4, y: 7, player_number: 0, king: false },
+                Square { id: 0, x: 5, y: 7, player_number: 0, king: false },
+                Square { id: 1, x: 6, y: 7, player_number: 0, king: false },
+                Square { id: 0, x: 7, y: 7, player_number: 0, king: false }
+            ]
+        ];
         let game_state = GameState { current_player_number: 1, squares };
 
-        let result = from.can_jump(player_number, king, &game_state);
-        assert_eq!(result, false);
-
-        let destinations = from.jump_destinations(player_number, king, &game_state);
-        assert_eq!(destinations.len(), 0);
+        for row in game_state.squares.iter() {
+            for from in row {
+                if from.id == 14 {
+                    let result = from.can_jump(player_number, king, &game_state);
+                    assert_eq!(result, false);
+                    let destinations = from.jump_destinations(player_number, king, &game_state);
+                    assert_eq!(destinations.len(), 0);
+                }
+            }
+        }
     }
 
     #[test]
     fn fetch_jump_legs() {
         let (player_number, king) = (2, false);
-        let from = Square { id: 1, x: 3, y: 3, player_number: 2, king: false };
-        let over_a = Square { id: 2, x: 4, y: 4, player_number: 1, king: false };
-        let to_a = Square { id: 3, x: 5, y: 5, player_number: 0, king: false };
-        let over_aa = Square { id: 4, x: 6, y: 6, player_number: 1, king: false };
-        let to_aa = Square { id: 5, x: 7, y: 7, player_number: 0, king: false };
-
-        let over_b = Square { id: 6, x: 2, y: 4, player_number: 1, king: false };
-        let to_b = Square { id: 7, x: 1, y: 5, player_number: 0, king: false };
-        let squares = vec![from, over_a, to_a, over_aa, to_aa, over_b, to_b];
+        let squares = vec![
+            vec![
+                Square { id: 0, x: 0, y: 0, player_number: 0, king: false },
+                Square { id: 32, x: 1, y: 0, player_number: 0, king: false },
+                Square { id: 0, x: 2, y: 0, player_number: 0, king: false },
+                Square { id: 31, x: 3, y: 0, player_number: 0, king: false },
+                Square { id: 0, x: 4, y: 0, player_number: 0, king: false },
+                Square { id: 30, x: 5, y: 0, player_number: 0, king: false },
+                Square { id: 0, x: 6, y: 0, player_number: 0, king: false },
+                Square { id: 29, x: 7, y: 0, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 28, x: 0, y: 1, player_number: 0, king: false },
+                Square { id: 0, x: 1, y: 1, player_number: 0, king: false },
+                Square { id: 27, x: 2, y: 1, player_number: 0, king: false },
+                Square { id: 0, x: 3, y: 1, player_number: 0, king: false },
+                Square { id: 26, x: 4, y: 1, player_number: 0, king: false },
+                Square { id: 0, x: 5, y: 1, player_number: 0, king: false },
+                Square { id: 25, x: 6, y: 1, player_number: 0, king: false },
+                Square { id: 0, x: 7, y: 1, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 0, x: 0, y: 2, player_number: 0, king: false },
+                Square { id: 24, x: 1, y: 2, player_number: 0, king: false },
+                Square { id: 0, x: 2, y: 2, player_number: 0, king: false },
+                Square { id: 23, x: 3, y: 2, player_number: 0, king: false },
+                Square { id: 0, x: 4, y: 2, player_number: 0, king: false },
+                Square { id: 22, x: 5, y: 2, player_number: 0, king: false },
+                Square { id: 0, x: 6, y: 2, player_number: 0, king: false },
+                Square { id: 21, x: 7, y: 2, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 20, x: 0, y: 3, player_number: 0, king: false },
+                Square { id: 0, x: 1, y: 3, player_number: 0, king: false },
+                Square { id: 19, x: 2, y: 3, player_number: 2, king: false },
+                Square { id: 0, x: 3, y: 3, player_number: 0, king: false },
+                Square { id: 18, x: 4, y: 3, player_number: 0, king: false },
+                Square { id: 0, x: 5, y: 3, player_number: 0, king: false },
+                Square { id: 17, x: 6, y: 3, player_number: 0, king: false },
+                Square { id: 0, x: 7, y: 3, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 0, x: 0, y: 4, player_number: 0, king: false },
+                Square { id: 16, x: 1, y: 4, player_number: 1, king: false },
+                Square { id: 0, x: 2, y: 4, player_number: 0, king: false },
+                Square { id: 15, x: 3, y: 4, player_number: 1, king: false },
+                Square { id: 0, x: 4, y: 4, player_number: 0, king: false },
+                Square { id: 14, x: 5, y: 4, player_number: 0, king: false },
+                Square { id: 0, x: 6, y: 4, player_number: 0, king: false },
+                Square { id: 13, x: 7, y: 4, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 12, x: 0, y: 5, player_number: 0, king: false },
+                Square { id: 0, x: 1, y: 5, player_number: 0, king: false },
+                Square { id: 11, x: 2, y: 5, player_number: 0, king: false },
+                Square { id: 0, x: 3, y: 5, player_number: 0, king: false },
+                Square { id: 10, x: 4, y: 5, player_number: 0, king: false },
+                Square { id: 0, x: 5, y: 5, player_number: 0, king: false },
+                Square { id: 9, x: 6, y: 5, player_number: 0, king: false },
+                Square { id: 0, x: 7, y: 5, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 0, x: 0, y: 6, player_number: 0, king: false },
+                Square { id: 8, x: 1, y: 6, player_number: 0, king: false },
+                Square { id: 0, x: 2, y: 6, player_number: 0, king: false },
+                Square { id: 7, x: 3, y: 6, player_number: 0, king: false },
+                Square { id: 0, x: 4, y: 6, player_number: 0, king: false },
+                Square { id: 6, x: 5, y: 6, player_number: 1, king: false },
+                Square { id: 0, x: 6, y: 6, player_number: 0, king: false },
+                Square { id: 5, x: 7, y: 6, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 4, x: 0, y: 7, player_number: 0, king: false },
+                Square { id: 0, x: 1, y: 7, player_number: 0, king: false },
+                Square { id: 3, x: 2, y: 7, player_number: 0, king: false },
+                Square { id: 0, x: 3, y: 7, player_number: 0, king: false },
+                Square { id: 2, x: 4, y: 7, player_number: 0, king: false },
+                Square { id: 0, x: 5, y: 7, player_number: 0, king: false },
+                Square { id: 1, x: 6, y: 7, player_number: 0, king: false },
+                Square { id: 0, x: 7, y: 7, player_number: 0, king: false }
+            ]
+        ];
         let game_state = GameState { current_player_number: 1, squares };
 
         let mut accumulator = vec![];
         let mut current_leg = vec![];
 
-        let result = from.jump_legs(player_number, king, &game_state, &mut accumulator, &mut current_leg);
-
-        assert_eq!(result.len(), 2);
-        assert_eq!(result[0], vec![1,3,5]);
-        assert_eq!(result[1], vec![1,7]);
+        for row in game_state.squares.iter() {
+            for from in row {
+                if from.id == 19 {
+                    let result = from.jump_legs(player_number, king, &game_state, &mut accumulator, &mut current_leg);
+                    assert_eq!(result.len(), 2);
+                    assert_eq!(result[0], vec![19,12]);
+                    assert_eq!(result[1], vec![19,10,1]);
+                }
+            }
+        }
     }
 
     #[test]
     fn fetch_branching_jump_legs() {
         let (player_number, king) = (2, false);
-        let from = Square { id: 1, x: 3, y: 3, player_number: 2, king: false };
-        let over_a = Square { id: 2, x: 4, y: 4, player_number: 1, king: false };
-        let to_a = Square { id: 3, x: 5, y: 5, player_number: 0, king: false };
-        let over_aa = Square { id: 4, x: 6, y: 6, player_number: 1, king: false };
-        let to_aa = Square { id: 5, x: 7, y: 7, player_number: 0, king: false };
+        let squares = vec![
+            vec![
+                Square { id: 0, x: 0, y: 0, player_number: 0, king: false },
+                Square { id: 32, x: 1, y: 0, player_number: 0, king: false },
+                Square { id: 0, x: 2, y: 0, player_number: 0, king: false },
+                Square { id: 31, x: 3, y: 0, player_number: 0, king: false },
+                Square { id: 0, x: 4, y: 0, player_number: 0, king: false },
+                Square { id: 30, x: 5, y: 0, player_number: 0, king: false },
+                Square { id: 0, x: 6, y: 0, player_number: 0, king: false },
+                Square { id: 29, x: 7, y: 0, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 28, x: 0, y: 1, player_number: 0, king: false },
+                Square { id: 0, x: 1, y: 1, player_number: 0, king: false },
+                Square { id: 27, x: 2, y: 1, player_number: 0, king: false },
+                Square { id: 0, x: 3, y: 1, player_number: 0, king: false },
+                Square { id: 26, x: 4, y: 1, player_number: 0, king: false },
+                Square { id: 0, x: 5, y: 1, player_number: 0, king: false },
+                Square { id: 25, x: 6, y: 1, player_number: 0, king: false },
+                Square { id: 0, x: 7, y: 1, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 0, x: 0, y: 2, player_number: 0, king: false },
+                Square { id: 24, x: 1, y: 2, player_number: 0, king: false },
+                Square { id: 0, x: 2, y: 2, player_number: 0, king: false },
+                Square { id: 23, x: 3, y: 2, player_number: 0, king: false },
+                Square { id: 0, x: 4, y: 2, player_number: 0, king: false },
+                Square { id: 22, x: 5, y: 2, player_number: 0, king: false },
+                Square { id: 0, x: 6, y: 2, player_number: 0, king: false },
+                Square { id: 21, x: 7, y: 2, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 20, x: 0, y: 3, player_number: 0, king: false },
+                Square { id: 0, x: 1, y: 3, player_number: 0, king: false },
+                Square { id: 19, x: 2, y: 3, player_number: 2, king: false },
+                Square { id: 0, x: 3, y: 3, player_number: 0, king: false },
+                Square { id: 18, x: 4, y: 3, player_number: 0, king: false },
+                Square { id: 0, x: 5, y: 3, player_number: 0, king: false },
+                Square { id: 17, x: 6, y: 3, player_number: 0, king: false },
+                Square { id: 0, x: 7, y: 3, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 0, x: 0, y: 4, player_number: 0, king: false },
+                Square { id: 16, x: 1, y: 4, player_number: 0, king: false },
+                Square { id: 0, x: 2, y: 4, player_number: 0, king: false },
+                Square { id: 15, x: 3, y: 4, player_number: 1, king: false },
+                Square { id: 0, x: 4, y: 4, player_number: 0, king: false },
+                Square { id: 14, x: 5, y: 4, player_number: 0, king: false },
+                Square { id: 0, x: 6, y: 4, player_number: 0, king: false },
+                Square { id: 13, x: 7, y: 4, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 12, x: 0, y: 5, player_number: 0, king: false },
+                Square { id: 0, x: 1, y: 5, player_number: 0, king: false },
+                Square { id: 11, x: 2, y: 5, player_number: 0, king: false },
+                Square { id: 0, x: 3, y: 5, player_number: 0, king: false },
+                Square { id: 10, x: 4, y: 5, player_number: 0, king: false },
+                Square { id: 0, x: 5, y: 5, player_number: 0, king: false },
+                Square { id: 9, x: 6, y: 5, player_number: 0, king: false },
+                Square { id: 0, x: 7, y: 5, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 0, x: 0, y: 6, player_number: 0, king: false },
+                Square { id: 8, x: 1, y: 6, player_number: 0, king: false },
+                Square { id: 0, x: 2, y: 6, player_number: 0, king: false },
+                Square { id: 7, x: 3, y: 6, player_number: 1, king: false },
+                Square { id: 0, x: 4, y: 6, player_number: 0, king: false },
+                Square { id: 6, x: 5, y: 6, player_number: 1, king: false },
+                Square { id: 0, x: 6, y: 6, player_number: 0, king: false },
+                Square { id: 5, x: 7, y: 6, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 4, x: 0, y: 7, player_number: 0, king: false },
+                Square { id: 0, x: 1, y: 7, player_number: 0, king: false },
+                Square { id: 3, x: 2, y: 7, player_number: 0, king: false },
+                Square { id: 0, x: 3, y: 7, player_number: 0, king: false },
+                Square { id: 2, x: 4, y: 7, player_number: 0, king: false },
+                Square { id: 0, x: 5, y: 7, player_number: 0, king: false },
+                Square { id: 1, x: 6, y: 7, player_number: 0, king: false },
+                Square { id: 0, x: 7, y: 7, player_number: 0, king: false }
+            ]
+        ];
 
-        let over_b = Square { id: 6, x: 4, y: 6, player_number: 1, king: false };
-        let to_b = Square { id: 7, x: 3, y: 7, player_number: 0, king: false };
-        let squares = vec![from, over_a, to_a, over_aa, to_aa, over_b, to_b];
-        let game_state = GameState { current_player_number: 1, squares };
+        let game_state = GameState { current_player_number: 2, squares };
 
-        let mut accumulator = vec![];
-        let mut current_leg = vec![];
 
-        let result = from.jump_legs(player_number, king, &game_state, &mut accumulator, &mut current_leg);
-
-        assert_eq!(result.len(), 2);
-        assert_eq!(result[0], vec![1,3,5]);
-        assert_eq!(result[1], vec![1,3,7]);
+        for row in game_state.squares.iter() {
+            for from in row {
+                if from.id == 19 {
+                    let mut accumulator = vec![];
+                    let mut current_leg = vec![];
+                    let result = from.jump_legs(player_number, king, &game_state, &mut accumulator, &mut current_leg);
+                    // assert_eq!(result.len(), 2);
+                    assert_eq!(result[0], vec![19,10,3]);
+                    assert_eq!(result[1], vec![19,10,1]);
+                }
+            }
+        }
     }
 
     #[test]
     fn fetch_jumps_test() {
         let (player_number, king) = (2, false);
-        let from = Square { id: 1, x: 3, y: 3, player_number: 2, king: false };
-        let over_a = Square { id: 2, x: 4, y: 4, player_number: 1, king: false };
-        let to_a = Square { id: 3, x: 5, y: 5, player_number: 0, king: false };
-        let over_aa = Square { id: 4, x: 6, y: 6, player_number: 1, king: false };
-        let to_aa = Square { id: 5, x: 7, y: 7, player_number: 0, king: false };
-
-        let over_b = Square { id: 6, x: 2, y: 4, player_number: 1, king: false };
-        let to_b = Square { id: 7, x: 1, y: 5, player_number: 0, king: false };
-        let squares = vec![from, over_a, to_a, over_aa, to_aa, over_b, to_b];
+        let squares = vec![
+            vec![
+                Square { id: 0, x: 0, y: 0, player_number: 0, king: false },
+                Square { id: 32, x: 1, y: 0, player_number: 0, king: false },
+                Square { id: 0, x: 2, y: 0, player_number: 0, king: false },
+                Square { id: 31, x: 3, y: 0, player_number: 0, king: false },
+                Square { id: 0, x: 4, y: 0, player_number: 0, king: false },
+                Square { id: 30, x: 5, y: 0, player_number: 0, king: false },
+                Square { id: 0, x: 6, y: 0, player_number: 0, king: false },
+                Square { id: 29, x: 7, y: 0, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 28, x: 0, y: 1, player_number: 0, king: false },
+                Square { id: 0, x: 1, y: 1, player_number: 0, king: false },
+                Square { id: 27, x: 2, y: 1, player_number: 0, king: false },
+                Square { id: 0, x: 3, y: 1, player_number: 0, king: false },
+                Square { id: 26, x: 4, y: 1, player_number: 0, king: false },
+                Square { id: 0, x: 5, y: 1, player_number: 0, king: false },
+                Square { id: 25, x: 6, y: 1, player_number: 0, king: false },
+                Square { id: 0, x: 7, y: 1, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 0, x: 0, y: 2, player_number: 0, king: false },
+                Square { id: 24, x: 1, y: 2, player_number: 0, king: false },
+                Square { id: 0, x: 2, y: 2, player_number: 0, king: false },
+                Square { id: 23, x: 3, y: 2, player_number: 0, king: false },
+                Square { id: 0, x: 4, y: 2, player_number: 0, king: false },
+                Square { id: 22, x: 5, y: 2, player_number: 0, king: false },
+                Square { id: 0, x: 6, y: 2, player_number: 0, king: false },
+                Square { id: 21, x: 7, y: 2, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 20, x: 0, y: 3, player_number: 0, king: false },
+                Square { id: 0, x: 1, y: 3, player_number: 0, king: false },
+                Square { id: 19, x: 2, y: 3, player_number: 2, king: false },
+                Square { id: 0, x: 3, y: 3, player_number: 0, king: false },
+                Square { id: 18, x: 4, y: 3, player_number: 0, king: false },
+                Square { id: 0, x: 5, y: 3, player_number: 0, king: false },
+                Square { id: 17, x: 6, y: 3, player_number: 0, king: false },
+                Square { id: 0, x: 7, y: 3, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 0, x: 0, y: 4, player_number: 0, king: false },
+                Square { id: 16, x: 1, y: 4, player_number: 1, king: false },
+                Square { id: 0, x: 2, y: 4, player_number: 0, king: false },
+                Square { id: 15, x: 3, y: 4, player_number: 1, king: false },
+                Square { id: 0, x: 4, y: 4, player_number: 0, king: false },
+                Square { id: 14, x: 5, y: 4, player_number: 0, king: false },
+                Square { id: 0, x: 6, y: 4, player_number: 0, king: false },
+                Square { id: 13, x: 7, y: 4, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 12, x: 0, y: 5, player_number: 0, king: false },
+                Square { id: 0, x: 1, y: 5, player_number: 0, king: false },
+                Square { id: 11, x: 2, y: 5, player_number: 0, king: false },
+                Square { id: 0, x: 3, y: 5, player_number: 0, king: false },
+                Square { id: 10, x: 4, y: 5, player_number: 0, king: false },
+                Square { id: 0, x: 5, y: 5, player_number: 0, king: false },
+                Square { id: 9, x: 6, y: 5, player_number: 0, king: false },
+                Square { id: 0, x: 7, y: 5, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 0, x: 0, y: 6, player_number: 0, king: false },
+                Square { id: 8, x: 1, y: 6, player_number: 0, king: false },
+                Square { id: 0, x: 2, y: 6, player_number: 0, king: false },
+                Square { id: 7, x: 3, y: 6, player_number: 0, king: false },
+                Square { id: 0, x: 4, y: 6, player_number: 0, king: false },
+                Square { id: 6, x: 5, y: 6, player_number: 1, king: false },
+                Square { id: 0, x: 6, y: 6, player_number: 0, king: false },
+                Square { id: 5, x: 7, y: 6, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 4, x: 0, y: 7, player_number: 0, king: false },
+                Square { id: 0, x: 1, y: 7, player_number: 0, king: false },
+                Square { id: 3, x: 2, y: 7, player_number: 0, king: false },
+                Square { id: 0, x: 3, y: 7, player_number: 0, king: false },
+                Square { id: 2, x: 4, y: 7, player_number: 0, king: false },
+                Square { id: 0, x: 5, y: 7, player_number: 0, king: false },
+                Square { id: 1, x: 6, y: 7, player_number: 0, king: false },
+                Square { id: 0, x: 7, y: 7, player_number: 0, king: false }
+            ]
+        ];
         let game_state = GameState { current_player_number: 1, squares };
 
-        let result = from.jumps(player_number, king, &game_state);
-
-        assert_eq!(result[0].from, 1);
-        assert_eq!(result[0].to, vec![3, 5]);
-        assert_eq!(result[1].from, 1);
-        assert_eq!(result[1].to, vec![7]);
-
-        assert_eq!(result.len(), 2);
+        for row in game_state.squares.iter() {
+            for from in row {
+                if from.id == 19 {
+                    let result = from.jumps(player_number, king, &game_state);
+                    assert_eq!(result[0].from, 19);
+                    assert_eq!(result[0].to, vec![12]);
+                    assert_eq!(result[1].from, 19);
+                    assert_eq!(result[1].to, vec![10,1]);
+                    assert_eq!(result.len(), 2);
+                }
+            }
+        }
     }
 
     #[test]
     fn fetch_branching_jumps_test() {
         let (player_number, king) = (2, false);
-        let from = Square { id: 1, x: 3, y: 3, player_number: 2, king: false };
-        let over_a = Square { id: 2, x: 4, y: 4, player_number: 1, king: false };
-        let to_a = Square { id: 3, x: 5, y: 5, player_number: 0, king: false };
-        let over_aa = Square { id: 4, x: 6, y: 6, player_number: 1, king: false };
-        let to_aa = Square { id: 5, x: 7, y: 7, player_number: 0, king: false };
-
-        let over_b = Square { id: 6, x: 4, y: 6, player_number: 1, king: false };
-        let to_b = Square { id: 7, x: 3, y: 7, player_number: 0, king: false };
-        let squares = vec![from, over_a, to_a, over_aa, to_aa, over_b, to_b];
-        let game_state = GameState { current_player_number: 1, squares };
-        let result = from.jumps(player_number, king, &game_state);
-
-        assert_eq!(result[0].from, 1);
-        assert_eq!(result[0].to, vec![3, 5]);
-
-        assert_eq!(result[1].from, 1);
-        assert_eq!(result[1].to, vec![3, 7]);
-
-        assert_eq!(result.len(), 2);
+        let squares = vec![
+            vec![
+                Square { id: 0, x: 0, y: 0, player_number: 0, king: false },
+                Square { id: 32, x: 1, y: 0, player_number: 0, king: false },
+                Square { id: 0, x: 2, y: 0, player_number: 0, king: false },
+                Square { id: 31, x: 3, y: 0, player_number: 0, king: false },
+                Square { id: 0, x: 4, y: 0, player_number: 0, king: false },
+                Square { id: 30, x: 5, y: 0, player_number: 0, king: false },
+                Square { id: 0, x: 6, y: 0, player_number: 0, king: false },
+                Square { id: 29, x: 7, y: 0, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 28, x: 0, y: 1, player_number: 0, king: false },
+                Square { id: 0, x: 1, y: 1, player_number: 0, king: false },
+                Square { id: 27, x: 2, y: 1, player_number: 0, king: false },
+                Square { id: 0, x: 3, y: 1, player_number: 0, king: false },
+                Square { id: 26, x: 4, y: 1, player_number: 0, king: false },
+                Square { id: 0, x: 5, y: 1, player_number: 0, king: false },
+                Square { id: 25, x: 6, y: 1, player_number: 0, king: false },
+                Square { id: 0, x: 7, y: 1, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 0, x: 0, y: 2, player_number: 0, king: false },
+                Square { id: 24, x: 1, y: 2, player_number: 0, king: false },
+                Square { id: 0, x: 2, y: 2, player_number: 0, king: false },
+                Square { id: 23, x: 3, y: 2, player_number: 0, king: false },
+                Square { id: 0, x: 4, y: 2, player_number: 0, king: false },
+                Square { id: 22, x: 5, y: 2, player_number: 0, king: false },
+                Square { id: 0, x: 6, y: 2, player_number: 0, king: false },
+                Square { id: 21, x: 7, y: 2, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 20, x: 0, y: 3, player_number: 0, king: false },
+                Square { id: 0, x: 1, y: 3, player_number: 0, king: false },
+                Square { id: 19, x: 2, y: 3, player_number: 2, king: false },
+                Square { id: 0, x: 3, y: 3, player_number: 0, king: false },
+                Square { id: 18, x: 4, y: 3, player_number: 0, king: false },
+                Square { id: 0, x: 5, y: 3, player_number: 0, king: false },
+                Square { id: 17, x: 6, y: 3, player_number: 0, king: false },
+                Square { id: 0, x: 7, y: 3, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 0, x: 0, y: 4, player_number: 0, king: false },
+                Square { id: 16, x: 1, y: 4, player_number: 0, king: false },
+                Square { id: 0, x: 2, y: 4, player_number: 0, king: false },
+                Square { id: 15, x: 3, y: 4, player_number: 1, king: false },
+                Square { id: 0, x: 4, y: 4, player_number: 0, king: false },
+                Square { id: 14, x: 5, y: 4, player_number: 0, king: false },
+                Square { id: 0, x: 6, y: 4, player_number: 0, king: false },
+                Square { id: 13, x: 7, y: 4, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 12, x: 0, y: 5, player_number: 0, king: false },
+                Square { id: 0, x: 1, y: 5, player_number: 0, king: false },
+                Square { id: 11, x: 2, y: 5, player_number: 0, king: false },
+                Square { id: 0, x: 3, y: 5, player_number: 0, king: false },
+                Square { id: 10, x: 4, y: 5, player_number: 0, king: false },
+                Square { id: 0, x: 5, y: 5, player_number: 0, king: false },
+                Square { id: 9, x: 6, y: 5, player_number: 0, king: false },
+                Square { id: 0, x: 7, y: 5, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 0, x: 0, y: 6, player_number: 0, king: false },
+                Square { id: 8, x: 1, y: 6, player_number: 0, king: false },
+                Square { id: 0, x: 2, y: 6, player_number: 0, king: false },
+                Square { id: 7, x: 3, y: 6, player_number: 1, king: false },
+                Square { id: 0, x: 4, y: 6, player_number: 0, king: false },
+                Square { id: 6, x: 5, y: 6, player_number: 1, king: false },
+                Square { id: 0, x: 6, y: 6, player_number: 0, king: false },
+                Square { id: 5, x: 7, y: 6, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 4, x: 0, y: 7, player_number: 0, king: false },
+                Square { id: 0, x: 1, y: 7, player_number: 0, king: false },
+                Square { id: 3, x: 2, y: 7, player_number: 0, king: false },
+                Square { id: 0, x: 3, y: 7, player_number: 0, king: false },
+                Square { id: 2, x: 4, y: 7, player_number: 0, king: false },
+                Square { id: 0, x: 5, y: 7, player_number: 0, king: false },
+                Square { id: 1, x: 6, y: 7, player_number: 0, king: false },
+                Square { id: 0, x: 7, y: 7, player_number: 0, king: false }
+            ]
+        ];
+        let game_state = GameState { current_player_number: 2, squares };
+        for row in game_state.squares.iter() {
+            for from in row {
+                if from.id == 19 {
+                    let result = from.jumps(player_number, king, &game_state);
+                    assert_eq!(result[0].from, 19);
+                    assert_eq!(result[0].to, vec![10, 3]);
+                    assert_eq!(result[1].from, 19);
+                    assert_eq!(result[1].to, vec![10, 1]);
+                    assert_eq!(result.len(), 2);
+                }
+            }
+        }
     }
 
     #[test]
     fn fetch_moves() {
         let (player_number, king) = (2, false);
-        let from = Square { id: 1, x: 4, y: 4, player_number: 2, king: false };
-        let to = Square { id: 2, x: 5, y: 5, player_number: 0, king: false };
-        let cant_to = Square { id: 4, x: 3, y: 5, player_number: 1, king: false };
-        let squares = vec![from, to, cant_to];
+        let squares = vec![
+            vec![
+                Square { id: 0, x: 0, y: 0, player_number: 0, king: false },
+                Square { id: 32, x: 1, y: 0, player_number: 0, king: false },
+                Square { id: 0, x: 2, y: 0, player_number: 0, king: false },
+                Square { id: 31, x: 3, y: 0, player_number: 0, king: false },
+                Square { id: 0, x: 4, y: 0, player_number: 0, king: false },
+                Square { id: 30, x: 5, y: 0, player_number: 0, king: false },
+                Square { id: 0, x: 6, y: 0, player_number: 0, king: false },
+                Square { id: 29, x: 7, y: 0, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 28, x: 0, y: 1, player_number: 0, king: false },
+                Square { id: 0, x: 1, y: 1, player_number: 0, king: false },
+                Square { id: 27, x: 2, y: 1, player_number: 0, king: false },
+                Square { id: 0, x: 3, y: 1, player_number: 0, king: false },
+                Square { id: 26, x: 4, y: 1, player_number: 0, king: false },
+                Square { id: 0, x: 5, y: 1, player_number: 0, king: false },
+                Square { id: 25, x: 6, y: 1, player_number: 0, king: false },
+                Square { id: 0, x: 7, y: 1, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 0, x: 0, y: 2, player_number: 0, king: false },
+                Square { id: 24, x: 1, y: 2, player_number: 0, king: false },
+                Square { id: 0, x: 2, y: 2, player_number: 0, king: false },
+                Square { id: 23, x: 3, y: 2, player_number: 0, king: false },
+                Square { id: 0, x: 4, y: 2, player_number: 0, king: false },
+                Square { id: 22, x: 5, y: 2, player_number: 0, king: false },
+                Square { id: 0, x: 6, y: 2, player_number: 0, king: false },
+                Square { id: 21, x: 7, y: 2, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 20, x: 0, y: 3, player_number: 0, king: false },
+                Square { id: 0, x: 1, y: 3, player_number: 0, king: false },
+                Square { id: 19, x: 2, y: 3, player_number: 0, king: false },
+                Square { id: 0, x: 3, y: 3, player_number: 0, king: false },
+                Square { id: 18, x: 4, y: 3, player_number: 0, king: false },
+                Square { id: 0, x: 5, y: 3, player_number: 0, king: false },
+                Square { id: 17, x: 6, y: 3, player_number: 0, king: false },
+                Square { id: 0, x: 7, y: 3, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 0, x: 0, y: 4, player_number: 0, king: false },
+                Square { id: 16, x: 1, y: 4, player_number: 0, king: false },
+                Square { id: 0, x: 2, y: 4, player_number: 0, king: false },
+                Square { id: 15, x: 3, y: 4, player_number: 0, king: false },
+                Square { id: 0, x: 4, y: 4, player_number: 0, king: false },
+                Square { id: 14, x: 5, y: 4, player_number: 2, king: false },
+                Square { id: 0, x: 6, y: 4, player_number: 0, king: false },
+                Square { id: 13, x: 7, y: 4, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 12, x: 0, y: 5, player_number: 0, king: false },
+                Square { id: 0, x: 1, y: 5, player_number: 0, king: false },
+                Square { id: 11, x: 2, y: 5, player_number: 0, king: false },
+                Square { id: 0, x: 3, y: 5, player_number: 0, king: false },
+                Square { id: 10, x: 4, y: 5, player_number: 1, king: false },
+                Square { id: 0, x: 5, y: 5, player_number: 0, king: false },
+                Square { id: 9, x: 6, y: 5, player_number: 0, king: false },
+                Square { id: 0, x: 7, y: 5, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 0, x: 0, y: 6, player_number: 0, king: false },
+                Square { id: 8, x: 1, y: 6, player_number: 0, king: false },
+                Square { id: 0, x: 2, y: 6, player_number: 0, king: false },
+                Square { id: 7, x: 3, y: 6, player_number: 0, king: false },
+                Square { id: 0, x: 4, y: 6, player_number: 0, king: false },
+                Square { id: 6, x: 5, y: 6, player_number: 0, king: false },
+                Square { id: 0, x: 6, y: 6, player_number: 0, king: false },
+                Square { id: 5, x: 7, y: 6, player_number: 0, king: false }
+            ],
+            vec![
+                Square { id: 4, x: 0, y: 7, player_number: 0, king: false },
+                Square { id: 0, x: 1, y: 7, player_number: 0, king: false },
+                Square { id: 3, x: 2, y: 7, player_number: 0, king: false },
+                Square { id: 0, x: 3, y: 7, player_number: 0, king: false },
+                Square { id: 2, x: 4, y: 7, player_number: 0, king: false },
+                Square { id: 0, x: 5, y: 7, player_number: 0, king: false },
+                Square { id: 1, x: 6, y: 7, player_number: 0, king: false },
+                Square { id: 0, x: 7, y: 7, player_number: 0, king: false }
+            ]
+        ];
         let game_state = GameState { current_player_number: 1, squares };
 
-        let result = from.moves(player_number, king, &game_state);
-        assert_eq!(result[0].from, 1);
-        assert_eq!(result[0].to, vec![2]);
-
-        assert_eq!(result.len(), 1);
+        for row in game_state.squares.iter() {
+            for from in row {
+                if from.id == 14 {
+                    let result = from.moves(player_number, king, &game_state);
+                    assert_eq!(result[0].from, 14);
+                    assert_eq!(result[0].to, vec![9]);
+                    assert_eq!(result.len(), 1);
+                }
+            }
+        }
     }
 
     #[test]

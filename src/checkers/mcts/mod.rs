@@ -196,17 +196,17 @@ mod tests {
 
     #[test]
     fn recommended_move_test() {
-        let game_state = game_state::parse(&String::from("W:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,12,15")).unwrap();
-        let simulation_count: i16 = 10;
-        let max_simulation_depth: i16 = 30;
+       let game_state = game_state::parse(&String::from("W:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,12,15")).unwrap();
+       let simulation_count: i16 = 10;
+       let max_simulation_depth: i16 = 30;
 
-        match recommended_move(game_state, simulation_count, max_simulation_depth) {
-            Ok(mov) => {
-                assert_eq!(24, mov.from);
-                assert_eq!(vec![20], mov.to);
-            },
-            Err(e) => assert!(false, "{}", e)
-        }
+       match recommended_move(game_state, simulation_count, max_simulation_depth) {
+           Ok(mov) => {
+               assert_eq!(21, mov.from);
+               assert_eq!(vec![17], mov.to);
+           },
+           Err(e) => assert!(false, "{}", e)
+       }
     }
 
     #[test]

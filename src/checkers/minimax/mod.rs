@@ -130,21 +130,39 @@ fn lose_value(game_state: &checkers::state::game_state::GameState) -> i32 {
 }
 
 fn center_squares_count(game_state: &checkers::state::game_state::GameState, player_number: i8) -> usize {
-    game_state.squares.iter().filter(|s| {
-        s.player_number == player_number && CENTER_SQUARE_IDS.iter().any(|id| s.id == *id )
-    }).count()
+    let mut counter = 0;
+    for row in game_state.squares.iter() {
+        for square in row {
+            if square.player_number == player_number && CENTER_SQUARE_IDS.iter().any(|id| square.id == *id ) {
+                counter += 1;
+            }
+        }
+    }
+    counter
 }
 
 fn player_pieces_count(game_state: &checkers::state::game_state::GameState, player_number: i8) -> usize {
-    game_state.squares.iter().filter(|s| {
-        s.player_number == player_number
-    }).count()
+    let mut counter = 0;
+    for row in game_state.squares.iter() {
+        for square in row {
+            if square.player_number == player_number {
+                counter += 1;
+            }
+        }
+    }
+    counter
 }
 
 fn player_kings_count(game_state: &checkers::state::game_state::GameState, player_number: i8) -> usize {
-    game_state.squares.iter().filter(|s| {
-        s.king && s.player_number == player_number
-    }).count()
+    let mut counter = 0;
+    for row in game_state.squares.iter() {
+        for square in row {
+            if square.king && square.player_number == player_number {
+                counter += 1;
+            }
+        }
+    }
+    counter
 }
 
 fn u_to_i32(value: usize) -> i32 {
@@ -171,16 +189,16 @@ mod tests {
 
     #[test]
     fn recommended_move_test() {
-        let encoded = String::from("W:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,12,15");
-        let game_state = checkers::state::game_state::parse(&encoded).unwrap();
-        let mov = recommended_move(game_state, 5);
+       let encoded = String::from("W:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,12,15");
+       let game_state = checkers::state::game_state::parse(&encoded).unwrap();
+       let mov = recommended_move(game_state, 5);
 
-        match mov {
-            Some(m) => {
-                assert_eq!(m.from, 23);
-                assert_eq!(m.to, vec![19]);
-            },
-            None => assert!(false, "expected move"),
-        }
+       match mov {
+           Some(m) => {
+               assert_eq!(m.from, 23);
+               assert_eq!(m.to, vec![19]);
+           },
+           None => assert!(false, "expected move"),
+       }
     }
 }
