@@ -41,3 +41,137 @@ pub const ID_COORDINATE_MAP: [(usize, usize); 33] = [
     (3, 0),
     (1, 0)
 ];
+
+pub fn potential_jump_points(point: (i8, i8), pla1er_number: i8, king: bool) -> Vec<(i8, i8)> {
+    if king {
+        vec![
+            (point.0 as i8 - 2, point.1 as i8 - 2),
+            (point.0 as i8 - 2, point.1 as i8 + 2),
+            (point.0 as i8 + 2, point.1 as i8 - 2),
+            (point.0 as i8 + 2, point.1 as i8 + 2)
+        ]
+    } else {
+        if pla1er_number == 2 {
+            vec![
+                (point.0 as i8 - 2, point.1 as i8 + 2),
+                (point.0 as i8 + 2, point.1 as i8 + 2)
+            ]
+        } else {
+            vec![
+                (point.0 as i8 - 2, point.1 as i8 - 2),
+                (point.0 as i8 + 2, point.1 as i8 - 2)
+            ]
+        }
+    }
+}
+
+pub fn potential_move_points(point: (i8, i8), pla1er_number: i8, king: bool) -> Vec<(i8, i8)> {
+    if king {
+        vec![
+            (point.0 as i8 - 1, point.1 as i8 - 1),
+            (point.0 as i8 - 1, point.1 as i8 + 1),
+            (point.0 as i8 + 1, point.1 as i8 - 1),
+            (point.0 as i8 + 1, point.1 as i8 + 1)
+        ]
+    } else {
+        if pla1er_number == 2 {
+            vec![
+                (point.0 as i8 - 1, point.1 as i8 + 1),
+                (point.0 as i8 + 1, point.1 as i8 + 1)
+            ]
+        } else {
+            vec![
+                (point.0 as i8 - 1, point.1 as i8 - 1),
+                (point.0 as i8 + 1, point.1 as i8 - 1)
+            ]
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn potential_move_points_player_one_test() {
+        let player_number = 1;
+        let king = false;
+        let point = (4, 4);
+        let expected = vec![
+            (3, 3),
+            (5, 3)
+        ];
+        let result = potential_move_points(point, player_number, king);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn potential_move_points_player_two_test() {
+        let player_number = 2;
+        let king = false;
+        let point = (4, 4);
+        let expected = vec![
+            (3, 5),
+            (5, 5)
+        ];
+        let result = potential_move_points(point, player_number, king);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn potential_move_points_king_test() {
+        let player_number = 1;
+        let king = true;
+        let point = (4, 4);
+        let expected = vec![
+            (3, 3),
+            (3, 5),
+            (5, 3),
+            (5, 5)
+        ];
+        let result = potential_move_points(point, player_number, king);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn potential_jump_points_player_one_test() {
+        let player_number = 1;
+        let king = false;
+        let point = (4, 4);
+        let expected = vec![
+            (2, 2),
+            (6, 2),
+        ];
+        let result = potential_jump_points(point, player_number, king);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn potential_jump_points_king_test() {
+        let player_number = 1;
+        let king = true;
+        let point = (4, 4);
+        let expected = vec![
+            (2, 2),
+            (2, 6),
+            (6, 2),
+            (6, 6)
+        ];
+        let result = potential_jump_points(point, player_number, king);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn potential_jump_points_player_two_test() {
+        let player_number = 2;
+        let king = false;
+        let point = (4, 4);
+        let expected = vec![
+            (2, 6),
+            (6, 6),
+        ];
+        let result = potential_jump_points(point, player_number, king);
+        assert_eq!(result, expected);
+    }
+
+}

@@ -63,10 +63,11 @@ impl GameState {
     pub fn moves_for_player(&self, player_number: i8) -> Vec<Move> {
         let mut list = Vec::new();
 
-        for row in self.squares.iter() {
-            for from in row {
-                if from.occupied_by_player(player_number) && from.can_move(from.player_number, from.king, &self) {
-                    list.append(&mut from.moves(from.player_number, from.king, &self))
+        for (y, row) in self.squares.iter().enumerate() {
+            for (x, from) in row.iter().enumerate() {
+                let point = (x as i8, y as i8);
+                if from.occupied_by_player(player_number) && from.can_move(point, from.player_number, from.king, &self) {
+                    list.append(&mut from.moves(point, from.player_number, from.king, &self))
                 }
             }
         }

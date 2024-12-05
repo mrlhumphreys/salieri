@@ -1,4 +1,6 @@
 use crate::checkers::state::point::ID_COORDINATE_MAP;
+use crate::checkers::state::point::potential_jump_points;
+use crate::checkers::state::point::potential_move_points;
 use crate::checkers::state::square_set::find_by_x_and_y;
 use crate::checkers::state::square_set::between_point;
 use crate::checkers::state::game_state::GameState;
@@ -16,7 +18,7 @@ pub struct Square {
 
 impl PartialEq for Square {
     fn eq(&self, other: &Square) -> bool {
-        self.x == other.x && self.y == other.y
+        self.id == other.id
     }
 }
 
@@ -55,54 +57,8 @@ impl Square {
         self.occupied() && self.player_number != player_number
     }
 
-    pub fn potential_jump_points(&self, player_number: i8, king: bool) -> Vec<(i8, i8)> {
-        if king {
-            vec![
-                (self.x as i8 - 2, self.y as i8 - 2),
-                (self.x as i8 - 2, self.y as i8 + 2),
-                (self.x as i8 + 2, self.y as i8 - 2),
-                (self.x as i8 + 2, self.y as i8 + 2)
-            ]
-        } else {
-            if player_number == 2 {
-                vec![
-                    (self.x as i8 - 2, self.y as i8 + 2),
-                    (self.x as i8 + 2, self.y as i8 + 2)
-                ]
-            } else {
-                vec![
-                    (self.x as i8 - 2, self.y as i8 - 2),
-                    (self.x as i8 + 2, self.y as i8 - 2)
-                ]
-            }
-        }
-    }
-
-    pub fn potential_move_points(&self, player_number: i8, king: bool) -> Vec<(i8, i8)> {
-        if king {
-            vec![
-                (self.x as i8 - 1, self.y as i8 - 1),
-                (self.x as i8 - 1, self.y as i8 + 1),
-                (self.x as i8 + 1, self.y as i8 - 1),
-                (self.x as i8 + 1, self.y as i8 + 1)
-            ]
-        } else {
-            if player_number == 2 {
-                vec![
-                    (self.x as i8 - 1, self.y as i8 + 1),
-                    (self.x as i8 + 1, self.y as i8 + 1)
-                ]
-            } else {
-                vec![
-                    (self.x as i8 - 1, self.y as i8 - 1),
-                    (self.x as i8 + 1, self.y as i8 - 1)
-                ]
-            }
-        }
-    }
-
     pub fn can_jump(&self, point: (i8, i8), player_number: i8, king: bool, game_state: &GameState) -> bool {
-        let potential_destinations = self.potential_jump_points(player_number, king);
+        let potential_destinations = potential_jump_points(point, player_number, king);
 
         potential_destinations.iter().any(|p| {
             match find_by_x_and_y(&game_state.squares, p.0 as usize, p.1 as usize) {
@@ -125,8 +81,8 @@ impl Square {
         })
     }
 
-    pub fn can_move(&self, player_number: i8, king: bool, game_state: &GameState) -> bool {
-        let potential_destinations = self.potential_move_points(player_number, king);
+    pub fn can_move(&self, point: (i8, i8), player_number: i8, king: bool, game_state: &GameState) -> bool {
+        let potential_destinations = potential_move_points(point, player_number, king);
         potential_destinations.iter().any(|p| {
             match find_by_x_and_y(&game_state.squares, p.0 as usize, p.1 as usize) {
                 Some(to) => to.unoccupied(),
@@ -137,7 +93,7 @@ impl Square {
 
     pub fn jump_destinations<'a>(&self, point: (i8, i8), player_number: i8, king: bool, game_state: &'a GameState) -> Vec<&'a Square> {
         let mut destinations = vec![];
-        let potential_destinations = self.potential_jump_points(player_number, king);
+        let potential_destinations = potential_jump_points(point, player_number, king);
 
         potential_destinations.iter().for_each(|p| {
             match find_by_x_and_y(&game_state.squares, p.0 as usize, p.1 as usize) {
@@ -167,9 +123,9 @@ impl Square {
         destinations
     }
 
-    pub fn move_destinations<'a>(&self, player_number: i8, king: bool, game_state: &'a GameState) -> Vec<&'a Square> {
+    pub fn move_destinations<'a>(&self, point: (i8, i8), player_number: i8, king: bool, game_state: &'a GameState) -> Vec<&'a Square> {
         let mut destinations = vec![];
-        let potential_destinations = self.potential_move_points(player_number, king);
+        let potential_destinations = potential_move_points(point, player_number, king);
 
         potential_destinations.iter().for_each(|p| {
             match find_by_x_and_y(&game_state.squares, p.0 as usize, p.1 as usize) {
@@ -226,8 +182,8 @@ impl Square {
         }).collect()
     }
 
-    pub fn moves(&self, player_number: i8, king: bool, game_state: &GameState) -> Vec<Move> {
-        let destinations = self.move_destinations(player_number, king, &game_state);
+    pub fn moves(&self, point: (i8, i8), player_number: i8, king: bool, game_state: &GameState) -> Vec<Move> {
+        let destinations = self.move_destinations(point, player_number, king, &game_state);
         destinations.iter().map(|d| {
             Move { kind: MoveKind::Mov, from: self.id, to: vec![d.id] }
         }).collect()
@@ -260,88 +216,6 @@ mod tests {
         assert_eq!(square.occupied_by_player(1), false);
         assert_eq!(square.occupied_by_opponent(1), false);
         assert_eq!(square.unoccupied(), true);
-    }
-
-    #[test]
-    fn potential_jump_points_king_test() {
-        let player_number = 1;
-        let king = true;
-        let square = Square { id: 1, x: 4, y: 4, player_number, king };
-        let expected = vec![
-            (2, 2),
-            (2, 6),
-            (6, 2),
-            (6, 6)
-        ];
-        let result = square.potential_jump_points(player_number, king);
-        assert_eq!(result, expected);
-    }
-
-    #[test]
-    fn potential_jump_points_player_one_test() {
-        let player_number = 1;
-        let king = false;
-        let square = Square { id: 1, x: 4, y: 4, player_number, king };
-        let expected = vec![
-            (2, 2),
-            (6, 2),
-        ];
-        let result = square.potential_jump_points(player_number, king);
-        assert_eq!(result, expected);
-    }
-
-    #[test]
-    fn potential_jump_points_player_two_test() {
-        let player_number = 2;
-        let king = false;
-        let square = Square { id: 1, x: 4, y: 4, player_number, king };
-        let expected = vec![
-            (2, 6),
-            (6, 6),
-        ];
-        let result = square.potential_jump_points(player_number, king);
-        assert_eq!(result, expected);
-    }
-
-    #[test]
-    fn potential_move_points_king_test() {
-        let player_number = 1;
-        let king = true;
-        let square = Square { id: 1, x: 4, y: 4, player_number, king };
-        let expected = vec![
-            (3, 3),
-            (3, 5),
-            (5, 3),
-            (5, 5)
-        ];
-        let result = square.potential_move_points(player_number, king);
-        assert_eq!(result, expected);
-    }
-
-    #[test]
-    fn potential_move_points_player_one_test() {
-        let player_number = 1;
-        let king = false;
-        let square = Square { id: 1, x: 4, y: 4, player_number, king };
-        let expected = vec![
-            (3, 3),
-            (5, 3)
-        ];
-        let result = square.potential_move_points(player_number, king);
-        assert_eq!(result, expected);
-    }
-
-    #[test]
-    fn potential_move_points_player_two_test() {
-        let player_number = 2;
-        let king = false;
-        let square = Square { id: 1, x: 4, y: 4, player_number, king };
-        let expected = vec![
-            (3, 5),
-            (5, 5)
-        ];
-        let result = square.potential_move_points(player_number, king);
-        assert_eq!(result, expected);
     }
 
     #[test]
@@ -534,12 +408,13 @@ mod tests {
         ];
         let game_state = GameState { current_player_number: 1, squares };
 
-        for row in game_state.squares.iter() {
-            for from in row {
+        for (y, row) in game_state.squares.iter().enumerate() {
+            for (x, from) in row.iter().enumerate() {
                 if from.id == 14 {
-                    let result = from.can_move(player_number, king, &game_state);
+                    let point = (x as i8, y as i8);
+                    let result = from.can_move(point, player_number, king, &game_state);
                     assert_eq!(result, true);
-                    let destinations = from.move_destinations(player_number, king, &game_state);
+                    let destinations = from.move_destinations(point, player_number, king, &game_state);
                     assert_eq!(destinations.len(), 1);
                     let square = &destinations[0];
                     assert_eq!(square.x, 6);
@@ -1346,10 +1221,11 @@ mod tests {
         ];
         let game_state = GameState { current_player_number: 1, squares };
 
-        for row in game_state.squares.iter() {
-            for from in row {
+        for (y, row) in game_state.squares.iter().enumerate() {
+            for (x, from) in row.iter().enumerate() {
                 if from.id == 14 {
-                    let result = from.moves(player_number, king, &game_state);
+                    let point = (x as i8, y as i8);
+                    let result = from.moves(point, player_number, king, &game_state);
                     assert_eq!(result[0].from, 14);
                     assert_eq!(result[0].to, vec![9]);
                     assert_eq!(result.len(), 1);
