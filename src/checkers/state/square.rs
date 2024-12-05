@@ -1,5 +1,6 @@
 use crate::checkers::state::point::Point;
-use crate::checkers::state::square_set::between;
+use crate::checkers::state::square_set::find_by_x_and_y;
+use crate::checkers::state::square_set::between_point;
 use crate::checkers::state::game_state::GameState;
 use crate::checkers::state::mov::Move;
 use crate::checkers::state::mov::MoveKind;
@@ -107,51 +108,66 @@ impl Square {
     pub fn can_jump(&self, player_number: i8, king: bool, game_state: &GameState) -> bool {
         let potential_destinations = self.potential_jump_points(player_number, king);
 
-        let mut can_jump = false;
-        for row in game_state.squares.iter() {
-            for to in row {
-                if potential_destinations.iter().any(|p| p.x as usize == to.x && p.y as usize == to.y) &&
-                    to.unoccupied() &&
-                    match between(&game_state.squares, self.point(), to.point()) {
-                        Some(b) => b.occupied_by_opponent(player_number),
+        potential_destinations.iter().any(|p| {
+            match find_by_x_and_y(&game_state.squares, p.x as usize, p.y as usize) {
+                Some(to) => {
+                    let b_point = between_point(self.point(), to.point());
+                    match b_point {
+                        Some(point) => {
+                            let between = find_by_x_and_y(&game_state.squares, point.0, point.1);
+                            let between_occupied_by_opponent = match between {
+                                Some(b) => b.occupied_by_opponent(player_number),
+                                None => false
+                            };
+                            to.unoccupied() && between_occupied_by_opponent
+                        },
                         None => false,
-                    } {
-                    can_jump = true;
-                }
+                    }
+                },
+                None => false
             }
-        }
-        can_jump
+        })
     }
 
     pub fn can_move(&self, player_number: i8, king: bool, game_state: &GameState) -> bool {
-        let mut can_move = false;
         let potential_destinations = self.potential_move_points(player_number, king);
-        for row in game_state.squares.iter() {
-            for to in row {
-                if potential_destinations.iter().any(|p| p.x as usize == to.x && p.y as usize == to.y) && to.unoccupied() {
-                    can_move = true;
-                }
+        potential_destinations.iter().any(|p| {
+            match find_by_x_and_y(&game_state.squares, p.x as usize, p.y as usize) {
+                Some(to) => to.unoccupied(),
+                None => false
             }
-        }
-        can_move
+        })
     }
 
     pub fn jump_destinations<'a>(&self, player_number: i8, king: bool, game_state: &'a GameState) -> Vec<&'a Square> {
         let mut destinations = vec![];
         let potential_destinations = self.potential_jump_points(player_number, king);
 
-        for row in game_state.squares.iter() {
-            for to in row {
-                if potential_destinations.iter().any(|p| p.x as usize == to.x && p.y as usize == to.y) &&
-                    to.unoccupied() &&
-                    match between(&game_state.squares, self.point(), to.point()) {
-                        Some(b) => b.occupied_by_opponent(player_number),
-                        None => false
-                    } {
-                    destinations.push(to);
-                }
+        potential_destinations.iter().for_each(|p| {
+            match find_by_x_and_y(&game_state.squares, p.x as usize, p.y as usize) {
+                Some(to) => {
+                    if to.unoccupied() {
+                        let b_point = between_point(self.point(), to.point());
+                        match b_point {
+                            Some(point) => {
+                                let between = find_by_x_and_y(&game_state.squares, point.0, point.1);
+                                match between {
+                                    Some(b) => {
+                                        if b.occupied_by_opponent(player_number) {
+                                            destinations.push(to);
+                                        }
+                                    },
+                                    None => ()
+                                }
+                            },
+                            None => ()
+                        }
+                    }
+                },
+                None => ()
             }
-        }
+        });
+
         destinations
     }
 
@@ -159,13 +175,17 @@ impl Square {
         let mut destinations = vec![];
         let potential_destinations = self.potential_move_points(player_number, king);
 
-        for row in game_state.squares.iter() {
-            for to in row {
-                if potential_destinations.iter().any(|p| p.x as usize == to.x && p.y as usize == to.y) && to.unoccupied() {
-                    destinations.push(to);
-                }
+        potential_destinations.iter().for_each(|p| {
+            match find_by_x_and_y(&game_state.squares, p.x as usize, p.y as usize) {
+                Some(to) => {
+                    if to.unoccupied() {
+                        destinations.push(to);
+                    }
+                },
+                None => ()
             }
-        }
+        });
+
         destinations
     }
 

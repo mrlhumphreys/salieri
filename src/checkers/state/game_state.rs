@@ -1,6 +1,8 @@
 use crate::checkers::state::point::Point;
 use crate::checkers::state::square::Square;
-use crate::checkers::state::square_set::between;
+use crate::checkers::state::square_set::find_by_x_and_y;
+use crate::checkers::state::square_set::find_by_x_and_y_mut;
+use crate::checkers::state::square_set::between_point;
 use crate::checkers::state::mov::Move;
 
 const ID_COORDINATE_MAP: [(usize, usize); 33] = [
@@ -128,14 +130,9 @@ impl GameState {
         };
 
         if let Some(last_id) = mov.to.last() {
-            let mut last_square = None;
-            for row in self.squares.iter() {
-                for square in row {
-                    if square.id == *last_id {
-                        last_square = Some(square);
-                    }
-                }
-            }
+            let point = ID_COORDINATE_MAP[*last_id as usize];
+
+            let last_square = find_by_x_and_y(&self.squares, point.0, point.1);
 
             if let Some(s) = last_square {
                 if promotion_row == s.y {
@@ -161,15 +158,9 @@ impl GameState {
         };
 
         if let Some(last_id) = mov.to.last() {
-            let mut last_square = None;
+            let point = ID_COORDINATE_MAP[*last_id as usize];
 
-            for row in self.squares.iter() {
-                for square in row {
-                    if square.id == *last_id {
-                        last_square = Some(square);
-                    }
-                }
-            }
+            let last_square = find_by_x_and_y(&self.squares, point.0, point.1);
 
             if let Some(s) = last_square {
                 if promotion_row == s.y {
@@ -197,37 +188,49 @@ impl GameState {
         let mut from_point: Point = Point { x: 0, y: 0 };
         let mut to_point: Point = Point { x: 0, y: 0 };
 
-        for row in self.squares.iter_mut() {
-            for square in row {
-                if square.id == from && square.occupied() {
-                    from_point = square.point();
-                    player_number = square.player_number;
-                    king = square.king;
-                    square.player_number = 0;
-                    square.king = false;
+        let from_tuple = ID_COORDINATE_MAP[from as usize];
+        let to_tuple = ID_COORDINATE_MAP[to as usize];
+
+        let from_square = find_by_x_and_y_mut(&mut self.squares, from_tuple.0, from_tuple.1);
+
+        match from_square {
+            Some(square) => {
+                if square.occupied() {
+                   from_point = square.point();
+                   player_number = square.player_number;
+                   king = square.king;
+                   square.player_number = 0;
+                   square.king = false;
                 }
-            }
+            },
+            None => ()
         }
 
-        for row in self.squares.iter_mut() {
-            for square in row {
-                if square.id == to {
-                    to_point = square.point();
-                    square.player_number = player_number;
-                    square.king = king;
-                }
-            }
+        let to_square = find_by_x_and_y_mut(&mut self.squares, to_tuple.0, to_tuple.1);
+
+        match to_square {
+            Some(square) => {
+                to_point = square.point();
+                square.player_number = player_number;
+                square.king = king;
+            },
+            None => ()
         }
 
-        if let Some(b) = between(&self.squares, from_point, to_point) {
-            for row in self.squares.iter_mut() {
-                for square in row {
-                    if square.id == b.id {
+        let b_point = between_point(from_point, to_point);
+
+        match b_point {
+            Some(point) => {
+                let between_square = find_by_x_and_y_mut(&mut self.squares, point.0, point.1);
+                match between_square {
+                    Some(square) => {
                         square.player_number = 0;
                         square.king = false;
-                    }
+                    },
+                    None => ()
                 }
-            }
+            },
+            None => ()
         }
 
         Ok(())
@@ -239,64 +242,73 @@ impl GameState {
         let mut from_point: Point = Point { x: 0, y: 0 };
         let mut to_point: Point = Point { x: 0, y: 0 };
 
-        for row in self.squares.iter_mut() {
-            for square in row {
-                if square.id == to && square.occupied() {
+        let to_tuple = ID_COORDINATE_MAP[to as usize];
+        let from_tuple = ID_COORDINATE_MAP[from as usize];
+
+        let to_square = find_by_x_and_y_mut(&mut self.squares, to_tuple.0, to_tuple.1);
+
+        match to_square {
+            Some(square) => {
+                if square.occupied() {
                     to_point = square.point();
                     player_number = square.player_number;
                     king = square.king;
                     square.player_number = 0;
                     square.king = false;
                 }
-            }
+            },
+            None => ()
         }
 
-        for row in self.squares.iter_mut() {
-            for square in row {
-                if square.id == from {
-                    from_point = square.point();
-                    square.player_number = player_number;
-                    square.king = king;
-                }
-            }
+        let from_square = find_by_x_and_y_mut(&mut self.squares, from_tuple.0, from_tuple.1);
+
+        match from_square {
+            Some(square) => {
+                from_point = square.point();
+                square.player_number = player_number;
+                square.king = king;
+            },
+            None => ()
         }
 
-        if let Some(b) = between(&self.squares, from_point, to_point) {
-            for row in self.squares.iter_mut() {
-                for square in row {
-                    if square.id == b.id {
-                        square.player_number = match player_number {
-                                2 => 1,
-                                1 => 2,
-                                _ => 0
-                        };
-                        square.king = false;
-                    }
+        let b_point = between_point(from_point, to_point);
+
+        match b_point {
+            Some(point) => {
+                let between_square = find_by_x_and_y_mut(&mut self.squares, point.0, point.1);
+
+                match between_square {
+                    Some(square) => {
+                       square.player_number = match player_number {
+                               2 => 1,
+                               1 => 2,
+                               _ => 0
+                       };
+                       square.king = false;
+                    },
+                    None => ()
                 }
-            }
+            },
+            None => ()
         }
 
         Ok(())
     }
 
     pub fn promote(&mut self, id: i8) -> Result<(), &'static str> {
-        for row in self.squares.iter_mut() {
-            for square in row {
-                if square.id == id {
-                    square.promote()?;
-                }
-            }
+        let point = ID_COORDINATE_MAP[id as usize];
+        let square = find_by_x_and_y_mut(&mut self.squares, point.0, point.1);
+        if let Some(s) = square {
+            s.promote()?;
         }
         Ok(())
     }
 
     pub fn demote(&mut self, id: i8) -> Result<(), &'static str> {
-        for row in self.squares.iter_mut() {
-            for square in row {
-                if square.id == id {
-                    square.demote()?;
-                }
-            }
+        let point = ID_COORDINATE_MAP[id as usize];
+        let square = find_by_x_and_y_mut(&mut self.squares, point.0, point.1);
+        if let Some(s) = square {
+            s.demote()?;
         }
         Ok(())
     }
