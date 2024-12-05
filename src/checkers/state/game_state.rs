@@ -1,52 +1,10 @@
+use crate::checkers::state::point::ID_COORDINATE_MAP;
 use crate::checkers::state::square::Square;
 use crate::checkers::state::square_set::find_by_x_and_y;
 use crate::checkers::state::square_set::find_by_x_and_y_mut;
 use crate::checkers::state::square_set::between_point;
 use crate::checkers::state::mov::Move;
 
-const ID_COORDINATE_MAP: [(usize, usize); 33] = [
-    (8, 8),
-
-    (6, 7),
-    (4, 7),
-    (2, 7),
-    (0, 7),
-
-    (7, 6),
-    (5, 6),
-    (3, 6),
-    (1, 6),
-
-    (6, 5),
-    (4, 5),
-    (2, 5),
-    (0, 5),
-
-    (7, 4),
-    (5, 4),
-    (3, 4),
-    (1, 4),
-
-    (6, 3),
-    (4, 3),
-    (2, 3),
-    (0, 3),
-
-    (7, 2),
-    (5, 2),
-    (3, 2),
-    (1, 2),
-
-    (6, 1),
-    (4, 1),
-    (2, 1),
-    (0, 1),
-
-    (7, 0),
-    (5, 0),
-    (3, 0),
-    (1, 0)
-];
 
 #[derive(PartialEq, Debug)]
 pub struct GameState {
@@ -90,10 +48,11 @@ impl GameState {
     pub fn jumps_for_player(&self, player_number: i8) -> Vec<Move> {
         let mut list = Vec::new();
 
-        for row in self.squares.iter() {
-            for from in row {
-                if from.occupied_by_player(player_number) && from.can_jump(from.player_number, from.king, &self) {
-                    list.append(&mut from.jumps(from.player_number, from.king, &self));
+        for (y, row) in self.squares.iter().enumerate() {
+            for (x, from) in row.iter().enumerate() {
+                let point = (x as i8, y as i8);
+                if from.occupied_by_player(player_number) && from.can_jump(point, from.player_number, from.king, &self) {
+                    list.append(&mut from.jumps(point, from.player_number, from.king, &self));
                 }
             }
         }
@@ -184,8 +143,6 @@ impl GameState {
     pub fn perform_move_leg(&mut self, from: i8, to: i8) -> Result<(), &'static str> {
         let mut player_number: i8 = 0;
         let mut king: bool = false;
-        let mut from_point: (i8, i8) = (0, 0);
-        let mut to_point: (i8, i8) = (0, 0);
 
         let from_tuple = ID_COORDINATE_MAP[from as usize];
         let to_tuple = ID_COORDINATE_MAP[to as usize];
@@ -195,7 +152,6 @@ impl GameState {
         match from_square {
             Some(square) => {
                 if square.occupied() {
-                   from_point = square.point();
                    player_number = square.player_number;
                    king = square.king;
                    square.player_number = 0;
@@ -209,14 +165,13 @@ impl GameState {
 
         match to_square {
             Some(square) => {
-                to_point = square.point();
                 square.player_number = player_number;
                 square.king = king;
             },
             None => ()
         }
 
-        let b_point = between_point(from_point, to_point);
+        let b_point = between_point((from_tuple.0 as i8, from_tuple.1 as i8), (to_tuple.0 as i8, to_tuple.1 as i8));
 
         match b_point {
             Some(point) => {
@@ -238,8 +193,6 @@ impl GameState {
     pub fn undo_move_leg(&mut self, from: i8, to: i8) -> Result<(), &'static str> {
         let mut player_number: i8 = 0;
         let mut king: bool = false;
-        let mut from_point: (i8, i8) = (0, 0);
-        let mut to_point: (i8, i8) = (0, 0);
 
         let to_tuple = ID_COORDINATE_MAP[to as usize];
         let from_tuple = ID_COORDINATE_MAP[from as usize];
@@ -249,7 +202,6 @@ impl GameState {
         match to_square {
             Some(square) => {
                 if square.occupied() {
-                    to_point = square.point();
                     player_number = square.player_number;
                     king = square.king;
                     square.player_number = 0;
@@ -263,14 +215,13 @@ impl GameState {
 
         match from_square {
             Some(square) => {
-                from_point = square.point();
                 square.player_number = player_number;
                 square.king = king;
             },
             None => ()
         }
 
-        let b_point = between_point(from_point, to_point);
+        let b_point = between_point((from_tuple.0 as i8, from_tuple.1 as i8), (to_tuple.0 as i8, to_tuple.1 as i8));
 
         match b_point {
             Some(point) => {

@@ -1,3 +1,4 @@
+use crate::checkers::state::point::ID_COORDINATE_MAP;
 use crate::checkers::state::square_set::find_by_x_and_y;
 use crate::checkers::state::square_set::between_point;
 use crate::checkers::state::game_state::GameState;
@@ -36,10 +37,6 @@ impl Square {
        } else {
             Err("No Piece")
        }
-    }
-
-    pub fn point(&self) -> (i8, i8) {
-        (self.x as i8, self.y as i8)
     }
 
     pub fn occupied(&self) -> bool {
@@ -104,13 +101,13 @@ impl Square {
         }
     }
 
-    pub fn can_jump(&self, player_number: i8, king: bool, game_state: &GameState) -> bool {
+    pub fn can_jump(&self, point: (i8, i8), player_number: i8, king: bool, game_state: &GameState) -> bool {
         let potential_destinations = self.potential_jump_points(player_number, king);
 
         potential_destinations.iter().any(|p| {
             match find_by_x_and_y(&game_state.squares, p.0 as usize, p.1 as usize) {
                 Some(to) => {
-                    let b_point = between_point(self.point(), to.point());
+                    let b_point = between_point(point, *p);
                     match b_point {
                         Some(point) => {
                             let between = find_by_x_and_y(&game_state.squares, point.0, point.1);
@@ -138,7 +135,7 @@ impl Square {
         })
     }
 
-    pub fn jump_destinations<'a>(&self, player_number: i8, king: bool, game_state: &'a GameState) -> Vec<&'a Square> {
+    pub fn jump_destinations<'a>(&self, point: (i8, i8), player_number: i8, king: bool, game_state: &'a GameState) -> Vec<&'a Square> {
         let mut destinations = vec![];
         let potential_destinations = self.potential_jump_points(player_number, king);
 
@@ -146,7 +143,7 @@ impl Square {
             match find_by_x_and_y(&game_state.squares, p.0 as usize, p.1 as usize) {
                 Some(to) => {
                     if to.unoccupied() {
-                        let b_point = between_point(self.point(), to.point());
+                        let b_point = between_point(point, *p);
                         match b_point {
                             Some(point) => {
                                 let between = find_by_x_and_y(&game_state.squares, point.0, point.1);
@@ -188,8 +185,8 @@ impl Square {
         destinations
     }
 
-    pub fn jump_legs<'a>(&self, player_number: i8, king: bool, game_state: &GameState, mut accumulator: &'a mut Vec<Vec<i8>>, mut current_leg: &mut Vec<i8>) -> &'a mut Vec<Vec<i8>> {
-        let destinations = self.jump_destinations(player_number, king, game_state);
+    pub fn jump_legs<'a>(&self, point: (i8, i8), player_number: i8, king: bool, game_state: &GameState, mut accumulator: &'a mut Vec<Vec<i8>>, mut current_leg: &mut Vec<i8>) -> &'a mut Vec<Vec<i8>> {
+        let destinations = self.jump_destinations(point, player_number, king, game_state);
 
         if !destinations.is_empty() {
             for destination in destinations.iter() {
@@ -203,7 +200,8 @@ impl Square {
                 let mut new_game_state = game_state.clone();
                 match new_game_state.perform_move_leg(self.id, destination.id) {
                     Ok(_) => {
-                        destination.jump_legs(player_number, king, &new_game_state, &mut accumulator, &mut current_leg);
+                        let point = ID_COORDINATE_MAP[destination.id as usize];
+                        destination.jump_legs((point.0 as i8, point.1 as i8), player_number, king, &new_game_state, &mut accumulator, &mut current_leg);
                     },
                     Err(_) => (),
                 }
@@ -217,10 +215,10 @@ impl Square {
         accumulator
     }
 
-    pub fn jumps(&self, player_number: i8, king: bool, game_state: &GameState) -> Vec<Move> {
+    pub fn jumps(&self, point: (i8, i8), player_number: i8, king: bool, game_state: &GameState) -> Vec<Move> {
         let mut accumulator = vec![];
         let mut current_leg = vec![];
-        let all_legs = self.jump_legs(player_number, king, &game_state, &mut accumulator, &mut current_leg);
+        let all_legs = self.jump_legs(point, player_number, king, &game_state, &mut accumulator, &mut current_leg);
         all_legs.iter().map(|l| {
             let from_id = l[0];
             let to_ids = l[1..].to_vec();
@@ -433,12 +431,13 @@ mod tests {
         ];
         let game_state = GameState { current_player_number: 1, squares };
 
-        for row in game_state.squares.iter() {
-            for from in row {
+        for (y, row) in game_state.squares.iter().enumerate() {
+            for (x, from) in row.iter().enumerate() {
                 if from.id == 14 {
-                    let result = from.can_jump(player_number, king, &game_state);
+                    let point = (x as i8, y as i8);
+                    let result = from.can_jump(point, player_number, king, &game_state);
                     assert_eq!(result, true);
-                    let destinations = from.jump_destinations(player_number, king, &game_state);
+                    let destinations = from.jump_destinations(point, player_number, king, &game_state);
                     assert_eq!(destinations.len(), 1);
                     let square = &destinations[0];
                     assert_eq!(square.x, 3);
@@ -637,12 +636,13 @@ mod tests {
         ];
         let game_state = GameState { current_player_number: 1, squares };
 
-        for row in game_state.squares.iter() {
-            for from in row {
+        for (y, row) in game_state.squares.iter().enumerate() {
+            for (x, from) in row.iter().enumerate() {
                 if from.id == 14 {
-                    let result = from.can_jump(player_number, king, &game_state);
+                    let point = (x as i8, y as i8);
+                    let result = from.can_jump(point, player_number, king, &game_state);
                     assert_eq!(result, false);
-                    let destinations = from.jump_destinations(player_number, king, &game_state);
+                    let destinations = from.jump_destinations(point, player_number, king, &game_state);
                     assert_eq!(destinations.len(), 0);
                 }
             }
@@ -736,12 +736,13 @@ mod tests {
         ];
         let game_state = GameState { current_player_number: 1, squares };
 
-        for row in game_state.squares.iter() {
-            for from in row {
+        for (y, row) in game_state.squares.iter().enumerate() {
+            for (x, from) in row.iter().enumerate() {
                 if from.id == 14 {
-                    let result = from.can_jump(player_number, king, &game_state);
+                    let point = (x as i8, y as i8);
+                    let result = from.can_jump(point, player_number, king, &game_state);
                     assert_eq!(result, false);
-                    let destinations = from.jump_destinations(player_number, king, &game_state);
+                    let destinations = from.jump_destinations(point, player_number, king, &game_state);
                     assert_eq!(destinations.len(), 0);
                 }
             }
@@ -835,12 +836,13 @@ mod tests {
         ];
         let game_state = GameState { current_player_number: 1, squares };
 
-        for row in game_state.squares.iter() {
-            for from in row {
+        for (y, row) in game_state.squares.iter().enumerate() {
+            for (x, from) in row.iter().enumerate() {
                 if from.id == 14 {
-                    let result = from.can_jump(player_number, king, &game_state);
+                    let point = (x as i8, y as i8);
+                    let result = from.can_jump(point, player_number, king, &game_state);
                     assert_eq!(result, false);
-                    let destinations = from.jump_destinations(player_number, king, &game_state);
+                    let destinations = from.jump_destinations(point, player_number, king, &game_state);
                     assert_eq!(destinations.len(), 0);
                 }
             }
@@ -937,10 +939,11 @@ mod tests {
         let mut accumulator = vec![];
         let mut current_leg = vec![];
 
-        for row in game_state.squares.iter() {
-            for from in row {
+        for (y, row) in game_state.squares.iter().enumerate() {
+            for (x, from) in row.iter().enumerate() {
                 if from.id == 19 {
-                    let result = from.jump_legs(player_number, king, &game_state, &mut accumulator, &mut current_leg);
+                    let point = (x as i8, y as i8);
+                    let result = from.jump_legs(point, player_number, king, &game_state, &mut accumulator, &mut current_leg);
                     assert_eq!(result.len(), 2);
                     assert_eq!(result[0], vec![19,12]);
                     assert_eq!(result[1], vec![19,10,1]);
@@ -1038,12 +1041,13 @@ mod tests {
         let game_state = GameState { current_player_number: 2, squares };
 
 
-        for row in game_state.squares.iter() {
-            for from in row {
+        for (y, row) in game_state.squares.iter().enumerate() {
+            for (x, from) in row.iter().enumerate() {
                 if from.id == 19 {
                     let mut accumulator = vec![];
                     let mut current_leg = vec![];
-                    let result = from.jump_legs(player_number, king, &game_state, &mut accumulator, &mut current_leg);
+                    let point = (x as i8, y as i8);
+                    let result = from.jump_legs(point, player_number, king, &game_state, &mut accumulator, &mut current_leg);
                     // assert_eq!(result.len(), 2);
                     assert_eq!(result[0], vec![19,10,3]);
                     assert_eq!(result[1], vec![19,10,1]);
@@ -1139,10 +1143,11 @@ mod tests {
         ];
         let game_state = GameState { current_player_number: 1, squares };
 
-        for row in game_state.squares.iter() {
-            for from in row {
+        for (y, row) in game_state.squares.iter().enumerate() {
+            for (x, from) in row.iter().enumerate() {
                 if from.id == 19 {
-                    let result = from.jumps(player_number, king, &game_state);
+                    let point = (x as i8, y as i8);
+                    let result = from.jumps(point, player_number, king, &game_state);
                     assert_eq!(result[0].from, 19);
                     assert_eq!(result[0].to, vec![12]);
                     assert_eq!(result[1].from, 19);
@@ -1239,10 +1244,11 @@ mod tests {
             ]
         ];
         let game_state = GameState { current_player_number: 2, squares };
-        for row in game_state.squares.iter() {
-            for from in row {
+        for (y, row) in game_state.squares.iter().enumerate() {
+            for (x, from) in row.iter().enumerate() {
                 if from.id == 19 {
-                    let result = from.jumps(player_number, king, &game_state);
+                    let point = (x as i8, y as i8);
+                    let result = from.jumps(point, player_number, king, &game_state);
                     assert_eq!(result[0].from, 19);
                     assert_eq!(result[0].to, vec![10, 3]);
                     assert_eq!(result[1].from, 19);

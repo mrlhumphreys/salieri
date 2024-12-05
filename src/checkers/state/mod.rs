@@ -1,3 +1,4 @@
+mod point;
 mod vector;
 mod square;
 mod square_set;
