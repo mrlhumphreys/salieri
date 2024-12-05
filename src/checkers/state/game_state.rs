@@ -1,4 +1,3 @@
-use crate::checkers::state::point::Point;
 use crate::checkers::state::square::Square;
 use crate::checkers::state::square_set::find_by_x_and_y;
 use crate::checkers::state::square_set::find_by_x_and_y_mut;
@@ -185,8 +184,8 @@ impl GameState {
     pub fn perform_move_leg(&mut self, from: i8, to: i8) -> Result<(), &'static str> {
         let mut player_number: i8 = 0;
         let mut king: bool = false;
-        let mut from_point: Point = Point { x: 0, y: 0 };
-        let mut to_point: Point = Point { x: 0, y: 0 };
+        let mut from_point: (i8, i8) = (0, 0);
+        let mut to_point: (i8, i8) = (0, 0);
 
         let from_tuple = ID_COORDINATE_MAP[from as usize];
         let to_tuple = ID_COORDINATE_MAP[to as usize];
@@ -239,8 +238,8 @@ impl GameState {
     pub fn undo_move_leg(&mut self, from: i8, to: i8) -> Result<(), &'static str> {
         let mut player_number: i8 = 0;
         let mut king: bool = false;
-        let mut from_point: Point = Point { x: 0, y: 0 };
-        let mut to_point: Point = Point { x: 0, y: 0 };
+        let mut from_point: (i8, i8) = (0, 0);
+        let mut to_point: (i8, i8) = (0, 0);
 
         let to_tuple = ID_COORDINATE_MAP[to as usize];
         let from_tuple = ID_COORDINATE_MAP[from as usize];
