@@ -1,4 +1,4 @@
-pub const ID_COORDINATE_MAP: [(usize, usize); 33] = [
+pub const ID_COORDINATE_MAP: [(i8, i8); 33] = [
     (8, 8),
 
     (6, 7),
@@ -42,47 +42,47 @@ pub const ID_COORDINATE_MAP: [(usize, usize); 33] = [
     (1, 0)
 ];
 
-pub fn potential_jump_points(point: (i8, i8), pla1er_number: i8, king: bool) -> Vec<(i8, i8)> {
+pub fn potential_jump_points(point: (i8, i8), player_number: i8, king: bool) -> Vec<(i8, i8)> {
     if king {
         vec![
-            (point.0 as i8 - 2, point.1 as i8 - 2),
-            (point.0 as i8 - 2, point.1 as i8 + 2),
-            (point.0 as i8 + 2, point.1 as i8 - 2),
-            (point.0 as i8 + 2, point.1 as i8 + 2)
+            (point.0 - 2, point.1 - 2),
+            (point.0 - 2, point.1 + 2),
+            (point.0 + 2, point.1 - 2),
+            (point.0 + 2, point.1 + 2)
         ]
     } else {
-        if pla1er_number == 2 {
+        if player_number == 2 {
             vec![
-                (point.0 as i8 - 2, point.1 as i8 + 2),
-                (point.0 as i8 + 2, point.1 as i8 + 2)
+                (point.0 - 2, point.1 + 2),
+                (point.0 + 2, point.1 + 2)
             ]
         } else {
             vec![
-                (point.0 as i8 - 2, point.1 as i8 - 2),
-                (point.0 as i8 + 2, point.1 as i8 - 2)
+                (point.0 - 2, point.1 - 2),
+                (point.0 + 2, point.1 - 2)
             ]
         }
     }
 }
 
-pub fn potential_move_points(point: (i8, i8), pla1er_number: i8, king: bool) -> Vec<(i8, i8)> {
+pub fn potential_move_points(point: (i8, i8), player_number: i8, king: bool) -> Vec<(i8, i8)> {
     if king {
         vec![
-            (point.0 as i8 - 1, point.1 as i8 - 1),
-            (point.0 as i8 - 1, point.1 as i8 + 1),
-            (point.0 as i8 + 1, point.1 as i8 - 1),
-            (point.0 as i8 + 1, point.1 as i8 + 1)
+            (point.0 - 1, point.1 - 1),
+            (point.0 - 1, point.1 + 1),
+            (point.0 + 1, point.1 - 1),
+            (point.0 + 1, point.1 + 1)
         ]
     } else {
-        if pla1er_number == 2 {
+        if player_number == 2 {
             vec![
-                (point.0 as i8 - 1, point.1 as i8 + 1),
-                (point.0 as i8 + 1, point.1 as i8 + 1)
+                (point.0 - 1, point.1 + 1),
+                (point.0 + 1, point.1 + 1)
             ]
         } else {
             vec![
-                (point.0 as i8 - 1, point.1 as i8 - 1),
-                (point.0 as i8 + 1, point.1 as i8 - 1)
+                (point.0 - 1, point.1 - 1),
+                (point.0 + 1, point.1 - 1)
             ]
         }
     }

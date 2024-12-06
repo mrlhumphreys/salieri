@@ -5,7 +5,6 @@ use crate::checkers::state::square_set::find_by_x_and_y_mut;
 use crate::checkers::state::square_set::between_point;
 use crate::checkers::state::mov::Move;
 
-
 #[derive(PartialEq, Debug)]
 pub struct GameState {
     pub current_player_number: i8,
@@ -172,7 +171,7 @@ impl GameState {
             None => ()
         }
 
-        let b_point = between_point((from_tuple.0 as i8, from_tuple.1 as i8), (to_tuple.0 as i8, to_tuple.1 as i8));
+        let b_point = between_point(from_tuple, to_tuple);
 
         match b_point {
             Some(point) => {
@@ -222,7 +221,7 @@ impl GameState {
             None => ()
         }
 
-        let b_point = between_point((from_tuple.0 as i8, from_tuple.1 as i8), (to_tuple.0 as i8, to_tuple.1 as i8));
+        let b_point = between_point(from_tuple, to_tuple);
 
         match b_point {
             Some(point) => {
@@ -390,7 +389,7 @@ pub fn parse(encoded: &String) -> Result<GameState, &'static str> {
                                     Ok(parsed_id) => {
                                         let x = ID_COORDINATE_MAP[parsed_id].0;
                                         let y = ID_COORDINATE_MAP[parsed_id].1;
-                                        squares[y][x] = square;
+                                        squares[y as usize][x as usize] = square;
                                     },
                                     Err(_) => parse_error = true
                                 }
@@ -422,7 +421,7 @@ pub fn parse(encoded: &String) -> Result<GameState, &'static str> {
                                 Ok(parsed_id) => {
                                     let x = ID_COORDINATE_MAP[parsed_id].0;
                                     let y = ID_COORDINATE_MAP[parsed_id].1;
-                                    squares[y][x] = square;
+                                    squares[y as usize][x as usize] = square;
                                 },
                                 Err(_) => parse_error = true
                             }
@@ -439,7 +438,7 @@ pub fn parse(encoded: &String) -> Result<GameState, &'static str> {
                                 Ok(parsed_id) => {
                                     let x = ID_COORDINATE_MAP[parsed_id].0;
                                     let y = ID_COORDINATE_MAP[parsed_id].1;
-                                    squares[y][x] = square;
+                                    squares[y as usize][x as usize] = square;
                                 },
                                 Err(_) => parse_error = true
                             }
@@ -466,7 +465,7 @@ pub fn parse(encoded: &String) -> Result<GameState, &'static str> {
                         Ok(parsed_id) => {
                             let x = ID_COORDINATE_MAP[parsed_id].0;
                             let y = ID_COORDINATE_MAP[parsed_id].1;
-                            squares[y][x] = square;
+                            squares[y as usize][x as usize] = square;
                         },
                         Err(_) => parse_error = true
                     }
@@ -480,7 +479,7 @@ pub fn parse(encoded: &String) -> Result<GameState, &'static str> {
                         Ok(parsed_id) => {
                             let x = ID_COORDINATE_MAP[parsed_id].0;
                             let y = ID_COORDINATE_MAP[parsed_id].1;
-                            squares[y][x] = square;
+                            squares[y as usize][x as usize] = square;
                         },
                         Err(_) => parse_error = true
                     }

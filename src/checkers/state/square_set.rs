@@ -2,26 +2,26 @@ use crate::checkers::state::vector::Vector;
 use crate::checkers::state::vector::Direction;
 use crate::checkers::state::square::Square;
 
-const MIN_N: usize = 0;
-const MAX_N: usize = 7;
+const MIN_N: i8 = 0;
+const MAX_N: i8 = 7;
 
-pub fn find_by_x_and_y(squares: &Vec<Vec<Square>>, x: usize, y: usize) -> Option<&Square> {
+pub fn find_by_x_and_y(squares: &Vec<Vec<Square>>, x: i8, y: i8) -> Option<&Square> {
     if x < MIN_N || x > MAX_N || y < MIN_N || y > MAX_N {
         None
     } else {
-        Some(&squares[y][x])
+        Some(&squares[y as usize][x as usize])
     }
 }
 
-pub fn find_by_x_and_y_mut(squares: &mut Vec<Vec<Square>>, x: usize, y: usize) -> Option<&mut Square> {
+pub fn find_by_x_and_y_mut(squares: &mut Vec<Vec<Square>>, x: i8, y: i8) -> Option<&mut Square> {
     if x < MIN_N || x > MAX_N || y < MIN_N || y > MAX_N {
         None
     } else {
-        Some(&mut squares[y][x])
+        Some(&mut squares[y as usize][x as usize])
     }
 }
 
-pub fn between_point(from: (i8, i8), to: (i8, i8)) -> Option<(usize, usize)> {
+pub fn between_point(from: (i8, i8), to: (i8, i8)) -> Option<(i8, i8)> {
     let vector = Vector { from, to };
 
     if vector.direction() == Direction::Other {
@@ -31,7 +31,7 @@ pub fn between_point(from: (i8, i8), to: (i8, i8)) -> Option<(usize, usize)> {
         let between_x = from.0 as i8 + direction_unit.x;
         let between_y = from.1 as i8 + direction_unit.y;
         if between_x != to.0 && between_y != to.1 {
-            Some((between_x as usize, between_y as usize))
+            Some((between_x, between_y))
         } else {
             None
         }
