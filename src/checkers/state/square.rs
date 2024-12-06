@@ -59,22 +59,18 @@ impl Square {
         let potential_destinations = potential_jump_points(point, player_number, king);
 
         potential_destinations.iter().any(|p| {
-            match find_by_x_and_y(&game_state.squares, p.0, p.1) {
-                Some(to) => {
-                    let b_point = between_point(point, *p);
-                    match b_point {
-                        Some(point) => {
-                            let between = find_by_x_and_y(&game_state.squares, point.0, point.1);
-                            let between_occupied_by_opponent = match between {
-                                Some(b) => b.occupied_by_opponent(player_number),
-                                None => false
-                            };
-                            to.unoccupied() && between_occupied_by_opponent
-                        },
-                        None => false,
-                    }
-                },
-                None => false
+            if let Some(to) = find_by_x_and_y(&game_state.squares, p.0, p.1) {
+                if let Some(point) = between_point(point, *p) {
+                    let between_occupied_by_opponent = match find_by_x_and_y(&game_state.squares, point.0, point.1) {
+                        Some(b) => b.occupied_by_opponent(player_number),
+                        None => false
+                    };
+                    to.unoccupied() && between_occupied_by_opponent
+                } else {
+                    false
+                }
+            } else {
+                false
             }
         })
     }
@@ -94,27 +90,16 @@ impl Square {
         let potential_destinations = potential_jump_points(point, player_number, king);
 
         potential_destinations.iter().for_each(|p| {
-            match find_by_x_and_y(&game_state.squares, p.0, p.1) {
-                Some(to) => {
-                    if to.unoccupied() {
-                        let b_point = between_point(point, *p);
-                        match b_point {
-                            Some(point) => {
-                                let between = find_by_x_and_y(&game_state.squares, point.0, point.1);
-                                match between {
-                                    Some(b) => {
-                                        if b.occupied_by_opponent(player_number) {
-                                            destinations.push(to);
-                                        }
-                                    },
-                                    None => ()
-                                }
-                            },
-                            None => ()
+            if let Some(to) = find_by_x_and_y(&game_state.squares, p.0, p.1) {
+                if to.unoccupied() {
+                    if let Some(point) = between_point(point, *p) {
+                        if let Some(b) = find_by_x_and_y(&game_state.squares, point.0, point.1) {
+                            if b.occupied_by_opponent(player_number) {
+                                destinations.push(to);
+                            }
                         }
                     }
-                },
-                None => ()
+                }
             }
         });
 
@@ -126,13 +111,10 @@ impl Square {
         let potential_destinations = potential_move_points(point, player_number, king);
 
         potential_destinations.iter().for_each(|p| {
-            match find_by_x_and_y(&game_state.squares, p.0, p.1) {
-                Some(to) => {
-                    if to.unoccupied() {
-                        destinations.push(to);
-                    }
-                },
-                None => ()
+            if let Some(to) = find_by_x_and_y(&game_state.squares, p.0, p.1) {
+                if to.unoccupied() {
+                    destinations.push(to);
+                }
             }
         });
 
@@ -155,7 +137,7 @@ impl Square {
                 match new_game_state.perform_move_leg(self.id, destination.id) {
                     Ok(_) => {
                         let point = ID_COORDINATE_MAP[destination.id as usize];
-                        destination.jump_legs((point.0, point.1), player_number, king, &new_game_state, &mut accumulator, &mut current_leg);
+                        destination.jump_legs(point, player_number, king, &new_game_state, &mut accumulator, &mut current_leg);
                     },
                     Err(_) => (),
                 }
