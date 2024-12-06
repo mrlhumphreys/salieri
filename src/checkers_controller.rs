@@ -37,12 +37,12 @@ pub fn mcts(game_data: &String) -> HttpResponse {
     };
 
     let mcts_simulation_count: i16 = env::var("CHECKERS_MCTS_SIMULATION_COUNT")
-        .unwrap_or_else(|_| "120".to_string())
+        .unwrap_or_else(|_| "1000".to_string())
         .parse()
         .expect("CHECKERS_MCTS_SIMULATION_COUNT must be a number");
 
     let mcts_simulation_depth: i16 = env::var("CHECKERS_MCTS_SIMULATION_DEPTH")
-        .unwrap_or_else(|_| "40".to_string())
+        .unwrap_or_else(|_| "50".to_string())
         .parse()
         .expect("CHECKERS_MCTS_SIMULATION_DEPTH must be a number");
 
