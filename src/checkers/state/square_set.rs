@@ -46,18 +46,17 @@ mod tests {
     fn find_by_x_and_y_test() {
         let squares = vec![
             vec![
-                Square { id: 1, x: 0, y: 0, player_number: 0, king: false },
-                Square { id: 2, x: 1, y: 0, player_number: 0, king: false }
+                Square { id: 1, player_number: 0, king: false },
+                Square { id: 2, player_number: 0, king: false }
             ],
             vec![
-                Square { id: 3, x: 0, y: 1, player_number: 0, king: false },
-                Square { id: 4, x: 1, y: 1, player_number: 0, king: false }
+                Square { id: 3, player_number: 0, king: false },
+                Square { id: 4, player_number: 0, king: false }
             ]
         ];
         match find_by_x_and_y(&squares, 1, 1) {
             Some(result) => {
-                assert_eq!(result.x, 1);
-                assert_eq!(result.y, 1);
+                assert_eq!(result.id, 4);
             },
             None => assert!(false, "expected square")
         }
@@ -67,18 +66,17 @@ mod tests {
     fn find_by_x_and_y_mut_test() {
         let mut squares = vec![
             vec![
-                Square { id: 1, x: 0, y: 0, player_number: 0, king: false },
-                Square { id: 2, x: 1, y: 0, player_number: 0, king: false }
+                Square { id: 1, player_number: 0, king: false },
+                Square { id: 2, player_number: 0, king: false }
             ],
             vec![
-                Square { id: 3, x: 0, y: 1, player_number: 0, king: false },
-                Square { id: 4, x: 1, y: 1, player_number: 0, king: false }
+                Square { id: 3, player_number: 0, king: false },
+                Square { id: 4, player_number: 0, king: false }
             ]
         ];
         match find_by_x_and_y_mut(&mut squares, 1, 1) {
             Some(result) => {
-                assert_eq!(result.x, 1);
-                assert_eq!(result.y, 1);
+                assert_eq!(result.id, 4);
             },
             None => assert!(false, "expected square")
         }
