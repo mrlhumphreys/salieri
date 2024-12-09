@@ -2,7 +2,7 @@ use std::cmp;
 use std::convert::TryFrom;
 use crate::checkers;
 
-const CENTER_SQUARE_IDS: [i8; 4] = [14, 15, 18, 19];
+const CENTER_SQUARE_POINTS: [(i8, i8); 4] = [(5, 4), (3, 4), (4, 3), (2, 3)];
 
 pub fn recommended_move(game_state: checkers::state::game_state::GameState, depth: i8) -> Option<checkers::state::mov::Move> {
     let mut new_game_state = game_state.clone();
@@ -131,9 +131,9 @@ fn lose_value(game_state: &checkers::state::game_state::GameState) -> i32 {
 
 fn center_squares_count(game_state: &checkers::state::game_state::GameState, player_number: i8) -> usize {
     let mut counter = 0;
-    for row in game_state.squares.iter() {
-        for square in row {
-            if square.player_number == player_number && CENTER_SQUARE_IDS.iter().any(|id| square.id == *id ) {
+    for (y, row) in game_state.squares.iter().enumerate() {
+        for (x, square) in row.iter().enumerate() {
+            if square.player_number == player_number && CENTER_SQUARE_POINTS.iter().any(|p| p.0 == x as i8 && p.1 == y as i8) {
                 counter += 1;
             }
         }
