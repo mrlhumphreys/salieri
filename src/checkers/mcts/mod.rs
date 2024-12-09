@@ -202,8 +202,8 @@ mod tests {
 
        match recommended_move(game_state, simulation_count, max_simulation_depth) {
            Ok(mov) => {
-               assert_eq!(21, mov.from);
-               assert_eq!(vec![17], mov.to);
+               assert_eq!((7, 2), mov.from);
+               assert_eq!(vec![(6, 3)], mov.to);
            },
            Err(e) => assert!(false, "{}", e)
        }
@@ -214,8 +214,8 @@ mod tests {
         let child_node_a_state = game_state::parse(&String::from("W:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,12,15")).unwrap();
         let mov_a = Move {
             kind: MoveKind::Mov,
-            from: 10,
-            to: vec![15]
+            from: (4, 5),
+            to: vec![(3, 4)]
         };
         let child_node_a = Node {
             id: 2,
@@ -230,8 +230,8 @@ mod tests {
         let child_node_b_state = game_state::parse(&String::from("W:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,12,16")).unwrap();
         let mov_b = Move {
             kind: MoveKind::Mov,
-            from: 11,
-            to: vec![16]
+            from: (2, 5),
+            to: vec![(1, 4)]
         };
         let child_node_b = Node {
             id: 3,
@@ -269,8 +269,8 @@ mod tests {
         let node_state = game_state::parse(&String::from("W:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,12,15")).unwrap();
         let mov = Move {
             kind: MoveKind::Mov,
-            from: 10,
-            to: vec![15]
+            from: (4, 5),
+            to: vec![(3, 4)]
         };
         let node = Node {
             id: 2,
@@ -345,8 +345,8 @@ mod tests {
         let node_state = game_state::parse(&String::from("W:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,12,15")).unwrap();
         let mov = Move {
             kind: MoveKind::Mov,
-            from: 10,
-            to: vec![15]
+            from: (4, 5),
+            to: vec![(3, 4)]
         };
         let node = Node {
             id: 2,

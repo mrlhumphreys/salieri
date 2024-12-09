@@ -121,23 +121,24 @@ impl Square {
         destinations
     }
 
-    pub fn jump_legs<'a>(&self, point: (i8, i8), player_number: i8, king: bool, game_state: &GameState, mut accumulator: &'a mut Vec<Vec<i8>>, mut current_leg: &mut Vec<i8>) -> &'a mut Vec<Vec<i8>> {
+    pub fn jump_legs<'a>(&self, point: (i8, i8), player_number: i8, king: bool, game_state: &GameState, mut accumulator: &'a mut Vec<Vec<(i8, i8)>>, mut current_leg: &mut Vec<(i8, i8)>) -> &'a mut Vec<Vec<(i8, i8)>> {
         let destinations = self.jump_destinations(point, player_number, king, game_state);
 
         if !destinations.is_empty() {
             for destination in destinations.iter() {
 
+                let point = ID_COORDINATE_MAP[self.id as usize];
                 if current_leg.is_empty() {
-                    current_leg.push(self.id);
+                    current_leg.push(point);
                 }
 
-                current_leg.push(destination.id);
+                let destination_point = ID_COORDINATE_MAP[destination.id as usize];
+                current_leg.push(destination_point);
 
                 let mut new_game_state = game_state.clone();
-                match new_game_state.perform_move_leg(self.id, destination.id) {
+                match new_game_state.perform_move_leg(point, destination_point) {
                     Ok(_) => {
-                        let point = ID_COORDINATE_MAP[destination.id as usize];
-                        destination.jump_legs(point, player_number, king, &new_game_state, &mut accumulator, &mut current_leg);
+                        destination.jump_legs(destination_point, player_number, king, &new_game_state, &mut accumulator, &mut current_leg);
                     },
                     Err(_) => (),
                 }
@@ -165,7 +166,9 @@ impl Square {
     pub fn moves(&self, point: (i8, i8), player_number: i8, king: bool, game_state: &GameState) -> Vec<Move> {
         let destinations = self.move_destinations(point, player_number, king, &game_state);
         destinations.iter().map(|d| {
-            Move { kind: MoveKind::Mov, from: self.id, to: vec![d.id] }
+            let point = ID_COORDINATE_MAP[self.id as usize];
+            let destination_point = ID_COORDINATE_MAP[d.id as usize];
+            Move { kind: MoveKind::Mov, from: point, to: vec![destination_point] }
         }).collect()
     }
 }
@@ -798,8 +801,8 @@ mod tests {
                     let point = (x as i8, y as i8);
                     let result = from.jump_legs(point, player_number, king, &game_state, &mut accumulator, &mut current_leg);
                     assert_eq!(result.len(), 2);
-                    assert_eq!(result[0], vec![19,12]);
-                    assert_eq!(result[1], vec![19,10,1]);
+                    assert_eq!(result[0], vec![(2, 3), (0, 5)]);
+                    assert_eq!(result[1], vec![(2, 3), (4, 5), (6, 7)]);
                 }
             }
         }
@@ -901,9 +904,9 @@ mod tests {
                     let mut current_leg = vec![];
                     let point = (x as i8, y as i8);
                     let result = from.jump_legs(point, player_number, king, &game_state, &mut accumulator, &mut current_leg);
-                    // assert_eq!(result.len(), 2);
-                    assert_eq!(result[0], vec![19,10,3]);
-                    assert_eq!(result[1], vec![19,10,1]);
+                    assert_eq!(result.len(), 2);
+                    assert_eq!(result[0], vec![(2, 3), (4, 5), (2, 7)]);
+                    assert_eq!(result[1], vec![(2, 3), (4, 5), (6, 7)]);
                 }
             }
         }
@@ -1001,10 +1004,10 @@ mod tests {
                 if from.id == 19 {
                     let point = (x as i8, y as i8);
                     let result = from.jumps(point, player_number, king, &game_state);
-                    assert_eq!(result[0].from, 19);
-                    assert_eq!(result[0].to, vec![12]);
-                    assert_eq!(result[1].from, 19);
-                    assert_eq!(result[1].to, vec![10,1]);
+                    assert_eq!(result[0].from, (2, 3));
+                    assert_eq!(result[0].to, vec![(0, 5)]);
+                    assert_eq!(result[1].from, (2, 3));
+                    assert_eq!(result[1].to, vec![(4, 5), (6, 7)]);
                     assert_eq!(result.len(), 2);
                 }
             }
@@ -1102,10 +1105,10 @@ mod tests {
                 if from.id == 19 {
                     let point = (x as i8, y as i8);
                     let result = from.jumps(point, player_number, king, &game_state);
-                    assert_eq!(result[0].from, 19);
-                    assert_eq!(result[0].to, vec![10, 3]);
-                    assert_eq!(result[1].from, 19);
-                    assert_eq!(result[1].to, vec![10, 1]);
+                    assert_eq!(result[0].from, (2, 3));
+                    assert_eq!(result[0].to, vec![(4, 5), (2, 7)]);
+                    assert_eq!(result[1].from, (2, 3));
+                    assert_eq!(result[1].to, vec![(4, 5), (6, 7)]);
                     assert_eq!(result.len(), 2);
                 }
             }
@@ -1204,8 +1207,8 @@ mod tests {
                 if from.id == 14 {
                     let point = (x as i8, y as i8);
                     let result = from.moves(point, player_number, king, &game_state);
-                    assert_eq!(result[0].from, 14);
-                    assert_eq!(result[0].to, vec![9]);
+                    assert_eq!(result[0].from, (5, 4));
+                    assert_eq!(result[0].to, vec![(6, 5)]);
                     assert_eq!(result.len(), 1);
                 }
             }

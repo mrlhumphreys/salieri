@@ -87,14 +87,12 @@ impl GameState {
             _ => return Err("invalid player number"),
         };
 
-        if let Some(last_id) = mov.to.last() {
-            let point = ID_COORDINATE_MAP[*last_id as usize];
-
-            let last_square = find_by_x_and_y(&self.squares, point.0, point.1);
+        if let Some(last_point) = mov.to.last() {
+            let last_square = find_by_x_and_y(&self.squares, last_point.0, last_point.1);
 
             if last_square.is_some() {
-                if promotion_row == point.1 {
-                    self.promote(*last_id)?;
+                if promotion_row == last_point.1 {
+                    self.promote(*last_point)?;
                 }
             } else {
                 return Err("invalid square id");
@@ -115,14 +113,12 @@ impl GameState {
             _ => return Err("invalid player number"),
         };
 
-        if let Some(last_id) = mov.to.last() {
-            let point = ID_COORDINATE_MAP[*last_id as usize];
-
-            let last_square = find_by_x_and_y(&self.squares, point.0, point.1);
+        if let Some(last_point) = mov.to.last() {
+            let last_square = find_by_x_and_y(&self.squares, last_point.0, last_point.1);
 
             if last_square.is_some() {
-                if promotion_row == point.1 {
-                    self.demote(*last_id)?;
+                if promotion_row == last_point.1 {
+                    self.demote(*last_point)?;
                 }
             } else {
                 return Err("invalid square id");
@@ -140,14 +136,11 @@ impl GameState {
         Ok(())
     }
 
-    pub fn perform_move_leg(&mut self, from: i8, to: i8) -> Result<(), &'static str> {
+    pub fn perform_move_leg(&mut self, from: (i8, i8), to: (i8, i8)) -> Result<(), &'static str> {
         let mut player_number: i8 = 0;
         let mut king: bool = false;
 
-        let from_tuple = ID_COORDINATE_MAP[from as usize];
-        let to_tuple = ID_COORDINATE_MAP[to as usize];
-
-        if let Some(square) = find_by_x_and_y_mut(&mut self.squares, from_tuple.0, from_tuple.1) {
+        if let Some(square) = find_by_x_and_y_mut(&mut self.squares, from.0, from.1) {
             if square.occupied() {
                 player_number = square.player_number;
                 king = square.king;
@@ -156,12 +149,12 @@ impl GameState {
             }
         }
 
-        if let Some(square) = find_by_x_and_y_mut(&mut self.squares, to_tuple.0, to_tuple.1) {
+        if let Some(square) = find_by_x_and_y_mut(&mut self.squares, to.0, to.1) {
             square.player_number = player_number;
             square.king = king;
         }
 
-        if let Some(point) = between_point(from_tuple, to_tuple) {
+        if let Some(point) = between_point(from, to) {
             if let Some(square) = find_by_x_and_y_mut(&mut self.squares, point.0, point.1) {
                 square.player_number = 0;
                 square.king = false;
@@ -171,14 +164,11 @@ impl GameState {
         Ok(())
     }
 
-    pub fn undo_move_leg(&mut self, from: i8, to: i8) -> Result<(), &'static str> {
+    pub fn undo_move_leg(&mut self, from: (i8, i8), to: (i8, i8)) -> Result<(), &'static str> {
         let mut player_number: i8 = 0;
         let mut king: bool = false;
 
-        let to_tuple = ID_COORDINATE_MAP[to as usize];
-        let from_tuple = ID_COORDINATE_MAP[from as usize];
-
-        if let Some(square) = find_by_x_and_y_mut(&mut self.squares, to_tuple.0, to_tuple.1) {
+        if let Some(square) = find_by_x_and_y_mut(&mut self.squares, to.0, to.1) {
             if square.occupied() {
                 player_number = square.player_number;
                 king = square.king;
@@ -187,12 +177,12 @@ impl GameState {
             }
         }
 
-        if let Some(square) = find_by_x_and_y_mut(&mut self.squares, from_tuple.0, from_tuple.1) {
+        if let Some(square) = find_by_x_and_y_mut(&mut self.squares, from.0, from.1) {
             square.player_number = player_number;
             square.king = king;
         }
 
-        if let Some(point) = between_point(from_tuple, to_tuple) {
+        if let Some(point) = between_point(from, to) {
             if let Some(square) = find_by_x_and_y_mut(&mut self.squares, point.0, point.1) {
                 square.player_number = match player_number {
                     2 => 1,
@@ -206,16 +196,14 @@ impl GameState {
         Ok(())
     }
 
-    pub fn promote(&mut self, id: i8) -> Result<(), &'static str> {
-        let point = ID_COORDINATE_MAP[id as usize];
+    pub fn promote(&mut self, point: (i8, i8)) -> Result<(), &'static str> {
         if let Some(s) = find_by_x_and_y_mut(&mut self.squares, point.0, point.1) {
             s.promote()?;
         }
         Ok(())
     }
 
-    pub fn demote(&mut self, id: i8) -> Result<(), &'static str> {
-        let point = ID_COORDINATE_MAP[id as usize];
+    pub fn demote(&mut self, point: (i8, i8)) -> Result<(), &'static str> {
         if let Some(s) = find_by_x_and_y_mut(&mut self.squares, point.0, point.1) {
             s.demote()?;
         }
@@ -606,26 +594,26 @@ mod tests {
         let result = game_state.possible_moves();
         assert_eq!(result.len(), 7);
 
-        assert_eq!((&result[0]).from, 12);
-        assert_eq!((&result[0]).to, vec![16]);
+        assert_eq!((&result[0]).from, (0, 5));
+        assert_eq!((&result[0]).to, vec![(1, 4)]);
 
-        assert_eq!((&result[1]).from, 11);
-        assert_eq!((&result[1]).to, vec![16]);
+        assert_eq!((&result[1]).from, (2, 5));
+        assert_eq!((&result[1]).to, vec![(1, 4)]);
 
-        assert_eq!((&result[2]).from, 11);
-        assert_eq!((&result[2]).to, vec![15]);
+        assert_eq!((&result[2]).from, (2, 5));
+        assert_eq!((&result[2]).to, vec![(3, 4)]);
 
-        assert_eq!((&result[3]).from, 10);
-        assert_eq!((&result[3]).to, vec![15]);
+        assert_eq!((&result[3]).from, (4, 5));
+        assert_eq!((&result[3]).to, vec![(3, 4)]);
 
-        assert_eq!((&result[4]).from, 10);
-        assert_eq!((&result[4]).to, vec![14]);
+        assert_eq!((&result[4]).from, (4, 5));
+        assert_eq!((&result[4]).to, vec![(5, 4)]);
 
-        assert_eq!((&result[5]).from, 9);
-        assert_eq!((&result[5]).to, vec![14]);
+        assert_eq!((&result[5]).from, (6, 5));
+        assert_eq!((&result[5]).to, vec![(5, 4)]);
 
-        assert_eq!((&result[6]).from, 9);
-        assert_eq!((&result[6]).to, vec![13]);
+        assert_eq!((&result[6]).from, (6, 5));
+        assert_eq!((&result[6]).to, vec![(7, 4)]);
     }
 
     #[test]
@@ -635,26 +623,26 @@ mod tests {
         let result = game_state.possible_moves_for_player(2);
         assert_eq!(result.len(), 7);
 
-        assert_eq!((&result[0]).from, 24);
-        assert_eq!((&result[0]).to, vec![20]);
+        assert_eq!((&result[0]).from, (1, 2));
+        assert_eq!((&result[0]).to, vec![(0, 3)]);
 
-        assert_eq!((&result[1]).from, 24);
-        assert_eq!((&result[1]).to, vec![19]);
+        assert_eq!((&result[1]).from, (1, 2));
+        assert_eq!((&result[1]).to, vec![(2, 3)]);
 
-        assert_eq!((&result[2]).from, 23);
-        assert_eq!((&result[2]).to, vec![19]);
+        assert_eq!((&result[2]).from, (3, 2));
+        assert_eq!((&result[2]).to, vec![(2, 3)]);
 
-        assert_eq!((&result[3]).from, 23);
-        assert_eq!((&result[3]).to, vec![18]);
+        assert_eq!((&result[3]).from, (3, 2));
+        assert_eq!((&result[3]).to, vec![(4, 3)]);
 
-        assert_eq!((&result[4]).from, 22);
-        assert_eq!((&result[4]).to, vec![18]);
+        assert_eq!((&result[4]).from, (5, 2));
+        assert_eq!((&result[4]).to, vec![(4, 3)]);
 
-        assert_eq!((&result[5]).from, 22);
-        assert_eq!((&result[5]).to, vec![17]);
+        assert_eq!((&result[5]).from, (5, 2));
+        assert_eq!((&result[5]).to, vec![(6, 3)]);
 
-        assert_eq!((&result[6]).from, 21);
-        assert_eq!((&result[6]).to, vec![17]);
+        assert_eq!((&result[6]).from, (7, 2));
+        assert_eq!((&result[6]).to, vec![(6, 3)]);
     }
 
     #[test]
@@ -664,11 +652,11 @@ mod tests {
         let result = game_state.possible_moves_for_player(2);
         assert_eq!(result.len(), 2);
 
-        assert_eq!((&result[0]).from, 24);
-        assert_eq!((&result[0]).to, vec![15, 8]);
+        assert_eq!((&result[0]).from, (1, 2));
+        assert_eq!((&result[0]).to, vec![(3, 4), (1, 6)]);
 
-        assert_eq!((&result[1]).from, 24);
-        assert_eq!((&result[1]).to, vec![15, 6]);
+        assert_eq!((&result[1]).from, (1, 2));
+        assert_eq!((&result[1]).to, vec![(3, 4), (5, 6)]);
     }
 
     #[test]
@@ -766,8 +754,8 @@ mod tests {
         let mov = result.first();
         match mov {
             Some(m) => {
-                assert_eq!(m.from, 14);
-                assert_eq!(m.to, vec![5]);
+                assert_eq!(m.from, (5, 4));
+                assert_eq!(m.to, vec![(7, 6)]);
             },
             None => assert!(false, "Expected Move"),
         }
@@ -866,8 +854,8 @@ mod tests {
         let mov = result.first();
         match mov {
             Some(m) => {
-                assert_eq!(m.from, 14);
-                assert_eq!(m.to, vec![9]);
+                assert_eq!(m.from, (5, 4));
+                assert_eq!(m.to, vec![(6, 5)]);
             },
             None => assert!(false, "Expected Move"),
         }
@@ -879,8 +867,8 @@ mod tests {
         let mut game_state = parse(&encoded).unwrap();
         let mov = Move {
             kind: MoveKind::Mov,
-            from: 9,
-            to: vec![13],
+            from: (6, 5),
+            to: vec![(7, 4)],
         };
 
         match game_state.perform_move(&mov) {
@@ -913,8 +901,8 @@ mod tests {
         let mut game_state = parse(&encoded).unwrap();
         let mov = Move {
             kind: MoveKind::Mov,
-            from: 28,
-            to: vec![32],
+            from: (0, 1),
+            to: vec![(1, 0)],
         };
         match game_state.perform_move(&mov) {
             Ok(_) => {
@@ -938,8 +926,8 @@ mod tests {
         let mut game_state = parse(&encoded).unwrap();
         let mov = Move {
             kind: MoveKind::Mov,
-            from: 9,
-            to: vec![13],
+            from: (6, 5),
+            to: vec![(7, 4)],
         };
 
         match game_state.undo_move(&mov) {
@@ -970,8 +958,8 @@ mod tests {
         let mut game_state = parse(&encoded).unwrap();
         let mov = Move {
             kind: MoveKind::Mov,
-            from: 28,
-            to: vec![32],
+            from: (0, 1),
+            to: vec![(1, 0)],
         };
         match game_state.undo_move(&mov) {
             Ok(_) => {
@@ -1082,7 +1070,7 @@ mod tests {
         ];
         let mut game_state = GameState { current_player_number: 1, squares };
 
-        match game_state.perform_move_leg(14, 5) {
+        match game_state.perform_move_leg((5, 4), (7, 6)) {
             Ok(_) => (),
             Err(e) => return assert!(false, "{}", e),
         };
@@ -1189,7 +1177,7 @@ mod tests {
 
         let mut game_state = GameState { current_player_number: 1, squares };
 
-        match game_state.perform_move_leg(14, 9) {
+        match game_state.perform_move_leg((5, 4), (6, 5)) {
             Ok(_) => {
                 for row in game_state.squares.iter() {
                     for square in row {
@@ -1292,7 +1280,7 @@ mod tests {
         ];
         let mut game_state = GameState { current_player_number: 1, squares };
 
-        match game_state.undo_move_leg(14, 5) {
+        match game_state.undo_move_leg((5, 4), (7, 6)) {
             Ok(_) => (),
             Err(e) => return assert!(false, "{}", e)
         };
@@ -1398,7 +1386,7 @@ mod tests {
         ];
         let mut game_state = GameState { current_player_number: 1, squares };
 
-        match game_state.undo_move_leg(14, 9) {
+        match game_state.undo_move_leg((5, 4), (6, 5)) {
             Ok(_) => (),
             Err(e) => return assert!(false, "{}", e)
         };
@@ -1501,7 +1489,7 @@ mod tests {
         ];
         let mut game_state = GameState { current_player_number: 1, squares };
 
-        match game_state.promote(14) {
+        match game_state.promote((5, 4)) {
             Ok(_) => (),
             Err(e) => assert!(false, "{}", e)
         }
@@ -1601,7 +1589,7 @@ mod tests {
         ];
         let mut game_state = GameState { current_player_number: 1, squares };
 
-        match game_state.demote(14) {
+        match game_state.demote((5, 4)) {
             Ok(_) => (),
             Err(e) => assert!(false, "{}", e),
         }

@@ -195,8 +195,8 @@ mod tests {
 
        match mov {
            Some(m) => {
-               assert_eq!(m.from, 23);
-               assert_eq!(m.to, vec![19]);
+               assert_eq!(m.from, (3, 2));
+               assert_eq!(m.to, vec![(2, 3)]);
            },
            None => assert!(false, "expected move"),
        }
