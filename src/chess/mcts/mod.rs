@@ -194,7 +194,7 @@ fn upper_confidence_bound(parent_node: &Node, node: &Node) -> f32 {
 mod tests {
     use super::*;
     use crate::chess::state::game_state;
-    use crate::chess::state::piece::PieceKind;
+    use crate::chess::state::square::PieceKind;
     use crate::chess::state::point::Point;
 
     #[test]

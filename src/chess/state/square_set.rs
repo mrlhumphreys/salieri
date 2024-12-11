@@ -34,13 +34,12 @@ pub fn between_unoccupied(squares: &Vec<Square>, from: (i8, i8), to: (i8, i8)) -
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::chess::state::piece::Piece;
-    use crate::chess::state::piece::PieceKind;
+    use crate::chess::state::square::PieceKind;
 
     #[test]
     fn squares_set_find_by_x_and_y_test() {
-        let square_a = Square { x: 1, y: 0, piece: None };
-        let square_b = Square { x: 1, y: 1, piece: None };
+        let square_a = Square { x: 1, y: 0, player_number: 0, kind: PieceKind::Empty };
+        let square_b = Square { x: 1, y: 1, player_number: 0, kind: PieceKind::Empty };
         let squares = vec![square_a, square_b];
 
         let result = find_by_x_and_y(&squares, 1, 1);
@@ -55,10 +54,10 @@ mod tests {
 
     #[test]
     fn square_set_between_unoccupied_true_test() {
-        let origin = Square { x: 1, y: 1, piece: None };
-        let between = Square { x: 1, y: 2, piece: None };
-        let destination = Square { x: 1, y: 3, piece: None };
-        let beyond = Square { x: 1, y: 4, piece: None };
+        let origin = Square { x: 1, y: 1, player_number: 0, kind: PieceKind::Empty };
+        let between = Square { x: 1, y: 2, player_number: 0, kind: PieceKind::Empty };
+        let destination = Square { x: 1, y: 3, player_number: 0, kind: PieceKind::Empty };
+        let beyond = Square { x: 1, y: 4, player_number: 0, kind: PieceKind::Empty };
         let squares = vec![origin, between, destination, beyond];
 
         let origin_point: (i8, i8) = (1, 1);
@@ -70,11 +69,11 @@ mod tests {
 
     #[test]
     fn square_set_between_unoccupied_false_test() {
-        let origin = Square { x: 1, y: 1, piece: None };
-        let between = Square { x: 1, y: 2, piece: Some(Piece { player_number: 1, kind: PieceKind::Pawn })};
-        let gap = Square { x: 1, y: 3, piece: None };
-        let destination = Square { x: 1, y: 4, piece: None };
-        let beyond = Square { x: 1, y: 5, piece: None };
+        let origin = Square { x: 1, y: 1, player_number: 0, kind: PieceKind::Empty };
+        let between = Square { x: 1, y: 2, player_number: 1, kind: PieceKind::Pawn };
+        let gap = Square { x: 1, y: 3, player_number: 0, kind: PieceKind::Empty };
+        let destination = Square { x: 1, y: 4, player_number: 0, kind: PieceKind::Empty };
+        let beyond = Square { x: 1, y: 5, player_number: 0, kind: PieceKind::Empty };
         let squares = vec![origin, between, gap, destination, beyond];
 
         let origin_point: (i8, i8) = (1, 1);

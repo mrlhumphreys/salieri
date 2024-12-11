@@ -1,6 +1,6 @@
 use std::cmp;
 use std::convert::TryFrom;
-use crate::chess::state::piece::PieceKind;
+use crate::chess::state::square::PieceKind;
 use crate::chess;
 
 pub fn recommended_move(game_state: &mut chess::state::game_state::GameState, depth: i8) -> Option<chess::state::mov::Move> {
@@ -135,23 +135,17 @@ pub fn static_evaluation(game_state: &mut chess::state::game_state::GameState) -
 // p: 1, n: 3, b: 3, r: 5, q: 9, k: 200
 fn player_pieces_count(game_state: &chess::state::game_state::GameState, player_number: i8) -> usize {
     game_state.squares.iter().filter(|s| {
-        match &s.piece {
-            Some(p) => p.player_number == player_number,
-            None => false
-        }
+        s.player_number == player_number
     }).map(|s| {
-        if let Some(p) = s.piece {
-            match p.kind {
-                PieceKind::King => 200,
-                PieceKind::Queen => 9,
-                PieceKind::Rook => 5,
-                PieceKind::Bishop => 3,
-                PieceKind::Knight => 3,
-                PieceKind::Pawn => 1
-            }
-        } else {
-            0
-        }
+       match s.kind {
+           PieceKind::King => 200,
+           PieceKind::Queen => 9,
+           PieceKind::Rook => 5,
+           PieceKind::Bishop => 3,
+           PieceKind::Knight => 3,
+           PieceKind::Pawn => 1,
+           PieceKind::Empty => 0
+       }
     }).sum()
 }
 
@@ -159,8 +153,8 @@ fn player_double_pawns_count(game_state: &chess::state::game_state::GameState, p
     let mut count = 0;
     for x in 0..8 {
         let number_of_pawns = game_state.squares.iter().filter(|s| {
-            if let Some(p) = s.piece {
-                p.kind == PieceKind::Pawn && p.player_number == player_number && s.x == x
+            if s.player_number != 0 {
+                s.kind == PieceKind::Pawn && s.player_number == player_number && s.x == x
             } else {
                 false
             }
@@ -180,18 +174,16 @@ fn player_blocked_pawns_count(game_state: &chess::state::game_state::GameState, 
         1
     };
     game_state.squares.iter().for_each(|s| {
-        if let Some(p) = s.piece {
-            if p.kind == PieceKind::Pawn && p.player_number == player_number {
-                let piece_blocking_pawn = game_state.squares.iter().any(|t| {
-                    if let Some(_) = t.piece {
-                        t.x == s.x && t.y == s.y + forward_direction_y
-                    } else {
-                        false
-                    }
-                });
-                if piece_blocking_pawn {
-                    count += 1;
+        if s.kind == PieceKind::Pawn && s.player_number == player_number {
+            let piece_blocking_pawn = game_state.squares.iter().any(|t| {
+                if t.player_number != 0 {
+                    t.x == s.x && t.y == s.y + forward_direction_y
+                } else {
+                    false
                 }
+            });
+            if piece_blocking_pawn {
+                count += 1;
             }
         }
     });
@@ -201,18 +193,16 @@ fn player_blocked_pawns_count(game_state: &chess::state::game_state::GameState, 
 fn player_isolated_pawns_count(game_state: &chess::state::game_state::GameState, player_number: i8) -> usize {
     let mut count = 0;
     game_state.squares.iter().for_each(|s| {
-        if let Some(p) = s.piece {
-            if p.kind == PieceKind::Pawn && p.player_number == player_number {
-                let pawns_in_adjacent_files = game_state.squares.iter().filter(|t| {
-                    if let Some(q) = t.piece {
-                        (t.x == s.x - 1 || t.x == s.x + 1) && q.kind == PieceKind::Pawn && q.player_number == player_number
-                    } else {
-                       false
-                    }
-                }).count();
-                if pawns_in_adjacent_files == 0 {
-                    count += 1;
+        if s.kind == PieceKind::Pawn && s.player_number == player_number {
+            let pawns_in_adjacent_files = game_state.squares.iter().filter(|t| {
+                if t.player_number != 0 {
+                    (t.x == s.x - 1 || t.x == s.x + 1) && t.kind == PieceKind::Pawn && t.player_number == player_number
+                } else {
+                    false
                 }
+            }).count();
+            if pawns_in_adjacent_files == 0 {
+                count += 1;
             }
         }
     });

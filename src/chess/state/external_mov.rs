@@ -1,6 +1,6 @@
 use std::convert::TryFrom;
 use crate::chess::state::point::Point;
-use crate::chess::state::piece::PieceKind;
+use crate::chess::state::square::PieceKind;
 use crate::chess::state::castle_move::CastleMove;
 use crate::chess::state::castle_move::Side;
 
@@ -13,13 +13,13 @@ const Y_FORMAT: [char; 8] = [
 ];
 
 pub struct ExternalMove {
-    pub from: Point, 
+    pub from: Point,
     pub to: Point,
     pub moving_piece_kind: PieceKind,
     pub capture_piece_kind: Option<PieceKind>, // Undo -> place piece back
     pub promote_piece_kind: Option<PieceKind>, // Undo -> revert promotion
-    pub en_passant_point: Option<Point>, // Undo - add capture piece back next to from 
-    pub en_passant_target: Option<Point>, // Undo - set game state en_passant_target back 
+    pub en_passant_point: Option<Point>, // Undo - add capture piece back next to from
+    pub en_passant_target: Option<Point>, // Undo - set game state en_passant_target back
     pub castle_move: Option<CastleMove>, // Undo - Move king and rook back to start.
     pub file_disambiguation: bool,
     pub rank_disambiguation: bool,
@@ -28,7 +28,7 @@ pub struct ExternalMove {
 }
 
 impl ExternalMove {
-    // Reference: 
+    // Reference:
     //   No letter for Pawn e.g. c5
     //   x for capture e.g. Bxe5
     //   en passant e.g. exd6 e.p.
@@ -57,7 +57,7 @@ impl ExternalMove {
     // fn prefix(&self) -> String {
     //     match self.en_passant_point {
     //         Some(_) => {
-    //             let x = usize::try_from(self.from.x).unwrap_or(0); 
+    //             let x = usize::try_from(self.from.x).unwrap_or(0);
     //             String::from(X_FORMAT[x])
     //         },
     //         None => String::from("")
@@ -71,7 +71,8 @@ impl ExternalMove {
              PieceKind::Rook => "R",
              PieceKind::Knight => "N",
              PieceKind::Bishop => "B",
-             PieceKind::Pawn => "" 
+             PieceKind::Pawn => "",
+             PieceKind::Empty => ""
         };
 
         String::from(format!("{}", piece_letter))
@@ -86,14 +87,14 @@ impl ExternalMove {
 
     fn from_format(&self) -> String {
         if self.file_disambiguation && self.rank_disambiguation {
-            let x = usize::try_from(self.from.x).unwrap_or(0); 
-            let y = usize::try_from(self.from.y).unwrap_or(0); 
+            let x = usize::try_from(self.from.x).unwrap_or(0);
+            let y = usize::try_from(self.from.y).unwrap_or(0);
             String::from(format!("{}{}", X_FORMAT[x], Y_FORMAT[y]))
         } else if self.file_disambiguation {
-            let x = usize::try_from(self.from.x).unwrap_or(0); 
+            let x = usize::try_from(self.from.x).unwrap_or(0);
             String::from(format!("{}", X_FORMAT[x]))
         } else if self.rank_disambiguation {
-            let y = usize::try_from(self.from.y).unwrap_or(0); 
+            let y = usize::try_from(self.from.y).unwrap_or(0);
             String::from(format!("{}", Y_FORMAT[y]))
         } else {
             String::from("")
@@ -101,8 +102,8 @@ impl ExternalMove {
     }
 
     fn to_format(&self) -> String {
-        let x = usize::try_from(self.to.x).unwrap_or(0); 
-        let y = usize::try_from(self.to.y).unwrap_or(0); 
+        let x = usize::try_from(self.to.x).unwrap_or(0);
+        let y = usize::try_from(self.to.y).unwrap_or(0);
         String::from(format!("{}{}", X_FORMAT[x], Y_FORMAT[y]))
     }
 
@@ -127,18 +128,18 @@ impl ExternalMove {
 impl Clone for ExternalMove {
     fn clone(&self) -> ExternalMove {
         ExternalMove {
-            from: self.from, 
+            from: self.from,
             to: self.to,
             moving_piece_kind: self.moving_piece_kind,
-            capture_piece_kind: self.capture_piece_kind, 
-            promote_piece_kind: self.promote_piece_kind, 
-            en_passant_point: self.en_passant_point,  
-            en_passant_target: self.en_passant_target,  
+            capture_piece_kind: self.capture_piece_kind,
+            promote_piece_kind: self.promote_piece_kind,
+            en_passant_point: self.en_passant_point,
+            en_passant_target: self.en_passant_target,
             castle_move: self.castle_move,
             file_disambiguation: self.file_disambiguation,
             rank_disambiguation: self.rank_disambiguation,
             in_check: self.in_check,
-            in_checkmate: self.in_checkmate 
+            in_checkmate: self.in_checkmate
         }
     }
 }
@@ -189,7 +190,7 @@ mod tests {
             in_check: false,
             in_checkmate: false
         };
-        
+
         assert_eq!("e4", mov.format());
     }
 
@@ -213,7 +214,7 @@ mod tests {
             in_check: false,
             in_checkmate: false
         };
-        
+
         assert_eq!("Bxe5", mov.format());
     }
 
@@ -238,7 +239,7 @@ mod tests {
             in_check: false,
             in_checkmate: false
         };
-        
+
         assert_eq!("exd6 e.p.", mov.format());
     }
 
@@ -261,7 +262,7 @@ mod tests {
             in_check: false,
             in_checkmate: false
         };
-        
+
         assert_eq!("Rdf8", mov.format());
     }
 
@@ -284,7 +285,7 @@ mod tests {
             in_check: false,
             in_checkmate: false
         };
-        
+
         assert_eq!("R1a3", mov.format());
     }
 
@@ -307,7 +308,7 @@ mod tests {
             in_check: false,
             in_checkmate: false
         };
-        
+
         assert_eq!("Qh4e1", mov.format());
     }
 
@@ -316,7 +317,7 @@ mod tests {
         let from = Point { x: 4, y: 3 };
         let to = Point { x: 3, y: 2 };
         let moving_piece_kind = PieceKind::King;
-        let castle_move = Some(CastleMove { player_number: 1, side: Side::King }); 
+        let castle_move = Some(CastleMove { player_number: 1, side: Side::King });
         let mov = ExternalMove {
             from,
             to,
@@ -331,7 +332,7 @@ mod tests {
             in_check: false,
             in_checkmate: false
         };
-        
+
         assert_eq!("0-0", mov.format());
     }
 
@@ -340,7 +341,7 @@ mod tests {
         let from = Point { x: 4, y: 3 };
         let to = Point { x: 3, y: 2 };
         let moving_piece_kind = PieceKind::King;
-        let castle_move = Some(CastleMove { player_number: 1, side: Side::Queen }); 
+        let castle_move = Some(CastleMove { player_number: 1, side: Side::Queen });
         let mov = ExternalMove {
             from,
             to,
@@ -399,10 +400,10 @@ mod tests {
             file_disambiguation: false,
             rank_disambiguation: false,
             in_check: false,
-            in_checkmate: true 
+            in_checkmate: true
         };
 
         assert_eq!("Rd6#", mov.format());
     }
-} 
+}
 

@@ -16,7 +16,7 @@ pub fn minimax(game_data: &String) -> HttpResponse {
     };
 
     let minimax_depth: i8 = env::var("CHESS_MINIMAX_DEPTH")
-        .unwrap_or_else(|_| "2".to_string())
+        .unwrap_or_else(|_| "3".to_string())
         .parse()
         .expect("CHESS_MINIMAX_DEPTH must be a number");
 
@@ -66,34 +66,22 @@ fn build_external_move(game_state: &chess::state::game_state::GameState, mov: ch
     let _result = new_state.perform_move(&mov);
 
     let file_disambiguation = match mov.moving_piece_kind {
-        chess::state::piece::PieceKind::Pawn => mov.capture_piece_kind.is_some(),
+        chess::state::square::PieceKind::Pawn => mov.capture_piece_kind.is_some(),
         _ => {
             game_state.squares.iter().filter(|s| {
-                let s_player_number = match s.piece {
-                    Some(p) => p.player_number,
-                    None => 0
-                };
-                let s_kind = match s.piece {
-                    Some(p) => p.kind,
-                    None => chess::state::piece::PieceKind::Pawn
-                };
+                let s_player_number = s.player_number;
+                let s_kind = s.kind;
                 s_kind == mov.moving_piece_kind && s.y == mov.from.y && s_player_number == game_state.current_player_number
             }).collect::<Vec<&chess::state::square::Square>>().len() > 1
         }
     };
 
     let rank_disambiguation = match mov.moving_piece_kind {
-        chess::state::piece::PieceKind::Pawn => false,
+        chess::state::square::PieceKind::Pawn => false,
         _ => {
             game_state.squares.iter().filter(|s| {
-                let s_player_number = match s.piece {
-                    Some(p) => p.player_number,
-                    None => 0
-                };
-                let s_kind = match s.piece {
-                    Some(p) => p.kind,
-                    None => chess::state::piece::PieceKind::Pawn
-                };
+                let s_player_number = s.player_number;
+                let s_kind = s.kind;
                 s_kind == mov.moving_piece_kind && s.x == mov.from.x && s_player_number == game_state.current_player_number
             }).collect::<Vec<&chess::state::square::Square>>().len() > 1
         }
@@ -216,7 +204,7 @@ mod tests {
         let mov = chess::state::mov::Move {
             from: chess::state::point::Point { x: 5, y: 0 },
             to: chess::state::point::Point { x: 6, y: 0 },
-            moving_piece_kind: chess::state::piece::PieceKind::Rook,
+            moving_piece_kind: chess::state::square::PieceKind::Rook,
             capture_piece_kind: None,
             promote_piece_kind: None,
             en_passant_point: None,
@@ -235,7 +223,7 @@ mod tests {
         let mov = chess::state::mov::Move {
             from: chess::state::point::Point { x: 0, y: 3 },
             to: chess::state::point::Point { x: 0, y: 4 },
-            moving_piece_kind: chess::state::piece::PieceKind::Rook,
+            moving_piece_kind: chess::state::square::PieceKind::Rook,
             capture_piece_kind: None,
             promote_piece_kind: None,
             en_passant_point: None,
@@ -255,8 +243,8 @@ mod tests {
         let mov = chess::state::mov::Move {
             from: chess::state::point::Point { x: 0, y: 1 },
             to: chess::state::point::Point { x: 1, y: 2 },
-            moving_piece_kind: chess::state::piece::PieceKind::Pawn,
-            capture_piece_kind: Some(chess::state::piece::PieceKind::Pawn),
+            moving_piece_kind: chess::state::square::PieceKind::Pawn,
+            capture_piece_kind: Some(chess::state::square::PieceKind::Pawn),
             promote_piece_kind: None,
             en_passant_point: None,
             en_passant_target: None,
@@ -275,7 +263,7 @@ mod tests {
         let mov = chess::state::mov::Move {
             from: chess::state::point::Point { x: 7, y: 4 },
             to: chess::state::point::Point { x: 4, y: 7 },
-            moving_piece_kind: chess::state::piece::PieceKind::Queen,
+            moving_piece_kind: chess::state::square::PieceKind::Queen,
             capture_piece_kind: None,
             promote_piece_kind: None,
             en_passant_point: None,
@@ -296,7 +284,7 @@ mod tests {
         let mov = chess::state::mov::Move {
             from: chess::state::point::Point { x: 7, y: 1 },
             to: chess::state::point::Point { x: 7, y: 0 },
-            moving_piece_kind: chess::state::piece::PieceKind::Rook,
+            moving_piece_kind: chess::state::square::PieceKind::Rook,
             capture_piece_kind: None,
             promote_piece_kind: None,
             en_passant_point: None,
@@ -315,7 +303,7 @@ mod tests {
         let mov = chess::state::mov::Move {
             from: chess::state::point::Point { x: 0, y: 1 },
             to: chess::state::point::Point { x: 0, y: 0 },
-            moving_piece_kind: chess::state::piece::PieceKind::Rook,
+            moving_piece_kind: chess::state::square::PieceKind::Rook,
             capture_piece_kind: None,
             promote_piece_kind: None,
             en_passant_point: None,
