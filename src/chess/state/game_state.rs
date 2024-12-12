@@ -1,14 +1,16 @@
 use std::convert::TryFrom;
+use crate::chess::state::point::valid;
+use crate::chess::state::point::Point;
 use crate::chess::state::vector::direction_unit_n;
 use crate::chess::state::vector::length;
 use crate::chess::state::vector::side;
-use crate::chess::state::point::Point;
 use crate::chess::state::mov::Move;
 use crate::chess::state::piece_factory::parse as parse_piece;
 use crate::chess::state::castle_move::parse as parse_castle_move;
 use crate::chess::state::castle_move::CastleMove;
 use crate::chess::state::castle_move::Side;
 use crate::chess::state::square_set::find_by_x_and_y;
+use crate::chess::state::square_set::find_by_x_and_y_mut;
 use crate::chess::state::square::Square;
 use crate::chess::state::square::PieceKind;
 
@@ -18,7 +20,7 @@ const PROMOTE_PIECE_KINDS: [PieceKind; 4] = [
 
 pub struct GameState {
     pub current_player_number: i8,
-    pub squares: Vec<Square>,
+    pub squares: Vec<Vec<Square>>,
     pub en_passant_target: Option<Point>,
     pub castle_moves: Vec<CastleMove>
 }
@@ -70,19 +72,25 @@ impl GameState {
 
         let mut check = false;
 
-        let Some(king_square) = self.squares.iter().find(|s| {
-            s.player_number == player_number && s.kind == PieceKind::King
-        }) else {
-           return false;
-        };
+        let mut king_point: (i8, i8) = (0, 0);
 
-        for square in self.squares.iter() {
-            if check {
-                break;
-            } else {
-                if square.player_number != 0 {
-                    // if any capture square match king square
-                    check = square.player_number == other_player_number && square.capture_squares(self).iter().any(|s| *s == king_square)
+        for row in self.squares.iter() {
+            for s in row.iter() {
+                if s.player_number == player_number && s.kind == PieceKind::King {
+                   king_point = (s.x, s.y);
+                }
+            }
+        }
+
+        for row in self.squares.iter() {
+            for square in row.iter() {
+                if check {
+                    break;
+                } else {
+                    if square.player_number != 0 {
+                        // if any capture square match king square
+                        check = square.player_number == other_player_number && square.capture_squares(self).iter().any(|s| s.x == king_point.0 && s.y == king_point.1 );
+                    }
                 }
             }
         }
@@ -97,60 +105,75 @@ impl GameState {
     pub fn possible_moves_for_player(&mut self, subject_player_number: i8) -> Vec<Move> {
         let mut moves = vec![];
 
-        for from in self.squares.iter() {
-            if from.player_number != 0 {
-                if from.player_number == subject_player_number {
-                    for to in from.destinations(&self) {
+        for row in self.squares.iter() {
+            for from in row.iter() {
+                if from.player_number != 0 {
+                    if from.player_number == subject_player_number {
+                        for to in from.destinations(&self) {
 
-                        let mut capture_piece_kind: Option<PieceKind> = None;
-                        if to.player_number != 0 {
-                           if subject_player_number != to.player_number {
-                               capture_piece_kind = Some(to.kind);
-                           }
-                        }
+                            let mut capture_piece_kind: Option<PieceKind> = None;
+                            if to.player_number != 0 {
+                               if subject_player_number != to.player_number {
+                                   capture_piece_kind = Some(to.kind);
+                               }
+                            }
 
-                        // move: en_passant_point
-                        //     - indicates that the move is en_passant
-                        //     - contains the landing square of the pawn that jumped previously
-                        //     - this pawn can be captured by en passant
-                        // state: en_passant_target
-                        //     - indicates that the previous move was a pawn that jumped previously
-                        //     - contains the jumped over square of the pawn that jumped previously.
-                        let mut en_passant_point: Option<Point> = None;
-                        if let Some(target) =  self.en_passant_target {
-                            if from.kind == PieceKind::Pawn &&
-                                (to.x == target.x && to.y == target.y) &&
-                                (from.x == target.x + 1 || from.x == target.x - 1) &&
-                                from.y + from.forwards_direction() == target.y {
+                            // move: en_passant_point
+                            //     - indicates that the move is en_passant
+                            //     - contains the landing square of the pawn that jumped previously
+                            //     - this pawn can be captured by en passant
+                            // state: en_passant_target
+                            //     - indicates that the previous move was a pawn that jumped previously
+                            //     - contains the jumped over square of the pawn that jumped previously.
+                            let mut en_passant_point: Option<Point> = None;
+                            if let Some(target) =  self.en_passant_target {
+                                if from.kind == PieceKind::Pawn &&
+                                    (to.x == target.x && to.y == target.y) &&
+                                    (from.x == target.x + 1 || from.x == target.x - 1) &&
+                                    from.y + from.forwards_direction() == target.y {
 
-                                let capture_x = target.x;
-                                let capture_y = target.y - from.forwards_direction();
-                                if let Some(capture_square) = find_by_x_and_y(&self.squares, capture_x, capture_y) {
-                                    if capture_square.occupied_by_opponent(from.player_number) {
-                                        capture_piece_kind = Some(PieceKind::Pawn);
-                                        en_passant_point = Some(Point { x: capture_x, y: capture_y });
+                                    let capture_x = target.x;
+                                    let capture_y = target.y - from.forwards_direction();
+                                    if let Some(capture_square) = find_by_x_and_y(&self.squares, capture_x, capture_y) {
+                                        if capture_square.occupied_by_opponent(from.player_number) {
+                                            capture_piece_kind = Some(PieceKind::Pawn);
+                                            en_passant_point = Some(Point { x: capture_x, y: capture_y });
+                                        }
                                     }
                                 }
                             }
-                        }
 
-                        let mut castle_move: Option<CastleMove> = None;
-                        if from.kind == PieceKind::King {
-                            // exclude castle move if in check
-                            if !self.in_check(subject_player_number) {
-                                if from.y == to.y && length(from.x, from.y, to.x, to.y) == 2 {
-                                    let s = side(from.x, to.x);
-                                    let cm = CastleMove { player_number: subject_player_number, side: s };
-                                    castle_move = Some(cm);
+                            let mut castle_move: Option<CastleMove> = None;
+                            if from.kind == PieceKind::King {
+                                // exclude castle move if in check
+                                if !self.in_check(subject_player_number) {
+                                    if from.y == to.y && length(from.x, from.y, to.x, to.y) == 2 {
+                                        let s = side(from.x, to.x);
+                                        let cm = CastleMove { player_number: subject_player_number, side: s };
+                                        castle_move = Some(cm);
+                                    }
                                 }
                             }
-                        }
 
-                        let promote = from.kind == PieceKind::Pawn && to.y == from.promotion_rank();
+                            let promote = from.kind == PieceKind::Pawn && to.y == from.promotion_rank();
 
-                        if promote {
-                            for piece_kind in PROMOTE_PIECE_KINDS {
-                                let promote_piece_kind = Some(piece_kind);
+                            if promote {
+                                for piece_kind in PROMOTE_PIECE_KINDS {
+                                    let promote_piece_kind = Some(piece_kind);
+                                    let mov = Move {
+                                        from: from.point(),
+                                        to: to.point(),
+                                        moving_piece_kind: from.kind,
+                                        capture_piece_kind,
+                                        promote_piece_kind,
+                                        en_passant_point,
+                                        en_passant_target: self.en_passant_target,
+                                        castle_move
+                                    };
+                                    moves.push(mov);
+                                };
+                            } else {
+                                let promote_piece_kind = None;
                                 let mov = Move {
                                     from: from.point(),
                                     to: to.point(),
@@ -162,20 +185,7 @@ impl GameState {
                                     castle_move
                                 };
                                 moves.push(mov);
-                            };
-                        } else {
-                            let promote_piece_kind = None;
-                            let mov = Move {
-                                from: from.point(),
-                                to: to.point(),
-                                moving_piece_kind: from.kind,
-                                capture_piece_kind,
-                                promote_piece_kind,
-                                en_passant_point,
-                                en_passant_target: self.en_passant_target,
-                                castle_move
-                            };
-                            moves.push(mov);
+                            }
                         }
                     }
                 }
@@ -196,7 +206,7 @@ impl GameState {
         let piece_player_number: i8;
         let piece_kind: PieceKind;
 
-        match self.squares.iter_mut().find(|s| s.x == mov.from.x && s.y == mov.from.y) {
+        match find_by_x_and_y_mut(&mut self.squares, mov.from.x, mov.from.y) {
             Some(s) => {
                 if s.occupied() {
                     piece_player_number = s.player_number;
@@ -210,7 +220,7 @@ impl GameState {
             None => return Err("Invalid From Square")
         }
 
-        match self.squares.iter_mut().find(|s| s.x == mov.to.x && s.y == mov.to.y) {
+        match find_by_x_and_y_mut(&mut self.squares, mov.to.x, mov.to.y) {
             Some(s) => {
                 s.player_number = piece_player_number;
                 s.kind = piece_kind;
@@ -220,7 +230,7 @@ impl GameState {
 
         // maybe use en_passant_target
         if let Some(p) = mov.en_passant_point {
-            match self.squares.iter_mut().find(|s| s.x == p.x && s.y == p.y) {
+            match find_by_x_and_y_mut(&mut self.squares, p.x, p.y) {
                 Some(s) => {
                     s.player_number = 0;
                     s.kind = PieceKind::Empty;
@@ -235,7 +245,7 @@ impl GameState {
             let piece_player_number: i8;
             let piece_kind: PieceKind;
 
-            match self.squares.iter_mut().find(|s| s.x == from.x && s.y == from.y) {
+            match find_by_x_and_y_mut(&mut self.squares, from.x, from.y) {
                Some(s) => {
                     piece_player_number = s.player_number;
                     piece_kind = s.kind;
@@ -245,7 +255,7 @@ impl GameState {
                None => return Err("Invalid From Square")
             }
 
-            match self.squares.iter_mut().find(|s| s.x == to.x && s.y == to.y) {
+            match find_by_x_and_y_mut(&mut self.squares, to.x, to.y) {
                 Some(s) => {
                     s.kind = piece_kind;
                     s.player_number = piece_player_number;
@@ -258,7 +268,7 @@ impl GameState {
            let promote_piece_kind = pk;
            let promote_piece_player_number = self.current_player_number;
 
-           match self.squares.iter_mut().find(|s| s.x == mov.to.x && s.y == mov.to.y) {
+           match find_by_x_and_y_mut(&mut self.squares, mov.to.x, mov.to.y) {
                Some(s) => {
                    s.player_number = promote_piece_player_number;
                    s.kind = promote_piece_kind;
@@ -310,7 +320,7 @@ impl GameState {
             let piece_player_number: i8;
             let piece_kind: PieceKind;
 
-            match self.squares.iter_mut().find(|s| s.x == to.x && s.y == to.y) {
+            match find_by_x_and_y_mut(&mut self.squares, to.x, to.y) {
                Some(s) => {
                     piece_player_number = s.player_number;
                     piece_kind = s.kind;
@@ -320,7 +330,7 @@ impl GameState {
                None => return Err("Invalid From Square")
             }
 
-            match self.squares.iter_mut().find(|s| s.x == from.x && s.y == from.y) {
+            match find_by_x_and_y_mut(&mut self.squares, from.x, from.y) {
                 Some(s) => {
                     s.player_number = piece_player_number;
                     s.kind = piece_kind;
@@ -333,7 +343,7 @@ impl GameState {
         let moving_piece_kind: PieceKind;
 
         // move
-        match self.squares.iter_mut().find(|s| s.x == mov.to.x && s.y == mov.to.y) {
+        match find_by_x_and_y_mut(&mut self.squares, mov.to.x, mov.to.y) {
             Some(s) => {
                 moving_piece_kind = s.kind;
                 moving_piece_player_number = s.player_number;
@@ -343,7 +353,7 @@ impl GameState {
             None => return Err("Invalid To Square")
         };
 
-        match self.squares.iter_mut().find(|s| s.x == mov.from.x && s.y == mov.from.y) {
+        match find_by_x_and_y_mut(&mut self.squares, mov.from.x, mov.from.y) {
             Some(s) => {
                 s.kind = moving_piece_kind;
                 s.player_number = moving_piece_player_number;
@@ -363,7 +373,7 @@ impl GameState {
             match mov.en_passant_point {
                 Some(p) => {
                     // en passant
-                    match self.squares.iter_mut().find(|s| s.x == p.x && s.y == p.y) {
+                    match find_by_x_and_y_mut(&mut self.squares, p.x, p.y) {
                         Some(s) => {
                             s.kind = PieceKind::Pawn;
                             s.player_number = other_player_number;
@@ -376,7 +386,7 @@ impl GameState {
                     let capture_piece_kind = pk;
                     let capture_piece_player_number = other_player_number;
 
-                    match self.squares.iter_mut().find(|s| s.x == mov.to.x && s.y == mov.to.y) {
+                    match find_by_x_and_y_mut(&mut self.squares, mov.to.x, mov.to.y) {
                         Some(s) => {
                             s.kind = capture_piece_kind;
                             s.player_number = capture_piece_player_number;
@@ -391,7 +401,7 @@ impl GameState {
             let unpromote_piece_kind = PieceKind::Pawn;
             let unpromote_player_number = moving_piece_player_number;
 
-            match self.squares.iter_mut().find(|s| s.x == mov.from.x && s.y == mov.from.y) {
+            match find_by_x_and_y_mut(&mut self.squares, mov.from.x, mov.from.y) {
                 Some(s) => {
                     s.kind = unpromote_piece_kind;
                     s.player_number = unpromote_player_number;
@@ -402,7 +412,7 @@ impl GameState {
 
         // castle moves
         if mov.moving_piece_kind == PieceKind::King {
-            if let Some(from) = self.squares.iter().find(|s| s.x == mov.from.x && s.y == mov.from.y) {
+            if let Some(from) = find_by_x_and_y(&self.squares, mov.from.x, mov.from.y) {
                if from.player_number != 0 {
                    if from.player_number == 1 && mov.from.x == 4 && mov.from.y == 7 {
                         let castle_move_a = CastleMove { player_number: 1, side: Side::King };
@@ -431,7 +441,7 @@ impl GameState {
         }
 
         if mov.moving_piece_kind == PieceKind::Rook {
-            if let Some(from) = self.squares.iter().find(|s| s.x == mov.from.x && s.y == mov.from.y) {
+            if let Some(from) = find_by_x_and_y(&self.squares, mov.from.x, mov.from.y) {
                if from.player_number != 0 {
                    if from.player_number == 1 && mov.from.x == 0 && mov.from.y == 7 {
                         let castle_move = CastleMove { player_number: 1, side: Side::Queen };
@@ -484,7 +494,88 @@ pub fn parse(encoded: &String) -> Result<GameState, &'static str> {
     let mut y: i8 = 0;
     let mut x: i8 = 0;
 
-    let mut squares = vec![];
+    let mut squares: Vec<Vec<Square>> = vec![
+        vec![
+            Square { x: 0, y: 0, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 1, y: 0, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 2, y: 0, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 3, y: 0, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 4, y: 0, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 5, y: 0, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 6, y: 0, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 7, y: 0, player_number: 0, kind: PieceKind::Empty }
+        ],
+        vec![
+            Square { x: 0, y: 1, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 1, y: 1, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 2, y: 1, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 3, y: 1, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 4, y: 1, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 5, y: 1, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 6, y: 1, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 7, y: 1, player_number: 0, kind: PieceKind::Empty }
+        ],
+        vec![
+            Square { x: 0, y: 2, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 1, y: 2, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 2, y: 2, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 3, y: 2, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 4, y: 2, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 5, y: 2, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 6, y: 2, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 7, y: 2, player_number: 0, kind: PieceKind::Empty }
+        ],
+        vec![
+            Square { x: 0, y: 3, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 1, y: 3, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 2, y: 3, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 3, y: 3, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 4, y: 3, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 5, y: 3, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 6, y: 3, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 7, y: 3, player_number: 0, kind: PieceKind::Empty }
+        ],
+        vec![
+            Square { x: 0, y: 4, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 1, y: 4, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 2, y: 4, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 3, y: 4, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 4, y: 4, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 5, y: 4, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 6, y: 4, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 7, y: 4, player_number: 0, kind: PieceKind::Empty }
+        ],
+        vec![
+            Square { x: 0, y: 5, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 1, y: 5, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 2, y: 5, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 3, y: 5, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 4, y: 5, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 5, y: 5, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 6, y: 5, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 7, y: 5, player_number: 0, kind: PieceKind::Empty }
+        ],
+        vec![
+            Square { x: 0, y: 6, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 1, y: 6, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 2, y: 6, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 3, y: 6, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 4, y: 6, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 5, y: 6, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 6, y: 6, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 7, y: 6, player_number: 0, kind: PieceKind::Empty }
+        ],
+        vec![
+            Square { x: 0, y: 7, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 1, y: 7, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 2, y: 7, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 3, y: 7, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 4, y: 7, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 5, y: 7, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 6, y: 7, player_number: 0, kind: PieceKind::Empty },
+            Square { x: 7, y: 7, player_number: 0, kind: PieceKind::Empty }
+        ]
+    ];
     let mut current_player_number = 1;
     let mut castle_moves = vec![];
     let mut en_passant_target = None;
@@ -496,7 +587,11 @@ pub fn parse(encoded: &String) -> Result<GameState, &'static str> {
                 if read_board {
                     match parse_piece(c, x, y) {
                         Ok(square) => {
-                            squares.push(square);
+                            if valid((x, y)) {
+                                squares[y as usize][x as usize] = square;
+                            } else {
+                                parse_error = true;
+                            }
                         },
                         Err(_) => {
                             parse_error = true;
@@ -509,7 +604,11 @@ pub fn parse(encoded: &String) -> Result<GameState, &'static str> {
                 if read_board {
                     match parse_piece(c, x, y) {
                         Ok(square) => {
-                            squares.push(square);
+                            if valid((x, y)) {
+                                squares[y as usize][x as usize] = square;
+                            } else {
+                                parse_error = true
+                            }
                         },
                         Err(_) => {
                             parse_error = true;
@@ -529,8 +628,12 @@ pub fn parse(encoded: &String) -> Result<GameState, &'static str> {
                         Some(number_of_spaces) => {
                             let mut empty_counter = 0;
                             while empty_counter < number_of_spaces {
-                                let square = Square { x: x, y: y, player_number: 0, kind: PieceKind::Empty };
-                                squares.push(square);
+                                let square = Square { x, y, player_number: 0, kind: PieceKind::Empty };
+                                if valid((x, y)) {
+                                    squares[y as usize][x as usize] = square;
+                                } else {
+                                    parse_error = true;
+                                }
                                 x += 1; // increment column
                                 empty_counter += 1;
                             };
@@ -587,7 +690,11 @@ pub fn parse(encoded: &String) -> Result<GameState, &'static str> {
                 if read_board {
                     match parse_piece(c, x, y) {
                         Ok(square) => {
-                            squares.push(square);
+                            if valid((x, y)) {
+                                squares[y as usize][x as usize] = square;
+                            } else {
+                                parse_error = true;
+                            }
                         },
                         Err(_) => {
                             parse_error = true;
@@ -1532,10 +1639,11 @@ mod tests {
         let result = parse(&encoded).unwrap();
         assert_eq!(result.current_player_number, 1);
 
-        assert_eq!(result.squares.len(), 64);
-        assert_eq!(result.squares[0].kind, PieceKind::Rook);
-        assert_eq!(result.squares[16].player_number, 0);
-        assert_eq!(result.squares[16].kind, PieceKind::Empty);
+        assert_eq!(result.squares.len(), 8);
+        assert_eq!(result.squares[0].len(), 8);
+        assert_eq!(result.squares[0][0].kind, PieceKind::Rook);
+        assert_eq!(result.squares[2][0].player_number, 0);
+        assert_eq!(result.squares[2][0].kind, PieceKind::Empty);
 
         assert_eq!(result.castle_moves.len(), 4);
         assert_eq!(result.castle_moves[0].player_number, 1);
@@ -1545,15 +1653,23 @@ mod tests {
     }
 
     #[test]
+    fn parse_invalid_test() {
+        let encoded = String::from("rnbqkbnr/pppppppp/4pP4/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+        let result = parse(&encoded);
+        assert_eq!(result.is_err(), true);
+    }
+
+    #[test]
     fn ninth_turn_test_test() {
         let encoded = String::from("rnb1kb1r/ppp2ppp/3q4/4p3/2PP4/PP6/4PnPP/RNB1KBR1 w KQkq - 0 9");
         let result = parse(&encoded).unwrap();
         assert_eq!(result.current_player_number, 1);
 
-        assert_eq!(result.squares.len(), 64);
-        assert_eq!(result.squares[0].kind, PieceKind::Rook);
-        assert_eq!(result.squares[16].kind, PieceKind::Empty);
-        assert_eq!(result.squares[16].player_number, 0);
+        assert_eq!(result.squares.len(), 8);
+        assert_eq!(result.squares[0].len(), 8);
+        assert_eq!(result.squares[0][0].kind, PieceKind::Rook);
+        assert_eq!(result.squares[2][0].kind, PieceKind::Empty);
+        assert_eq!(result.squares[2][0].player_number, 0);
 
         assert_eq!(result.castle_moves.len(), 4);
         assert_eq!(result.castle_moves[0].player_number, 1);

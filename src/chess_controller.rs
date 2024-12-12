@@ -68,22 +68,34 @@ fn build_external_move(game_state: &chess::state::game_state::GameState, mov: ch
     let file_disambiguation = match mov.moving_piece_kind {
         chess::state::square::PieceKind::Pawn => mov.capture_piece_kind.is_some(),
         _ => {
-            game_state.squares.iter().filter(|s| {
-                let s_player_number = s.player_number;
-                let s_kind = s.kind;
-                s_kind == mov.moving_piece_kind && s.y == mov.from.y && s_player_number == game_state.current_player_number
-            }).collect::<Vec<&chess::state::square::Square>>().len() > 1
+            let mut count: i8 = 0;
+            for row in game_state.squares.iter() {
+                for s in row.iter() {
+                    let s_player_number = s.player_number;
+                    let s_kind = s.kind;
+                    if s_kind == mov.moving_piece_kind && s.y == mov.from.y && s_player_number == game_state.current_player_number {
+                        count += 1;
+                    }
+                }
+            }
+            count > 1
         }
     };
 
     let rank_disambiguation = match mov.moving_piece_kind {
         chess::state::square::PieceKind::Pawn => false,
         _ => {
-            game_state.squares.iter().filter(|s| {
-                let s_player_number = s.player_number;
-                let s_kind = s.kind;
-                s_kind == mov.moving_piece_kind && s.x == mov.from.x && s_player_number == game_state.current_player_number
-            }).collect::<Vec<&chess::state::square::Square>>().len() > 1
+            let mut count: i8 = 0;
+            for row in game_state.squares.iter() {
+                for s in row.iter() {
+                    let s_player_number = s.player_number;
+                    let s_kind = s.kind;
+                    if s_kind == mov.moving_piece_kind && s.x == mov.from.x && s_player_number == game_state.current_player_number {
+                        count += 1;
+                    }
+                }
+            }
+            count > 1
         }
     };
 

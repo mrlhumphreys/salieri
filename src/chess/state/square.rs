@@ -80,43 +80,73 @@ impl Square {
                 self.pawn_destinations(game_state)
             },
             PieceKind::Rook => {
-                game_state.squares.iter().filter(|to| {
-                    orthogonal(self.x, self.y, to.x, to.y) &&
-                        to.unoccupied_or_occupied_by_opponent(self.player_number) &&
-                        between_unoccupied(&game_state.squares, (self.x, self.y), (to.x, to.y))
-                }).collect()
+                let mut acc = vec![];
+                for row in game_state.squares.iter() {
+                    for to in row.iter() {
+                        if orthogonal(self.x, self.y, to.x, to.y) &&
+                            to.unoccupied_or_occupied_by_opponent(self.player_number) &&
+                            between_unoccupied(&game_state.squares, (self.x, self.y), (to.x, to.y)) {
+                            acc.push(to);
+                        }
+                    }
+                }
+                acc
             },
             PieceKind::Knight => {
-                game_state.squares.iter().filter(|to| {
-                    knight_jump(self.x, self.y, to.x, to.y) &&
-                        to.unoccupied_or_occupied_by_opponent(self.player_number)
-                }).collect()
+                let mut acc = vec![];
+                for row in game_state.squares.iter() {
+                    for to in row.iter() {
+                        if knight_jump(self.x, self.y, to.x, to.y) &&
+                            to.unoccupied_or_occupied_by_opponent(self.player_number) {
+                            acc.push(to);
+                        }
+                    }
+                }
+                acc
             },
             PieceKind::Bishop => {
-                game_state.squares.iter().filter(|to| {
-                    diagonal(self.x, self.y, to.x, to.y) &&
-                        to.unoccupied_or_occupied_by_opponent(self.player_number) &&
-                        between_unoccupied(&game_state.squares, (self.x, self.y), (to.x, to.y))
-                }).collect()
+                let mut acc = vec![];
+                for row in game_state.squares.iter() {
+                    for to in row.iter() {
+                        if diagonal(self.x, self.y, to.x, to.y) &&
+                            to.unoccupied_or_occupied_by_opponent(self.player_number) &&
+                            between_unoccupied(&game_state.squares, (self.x, self.y), (to.x, to.y)) {
+                            acc.push(to);
+                        }
+                    }
+                }
+                acc
             },
             PieceKind::Queen => {
-                game_state.squares.iter().filter(|to| {
-                    orthogonal_or_diagonal(self.x, self.y, to.x, to.y) &&
-                        to.unoccupied_or_occupied_by_opponent(self.player_number) &&
-                        between_unoccupied(&game_state.squares, (self.x, self.y), (to.x, to.y))
-                }).collect()
+                let mut acc = vec![];
+                for row in game_state.squares.iter() {
+                    for to in row.iter() {
+                        if orthogonal_or_diagonal(self.x, self.y, to.x, to.y) &&
+                            to.unoccupied_or_occupied_by_opponent(self.player_number) &&
+                            between_unoccupied(&game_state.squares, (self.x, self.y), (to.x, to.y)) {
+                            acc.push(to);
+                        }
+                    }
+                }
+                acc
             },
             PieceKind::King => {
                 let min_x = self.x - 1;
                 let max_x = self.x + 1;
                 let min_y = self.y - 1;
                 let max_y = self.y + 1;
-                game_state.squares.iter().filter(|to| {
-                    ((to.x >= min_x && to.x <= max_x && to.y >= min_y && to.y <= max_y) &&
-                        to.unoccupied_or_occupied_by_opponent(self.player_number)
-                    ) ||
-                    (self.castle_conditions(to, game_state))
-                }).collect()
+                let mut acc = vec![];
+                for row in game_state.squares.iter() {
+                    for to in row.iter() {
+                        if ((to.x >= min_x && to.x <= max_x && to.y >= min_y && to.y <= max_y) &&
+                            to.unoccupied_or_occupied_by_opponent(self.player_number)
+                        ) ||
+                        (self.castle_conditions(to, game_state)) {
+                            acc.push(to);
+                        }
+                    }
+                }
+                acc
             }
         }
     }
@@ -127,20 +157,32 @@ impl Square {
                 let to_x_a = self.x + 1;
                 let to_x_b = self.x - 1;
                 let to_y = self.y + self.forwards_direction();
-                game_state.squares.iter().filter(|s| {
-                    (s.x == to_x_a || s.x == to_x_b) && s.y == to_y &&
-                        (s.occupied_by_opponent(self.player_number) || self.en_passant_condition(s, game_state))
-                }).collect()
+                let mut acc = vec![];
+                for row in game_state.squares.iter() {
+                    for to in row.iter() {
+                        if (to.x == to_x_a || to.x == to_x_b) && to.y == to_y &&
+                        (to.occupied_by_opponent(self.player_number) || self.en_passant_condition(to, game_state)) {
+                            acc.push(to);
+                        }
+                    }
+                }
+                acc
             },
             PieceKind::King => {
                 let min_x = self.x - 1;
                 let max_x = self.x + 1;
                 let min_y = self.y - 1;
                 let max_y = self.y + 1;
-                game_state.squares.iter().filter(|to| {
-                    (to.x >= min_x && to.x <= max_x && to.y >= min_y && to.y <= max_y) &&
-                        to.unoccupied_or_occupied_by_opponent(self.player_number)
-                }).collect()
+                let mut acc = vec![];
+                for row in game_state.squares.iter() {
+                    for to in row.iter() {
+                        if (to.x >= min_x && to.x <= max_x && to.y >= min_y && to.y <= max_y) &&
+                        to.unoccupied_or_occupied_by_opponent(self.player_number) {
+                            acc.push(to);
+                        }
+                    }
+                }
+                acc
             },
             _ => {
                 self.destinations(game_state)
@@ -189,16 +231,22 @@ impl Square {
                 let move_capture_y = self.y + self.forwards_direction();
                 let move_double_y = self.y + 2*self.forwards_direction();
                 let r = self.range();
-                game_state.squares.iter().filter(|to| {
-                    // Move
-                    (to.x == move_x && (r == 2 && to.y == move_double_y || to.y == move_capture_y) &&
-                     to.unoccupied() &&
-                     between_unoccupied(&game_state.squares, (self.x, self.y), (to.x, to.y))
-                     ) ||
-                    ((to.x == capture_x_a || to.x == capture_x_b) && to.y == move_capture_y &&
-                     (to.occupied_by_opponent(self.player_number) || self.en_passant_condition(to, game_state)  )
-                     )
-                }).collect()
+                let mut acc = vec![];
+                for row in game_state.squares.iter() {
+                    for to in row.iter() {
+                        // Move
+                        if (to.x == move_x && (r == 2 && to.y == move_double_y || to.y == move_capture_y) &&
+                            to.unoccupied() &&
+                            between_unoccupied(&game_state.squares, (self.x, self.y), (to.x, to.y))
+                        ) ||
+                        ((to.x == capture_x_a || to.x == capture_x_b) && to.y == move_capture_y &&
+                            (to.occupied_by_opponent(self.player_number) || self.en_passant_condition(to, game_state))
+                        ) {
+                            acc.push(to);
+                        }
+                    }
+                }
+                acc
             },
             _ => self.destinations(game_state)
         }
@@ -207,11 +255,15 @@ impl Square {
     fn en_passant_condition(&self, to: &Square, game_state: &GameState) -> bool {
         if let Some(target) = game_state.en_passant_target {
             if to.x == target.x && to.y == target.y {
-                if let Some(capture_square) = game_state.squares.iter().find(|s| s.x == target.x && s.y == self.y) {
-                    capture_square.occupied_by_opponent(self.player_number)
-                } else {
-                    false
+                let mut result = false;
+                for row in game_state.squares.iter() {
+                    for to in row.iter() {
+                         if to.x == target.x && to.y == self.y && to.occupied_by_opponent(self.player_number) {
+                            result = true;
+                         }
+                    }
                 }
+                result
             } else {
                 false
             }
@@ -423,7 +475,7 @@ mod tests {
     #[test]
     fn destinations_pawn_en_passant_test() {
         let from = Square { x: 4, y: 3, kind: PieceKind::Pawn, player_number: 1 };
-        let encoded = String::from("rnbqkbnr/ppp1pppp/8/3pP4/8/8/PPPPPPPP/RNBQKBNR w KQkq d6 0 1");
+        let encoded = String::from("rnbqkbnr/ppp1pppp/8/3pP3/8/8/PPPPPPPP/RNBQKBNR w KQkq d6 0 1");
         let result = parse_game_state(&encoded);
 
         match result {
@@ -442,7 +494,7 @@ mod tests {
     #[test]
     fn destinations_pawn_no_en_passant_test() {
         let from = Square { x: 4, y: 3, kind: PieceKind::Pawn, player_number: 1 };
-        let encoded = String::from("rnbqkbnr/ppp1pppp/8/3pP4/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+        let encoded = String::from("rnbqkbnr/ppp1pppp/8/3pP3/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
         let game_state = parse_game_state(&encoded).unwrap();
 
         let result = from.destinations(&game_state);
