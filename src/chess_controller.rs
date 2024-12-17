@@ -69,11 +69,11 @@ fn build_external_move(game_state: &chess::state::game_state::GameState, mov: ch
         chess::state::square::PieceKind::Pawn => mov.capture_piece_kind.is_some(),
         _ => {
             let mut count: i8 = 0;
-            for row in game_state.squares.iter() {
+            for (y, row) in game_state.squares.iter().enumerate() {
                 for s in row.iter() {
                     let s_player_number = s.player_number;
                     let s_kind = s.kind;
-                    if s_kind == mov.moving_piece_kind && s.y == mov.from.y && s_player_number == game_state.current_player_number {
+                    if s_kind == mov.moving_piece_kind && y as i8 == mov.from.1 && s_player_number == game_state.current_player_number {
                         count += 1;
                     }
                 }
@@ -87,10 +87,10 @@ fn build_external_move(game_state: &chess::state::game_state::GameState, mov: ch
         _ => {
             let mut count: i8 = 0;
             for row in game_state.squares.iter() {
-                for s in row.iter() {
+                for (x, s) in row.iter().enumerate() {
                     let s_player_number = s.player_number;
                     let s_kind = s.kind;
-                    if s_kind == mov.moving_piece_kind && s.x == mov.from.x && s_player_number == game_state.current_player_number {
+                    if s_kind == mov.moving_piece_kind && x as i8 == mov.from.0 && s_player_number == game_state.current_player_number {
                         count += 1;
                     }
                 }
@@ -214,8 +214,8 @@ mod tests {
         let encoded = String::from("4kr1r/8/8/8/8/8/8/4K3 b - - 0 1");
         let state = chess::state::game_state::parse(&encoded).unwrap();
         let mov = chess::state::mov::Move {
-            from: chess::state::point::Point { x: 5, y: 0 },
-            to: chess::state::point::Point { x: 6, y: 0 },
+            from: (5, 0),
+            to: (6, 0),
             moving_piece_kind: chess::state::square::PieceKind::Rook,
             capture_piece_kind: None,
             promote_piece_kind: None,
@@ -233,8 +233,8 @@ mod tests {
         let encoded = String::from("4k3/8/8/R7/8/8/8/R3K3 w - - 0 1");
         let state = chess::state::game_state::parse(&encoded).unwrap();
         let mov = chess::state::mov::Move {
-            from: chess::state::point::Point { x: 0, y: 3 },
-            to: chess::state::point::Point { x: 0, y: 4 },
+            from: (0, 3),
+            to: (0, 4),
             moving_piece_kind: chess::state::square::PieceKind::Rook,
             capture_piece_kind: None,
             promote_piece_kind: None,
@@ -253,8 +253,8 @@ mod tests {
         let encoded = String::from("4k3/p7/1P6/8/8/8/8/4K3 b - - 0 1");
         let state = chess::state::game_state::parse(&encoded).unwrap();
         let mov = chess::state::mov::Move {
-            from: chess::state::point::Point { x: 0, y: 1 },
-            to: chess::state::point::Point { x: 1, y: 2 },
+            from: (0, 1),
+            to: (1, 2),
             moving_piece_kind: chess::state::square::PieceKind::Pawn,
             capture_piece_kind: Some(chess::state::square::PieceKind::Pawn),
             promote_piece_kind: None,
@@ -273,8 +273,8 @@ mod tests {
         let encoded = String::from("5k2/8/8/8/4Q2Q/8/8/5K1Q w - - 0 1");
         let state = chess::state::game_state::parse(&encoded).unwrap();
         let mov = chess::state::mov::Move {
-            from: chess::state::point::Point { x: 7, y: 4 },
-            to: chess::state::point::Point { x: 4, y: 7 },
+            from: (7, 4),
+            to: (4, 7),
             moving_piece_kind: chess::state::square::PieceKind::Queen,
             capture_piece_kind: None,
             promote_piece_kind: None,
@@ -294,8 +294,8 @@ mod tests {
         let encoded = String::from("4k3/7R/8/8/8/8/8/4K3 w - - 0 1");
         let state = chess::state::game_state::parse(&encoded).unwrap();
         let mov = chess::state::mov::Move {
-            from: chess::state::point::Point { x: 7, y: 1 },
-            to: chess::state::point::Point { x: 7, y: 0 },
+            from: (7, 1),
+            to: (7, 0),
             moving_piece_kind: chess::state::square::PieceKind::Rook,
             capture_piece_kind: None,
             promote_piece_kind: None,
@@ -313,8 +313,8 @@ mod tests {
         let encoded = String::from("4k3/R6R/8/8/8/8/8/4K3 w - - 0 1");
         let state = chess::state::game_state::parse(&encoded).unwrap();
         let mov = chess::state::mov::Move {
-            from: chess::state::point::Point { x: 0, y: 1 },
-            to: chess::state::point::Point { x: 0, y: 0 },
+            from: (0, 1),
+            to: (0, 0),
             moving_piece_kind: chess::state::square::PieceKind::Rook,
             capture_piece_kind: None,
             promote_piece_kind: None,

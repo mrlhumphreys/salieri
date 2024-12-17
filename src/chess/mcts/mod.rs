@@ -195,7 +195,6 @@ mod tests {
     use super::*;
     use crate::chess::state::game_state;
     use crate::chess::state::square::PieceKind;
-    use crate::chess::state::point::Point;
 
     #[test]
     fn recommended_move_test() {
@@ -205,10 +204,10 @@ mod tests {
 
         match recommended_move(&mut game_state, simulation_count, max_simulation_depth) {
             Ok(mov) => {
-                assert_eq!(6, mov.from.x);
-                assert_eq!(7, mov.from.y);
-                assert_eq!(7, mov.to.x);
-                assert_eq!(5, mov.to.y);
+                assert_eq!(6, mov.from.0);
+                assert_eq!(7, mov.from.1);
+                assert_eq!(7, mov.to.0);
+                assert_eq!(5, mov.to.1);
                 assert_eq!(PieceKind::Knight, mov.moving_piece_kind);
                 assert_eq!(None, mov.capture_piece_kind);
                 assert_eq!(None, mov.promote_piece_kind);
@@ -224,8 +223,8 @@ mod tests {
     fn selection_test() {
         let child_node_a_state = game_state::parse(&String::from("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1")).unwrap();
         let mov_a = Move {
-            from: Point { x: 4, y: 6 },
-            to: Point { x: 4, y: 4 },
+            from: (4, 6),
+            to: (4, 4),
             moving_piece_kind: PieceKind::Pawn,
             capture_piece_kind: None,
             promote_piece_kind: None,
@@ -245,8 +244,8 @@ mod tests {
 
         let child_node_b_state = game_state::parse(&String::from("rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq d3 0 1")).unwrap();
         let mov_b = Move {
-            from: Point { x: 3, y: 6 },
-            to: Point { x: 3, y: 4 },
+            from: (3, 6),
+            to: (3, 4),
             moving_piece_kind: PieceKind::Pawn,
             capture_piece_kind: None,
             promote_piece_kind: None,
@@ -289,8 +288,8 @@ mod tests {
     fn upper_confidence_bound_test() {
         let node_state = game_state::parse(&String::from("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1")).unwrap();
         let mov = Move {
-            from: Point { x: 4, y: 6 },
-            to: Point { x: 4, y: 4 },
+            from: (4, 6),
+            to: (4, 4),
             moving_piece_kind: PieceKind::Pawn,
             capture_piece_kind: None,
             promote_piece_kind: None,
@@ -370,8 +369,8 @@ mod tests {
     fn backpropagation_test() {
         let node_state = game_state::parse(&String::from("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1")).unwrap();
         let mov = Move {
-            from: Point { x: 4, y: 6 },
-            to: Point { x: 4, y: 4 },
+            from: (4, 6),
+            to: (4, 4),
             moving_piece_kind: PieceKind::Pawn,
             capture_piece_kind: None,
             promote_piece_kind: None,

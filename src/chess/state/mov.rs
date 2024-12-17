@@ -3,8 +3,8 @@ use crate::chess::state::square::PieceKind;
 use crate::chess::state::castle_move::CastleMove;
 
 pub struct Move {
-    pub from: Point,
-    pub to: Point,
+    pub from: (i8, i8),
+    pub to: (i8, i8),
     pub moving_piece_kind: PieceKind,
     pub capture_piece_kind: Option<PieceKind>, // Undo -> place piece back
     pub promote_piece_kind: Option<PieceKind>, // Undo -> revert promotion

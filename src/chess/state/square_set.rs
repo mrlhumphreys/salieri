@@ -53,20 +53,20 @@ mod tests {
     fn squares_set_find_by_x_and_y_mut_test() {
         let mut squares = vec![
             vec![
-                Square { x: 0, y: 0, player_number: 0, kind: PieceKind::Empty },
-                Square { x: 1, y: 0, player_number: 0, kind: PieceKind::Empty }
+                Square { player_number: 0, kind: PieceKind::Empty },
+                Square { player_number: 0, kind: PieceKind::Empty }
             ],
             vec![
-                Square { x: 0, y: 1, player_number: 0, kind: PieceKind::Empty },
-                Square { x: 1, y: 1, player_number: 0, kind: PieceKind::Empty }
+                Square { player_number: 0, kind: PieceKind::Empty },
+                Square { player_number: 1, kind: PieceKind::Pawn }
             ]
         ];
 
         let result = find_by_x_and_y_mut(&mut squares, 1, 1);
         match result {
             Some(s) => {
-                assert_eq!(s.x, 1);
-                assert_eq!(s.y, 1);
+                assert_eq!(s.player_number, 1);
+                assert_eq!(s.kind, PieceKind::Pawn);
             },
             None => assert!(false, "expected square")
         }
@@ -76,20 +76,20 @@ mod tests {
     fn squares_set_find_by_x_and_y_test() {
         let squares = vec![
             vec![
-                Square { x: 0, y: 0, player_number: 0, kind: PieceKind::Empty },
-                Square { x: 1, y: 0, player_number: 0, kind: PieceKind::Empty }
+                Square { player_number: 0, kind: PieceKind::Empty },
+                Square { player_number: 0, kind: PieceKind::Empty }
             ],
             vec![
-                Square { x: 0, y: 1, player_number: 0, kind: PieceKind::Empty },
-                Square { x: 1, y: 1, player_number: 0, kind: PieceKind::Empty }
+                Square { player_number: 0, kind: PieceKind::Empty },
+                Square { player_number: 1, kind: PieceKind::Pawn }
             ]
         ];
 
         let result = find_by_x_and_y(&squares, 1, 1);
         match result {
             Some(s) => {
-                assert_eq!(s.x, 1);
-                assert_eq!(s.y, 1);
+                assert_eq!(s.player_number, 1);
+                assert_eq!(s.kind, PieceKind::Pawn);
             },
             None => assert!(false, "expected square")
         }
@@ -99,24 +99,24 @@ mod tests {
     fn square_set_between_unoccupied_true_test() {
         let squares = vec![
             vec![
-                Square { x: 0, y: 0, player_number: 0, kind: PieceKind::Empty },
-                Square { x: 1, y: 0, player_number: 0, kind: PieceKind::Empty }
+                Square { player_number: 0, kind: PieceKind::Empty },
+                Square { player_number: 0, kind: PieceKind::Empty }
             ],
             vec![
-                Square { x: 0, y: 1, player_number: 0, kind: PieceKind::Empty },
-                Square { x: 1, y: 1, player_number: 0, kind: PieceKind::Empty }
+                Square { player_number: 0, kind: PieceKind::Empty },
+                Square { player_number: 0, kind: PieceKind::Empty }
             ],
             vec![
-                Square { x: 0, y: 2, player_number: 0, kind: PieceKind::Empty },
-                Square { x: 1, y: 2, player_number: 0, kind: PieceKind::Empty }
+                Square { player_number: 0, kind: PieceKind::Empty },
+                Square { player_number: 0, kind: PieceKind::Empty }
             ],
             vec![
-                Square { x: 0, y: 3, player_number: 0, kind: PieceKind::Empty },
-                Square { x: 1, y: 3, player_number: 0, kind: PieceKind::Empty }
+                Square { player_number: 0, kind: PieceKind::Empty },
+                Square { player_number: 0, kind: PieceKind::Empty }
             ],
             vec![
-                Square { x: 0, y: 4, player_number: 0, kind: PieceKind::Empty },
-                Square { x: 1, y: 4, player_number: 0, kind: PieceKind::Empty }
+                Square { player_number: 0, kind: PieceKind::Empty },
+                Square { player_number: 0, kind: PieceKind::Empty }
             ]
         ];
 
@@ -131,28 +131,28 @@ mod tests {
     fn square_set_between_unoccupied_false_test() {
         let squares = vec![
             vec![
-                Square { x: 0, y: 0, player_number: 0, kind: PieceKind::Empty },
-                Square { x: 1, y: 0, player_number: 0, kind: PieceKind::Empty }
+                Square { player_number: 0, kind: PieceKind::Empty },
+                Square { player_number: 0, kind: PieceKind::Empty }
             ],
             vec![
-                Square { x: 0, y: 1, player_number: 0, kind: PieceKind::Empty },
-                Square { x: 1, y: 1, player_number: 0, kind: PieceKind::Empty }
+                Square { player_number: 0, kind: PieceKind::Empty },
+                Square { player_number: 0, kind: PieceKind::Empty }
             ],
             vec![
-                Square { x: 0, y: 2, player_number: 0, kind: PieceKind::Empty },
-                Square { x: 1, y: 2, player_number: 1, kind: PieceKind::Pawn }
+                Square { player_number: 0, kind: PieceKind::Empty },
+                Square { player_number: 1, kind: PieceKind::Pawn }
             ],
             vec![
-                Square { x: 0, y: 3, player_number: 0, kind: PieceKind::Empty },
-                Square { x: 1, y: 3, player_number: 0, kind: PieceKind::Empty }
+                Square { player_number: 0, kind: PieceKind::Empty },
+                Square { player_number: 0, kind: PieceKind::Empty }
             ],
             vec![
-                Square { x: 0, y: 4, player_number: 0, kind: PieceKind::Empty },
-                Square { x: 1, y: 4, player_number: 0, kind: PieceKind::Empty }
+                Square { player_number: 0, kind: PieceKind::Empty },
+                Square { player_number: 0, kind: PieceKind::Empty }
             ],
             vec![
-                Square { x: 0, y: 4, player_number: 0, kind: PieceKind::Empty },
-                Square { x: 1, y: 5, player_number: 0, kind: PieceKind::Empty }
+                Square { player_number: 0, kind: PieceKind::Empty },
+                Square { player_number: 0, kind: PieceKind::Empty }
             ]
         ];
 

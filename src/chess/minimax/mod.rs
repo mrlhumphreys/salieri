@@ -158,9 +158,9 @@ fn player_double_pawns_count(game_state: &chess::state::game_state::GameState, p
     for x in 0..8 {
         let mut number_of_pawns: i8 = 0;
         for row in game_state.squares.iter() {
-            for s in row.iter() {
+            for (sx, s) in row.iter().enumerate() {
                 if s.player_number != 0 {
-                    if s.kind == PieceKind::Pawn && s.player_number == player_number && s.x == x {
+                    if s.kind == PieceKind::Pawn && s.player_number == player_number && sx == x {
                         number_of_pawns += 1;
                     }
                 }
@@ -180,14 +180,14 @@ fn player_blocked_pawns_count(game_state: &chess::state::game_state::GameState, 
     } else {
         1
     };
-    for row in game_state.squares.iter() {
-        for s in row.iter() {
+    for (sy, row) in game_state.squares.iter().enumerate() {
+        for (sx, s) in row.iter().enumerate() {
             if s.kind == PieceKind::Pawn && s.player_number == player_number {
                 let mut piece_blocking_pawn: bool = false;
-                for t_row in game_state.squares.iter() {
-                    for t in t_row.iter() {
+                for (ty, t_row) in game_state.squares.iter().enumerate() {
+                    for (tx, t) in t_row.iter().enumerate() {
                         if t.player_number != 0 {
-                            piece_blocking_pawn = t.x == s.x && t.y == s.y + forward_direction_y
+                            piece_blocking_pawn = tx == sx && ty as i8 == sy as i8 + forward_direction_y
                         }
                     }
                 }
@@ -203,13 +203,13 @@ fn player_blocked_pawns_count(game_state: &chess::state::game_state::GameState, 
 fn player_isolated_pawns_count(game_state: &chess::state::game_state::GameState, player_number: i8) -> usize {
     let mut count = 0;
     for row in game_state.squares.iter() {
-        for s in row {
+        for (sx, s) in row.iter().enumerate() {
             if s.kind == PieceKind::Pawn && s.player_number == player_number {
                 let mut pawns_in_adjacent_files: i8 = 0;
                 for t_row in game_state.squares.iter() {
-                    for t in t_row {
+                    for (tx, t) in t_row.iter().enumerate() {
                         if t.player_number != 0 {
-                            if (t.x == s.x - 1 || t.x == s.x + 1) && t.kind == PieceKind::Pawn && t.player_number == player_number {
+                            if (tx as i8 == sx as i8 - 1 || tx == sx + 1) && t.kind == PieceKind::Pawn && t.player_number == player_number {
                                 pawns_in_adjacent_files += 1;
                             }
                         }
@@ -234,7 +234,6 @@ fn u_to_i32(value: usize) -> i32 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::chess::state::point::Point;
 
     #[test]
     fn evaluate_test() {
@@ -256,8 +255,8 @@ mod tests {
 
         match mov {
             Some(m) => {
-                assert_eq!(m.from, Point { x: 4, y: 6 });
-                assert_eq!(m.to, Point { x: 4, y: 5 });
+                assert_eq!(m.from, (4, 6));
+                assert_eq!(m.to, (4, 5));
                 assert_eq!(m.moving_piece_kind, PieceKind::Pawn);
                 assert_eq!(m.capture_piece_kind, None);
                 assert_eq!(m.promote_piece_kind, None);

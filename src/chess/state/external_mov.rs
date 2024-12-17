@@ -13,8 +13,8 @@ const Y_FORMAT: [char; 8] = [
 ];
 
 pub struct ExternalMove {
-    pub from: Point,
-    pub to: Point,
+    pub from: (i8, i8),
+    pub to: (i8, i8),
     pub moving_piece_kind: PieceKind,
     pub capture_piece_kind: Option<PieceKind>, // Undo -> place piece back
     pub promote_piece_kind: Option<PieceKind>, // Undo -> revert promotion
@@ -87,14 +87,14 @@ impl ExternalMove {
 
     fn from_format(&self) -> String {
         if self.file_disambiguation && self.rank_disambiguation {
-            let x = usize::try_from(self.from.x).unwrap_or(0);
-            let y = usize::try_from(self.from.y).unwrap_or(0);
+            let x = usize::try_from(self.from.0).unwrap_or(0);
+            let y = usize::try_from(self.from.1).unwrap_or(0);
             String::from(format!("{}{}", X_FORMAT[x], Y_FORMAT[y]))
         } else if self.file_disambiguation {
-            let x = usize::try_from(self.from.x).unwrap_or(0);
+            let x = usize::try_from(self.from.0).unwrap_or(0);
             String::from(format!("{}", X_FORMAT[x]))
         } else if self.rank_disambiguation {
-            let y = usize::try_from(self.from.y).unwrap_or(0);
+            let y = usize::try_from(self.from.1).unwrap_or(0);
             String::from(format!("{}", Y_FORMAT[y]))
         } else {
             String::from("")
@@ -102,8 +102,8 @@ impl ExternalMove {
     }
 
     fn to_format(&self) -> String {
-        let x = usize::try_from(self.to.x).unwrap_or(0);
-        let y = usize::try_from(self.to.y).unwrap_or(0);
+        let x = usize::try_from(self.to.0).unwrap_or(0);
+        let y = usize::try_from(self.to.1).unwrap_or(0);
         String::from(format!("{}{}", X_FORMAT[x], Y_FORMAT[y]))
     }
 
@@ -150,8 +150,8 @@ mod tests {
 
     #[test]
     fn format_piece_test() {
-        let from = Point { x: 3, y: 2 };
-        let to = Point { x: 4, y: 3 };
+        let from = (3, 2);
+        let to = (4, 3);
         let moving_piece_kind = PieceKind::Bishop;
         let mov = ExternalMove {
             from,
@@ -173,8 +173,8 @@ mod tests {
 
     #[test]
     fn format_pawn_test() {
-        let from = Point { x: 4, y: 6 };
-        let to = Point { x: 4, y: 4 };
+        let from = (4, 6);
+        let to = (4, 4);
         let moving_piece_kind = PieceKind::Pawn;
         let mov = ExternalMove {
             from,
@@ -196,8 +196,8 @@ mod tests {
 
     #[test]
     fn format_capture_test() {
-        let from = Point { x: 3, y: 2 };
-        let to = Point { x: 4, y: 3 };
+        let from = (3, 2);
+        let to = (4, 3);
         let moving_piece_kind = PieceKind::Bishop;
         let capture_piece_kind = Some(PieceKind::Pawn);
         let mov = ExternalMove {
@@ -220,8 +220,8 @@ mod tests {
 
     #[test]
     fn format_en_passant_test() {
-        let from = Point { x: 4, y: 3 };
-        let to = Point { x: 3, y: 2 };
+        let from = (4, 3);
+        let to = (3, 2);
         let moving_piece_kind = PieceKind::Pawn;
         let capture_piece_kind = Some(PieceKind::Pawn);
         let en_passant_point = Some(Point { x: 3, y: 3 });
@@ -245,8 +245,8 @@ mod tests {
 
     #[test]
     fn format_disambiguation_file_test() {
-        let from = Point { x: 3, y: 0 };
-        let to = Point { x: 5, y: 0 };
+        let from = (3, 0);
+        let to = (5, 0);
         let moving_piece_kind = PieceKind::Rook;
         let mov = ExternalMove {
             from,
@@ -268,8 +268,8 @@ mod tests {
 
     #[test]
     fn format_disambiguation_rank_test() {
-        let from = Point { x: 0, y: 7 };
-        let to = Point { x: 0, y: 5 };
+        let from = (0, 7);
+        let to = (0, 5);
         let moving_piece_kind = PieceKind::Rook;
         let mov = ExternalMove {
             from,
@@ -291,8 +291,8 @@ mod tests {
 
     #[test]
     fn format_disambiguation_file_and_rank_test() {
-        let from = Point { x: 7, y: 4 };
-        let to = Point { x: 4, y: 7 };
+        let from = (7, 4);
+        let to = (4, 7);
         let moving_piece_kind = PieceKind::Queen;
         let mov = ExternalMove {
             from,
@@ -314,8 +314,8 @@ mod tests {
 
     #[test]
     fn format_kingside_castle_test() {
-        let from = Point { x: 4, y: 3 };
-        let to = Point { x: 3, y: 2 };
+        let from = (4, 3);
+        let to = (3, 2);
         let moving_piece_kind = PieceKind::King;
         let castle_move = Some(CastleMove { player_number: 1, side: Side::King });
         let mov = ExternalMove {
@@ -338,8 +338,8 @@ mod tests {
 
     #[test]
     fn format_queenside_castle_test() {
-        let from = Point { x: 4, y: 3 };
-        let to = Point { x: 3, y: 2 };
+        let from = (4, 3);
+        let to = (3, 2);
         let moving_piece_kind = PieceKind::King;
         let castle_move = Some(CastleMove { player_number: 1, side: Side::Queen });
         let mov = ExternalMove {
@@ -362,8 +362,8 @@ mod tests {
 
     #[test]
     fn format_check_test() {
-        let from = Point { x: 4, y: 3 };
-        let to = Point { x: 3, y: 2 };
+        let from = (4, 3);
+        let to = (3, 2);
         let moving_piece_kind = PieceKind::Rook;
         let mov = ExternalMove {
             from,
@@ -385,8 +385,8 @@ mod tests {
 
     #[test]
     fn format_checkmate_test() {
-        let from = Point { x: 4, y: 3 };
-        let to = Point { x: 3, y: 2 };
+        let from = (4, 3);
+        let to = (3, 2);
         let moving_piece_kind = PieceKind::Rook;
         let mov = ExternalMove {
             from,

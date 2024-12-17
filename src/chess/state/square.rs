@@ -6,7 +6,6 @@ use crate::chess::state::point::one_step_destination_points;
 use crate::chess::state::point::king_castle_destination_points;
 use crate::chess::state::point::forward_diagonal_step_destination_points;
 use crate::chess::state::point::pawn_destination_points;
-use crate::chess::state::point::Point;
 use crate::chess::state::square_set::find_by_x_and_y;
 use crate::chess::state::square_set::between_unoccupied;
 use crate::chess::state::game_state::GameState;
@@ -35,8 +34,6 @@ pub enum PieceKind {
 
 #[derive(Copy, Debug, PartialEq)]
 pub struct Square {
-    pub x: i8,
-    pub y: i8,
     pub player_number: i8,
     pub kind: PieceKind
 }
@@ -44,8 +41,6 @@ pub struct Square {
 impl Clone for Square {
     fn clone(&self) -> Square {
         Square {
-            x: self.x,
-            y: self.y,
             player_number: self.player_number,
             kind: self.kind
         }
@@ -53,13 +48,6 @@ impl Clone for Square {
 }
 
 impl Square {
-    pub fn point(&self) -> Point {
-        Point {
-            x: self.x,
-            y: self.y,
-        }
-    }
-
     pub fn occupied(&self) -> bool {
         self.player_number != 0
     }
@@ -76,21 +64,21 @@ impl Square {
         self.player_number == 0 || self.player_number != player_number
     }
 
-    pub fn destinations<'a>(&'a self, game_state: &'a GameState) -> Vec<&Square> {
+    pub fn destinations<'a>(&'a self, point: (i8, i8), game_state: &'a GameState) -> Vec<(i8, i8)> {
         match self.kind {
             PieceKind::Empty => {
                 vec![]
             },
             PieceKind::Pawn => {
-                self.pawn_destinations(game_state)
+                self.pawn_destinations(point, game_state)
             },
             PieceKind::Rook => {
                 let mut acc = vec![];
-                for to_point in orthogonal_destination_points((self.x, self.y)).iter() {
+                for to_point in orthogonal_destination_points((point.0, point.1)) {
                     if let Some(to) = find_by_x_and_y(&game_state.squares, to_point.0, to_point.1) {
                         if to.unoccupied_or_occupied_by_opponent(self.player_number) &&
-                            between_unoccupied(&game_state.squares, (self.x, self.y), (to.x, to.y)) {
-                            acc.push(to);
+                            between_unoccupied(&game_state.squares, (point.0, point.1), (to_point.0, to_point.1)) {
+                            acc.push(to_point);
                         }
                     }
                 }
@@ -98,10 +86,10 @@ impl Square {
             },
             PieceKind::Knight => {
                 let mut acc = vec![];
-                for to_point in l_shape_destination_points((self.x, self.y)).iter() {
+                for to_point in l_shape_destination_points((point.0, point.1)) {
                     if let Some(to) = find_by_x_and_y(&game_state.squares, to_point.0, to_point.1) {
                         if to.unoccupied_or_occupied_by_opponent(self.player_number) {
-                            acc.push(to);
+                            acc.push(to_point);
                         }
                     }
                 }
@@ -109,11 +97,11 @@ impl Square {
             },
             PieceKind::Bishop => {
                 let mut acc = vec![];
-                for to_point in diagonal_destination_points((self.x, self.y)).iter() {
+                for to_point in diagonal_destination_points((point.0, point.1)) {
                     if let Some(to) = find_by_x_and_y(&game_state.squares, to_point.0, to_point.1) {
                         if to.unoccupied_or_occupied_by_opponent(self.player_number) &&
-                            between_unoccupied(&game_state.squares, (self.x, self.y), (to.x, to.y)) {
-                            acc.push(to);
+                            between_unoccupied(&game_state.squares, (point.0, point.1), (to_point.0, to_point.1)) {
+                            acc.push(to_point);
                         }
                     }
                 }
@@ -121,11 +109,11 @@ impl Square {
             },
             PieceKind::Queen => {
                 let mut acc = vec![];
-                for to_point in orthogonal_or_diagonal_destination_points((self.x, self.y)).iter() {
+                for to_point in orthogonal_or_diagonal_destination_points((point.0, point.1)) {
                     if let Some(to) = find_by_x_and_y(&game_state.squares, to_point.0, to_point.1) {
                         if to.unoccupied_or_occupied_by_opponent(self.player_number) &&
-                            between_unoccupied(&game_state.squares, (self.x, self.y), (to.x, to.y)) {
-                            acc.push(to);
+                            between_unoccupied(&game_state.squares, (point.0, point.1), (to_point.0, to_point.1)) {
+                            acc.push(to_point);
                         }
                     }
                 }
@@ -133,18 +121,18 @@ impl Square {
             },
             PieceKind::King => {
                 let mut acc = vec![];
-                for to_point in one_step_destination_points((self.x, self.y)).iter() {
+                for to_point in one_step_destination_points((point.0, point.1)) {
                     if let Some(to) = find_by_x_and_y(&game_state.squares, to_point.0, to_point.1) {
                         if to.unoccupied_or_occupied_by_opponent(self.player_number) {
-                            acc.push(to);
+                            acc.push(to_point);
                         }
                     }
                 }
 
-                for to_point in king_castle_destination_points((self.x, self.y)).iter() {
-                    if let Some(to) = find_by_x_and_y(&game_state.squares, to_point.0, to_point.1) {
-                        if self.castle_conditions(to, game_state) {
-                            acc.push(to);
+                for to_point in king_castle_destination_points((point.0, point.1)) {
+                    if find_by_x_and_y(&game_state.squares, to_point.0, to_point.1).is_some() {
+                        if self.castle_conditions(point, to_point, game_state) {
+                            acc.push(to_point);
                         }
                     }
                 }
@@ -153,14 +141,14 @@ impl Square {
         }
     }
 
-    pub fn capture_squares<'a>(&'a self, game_state: &'a GameState) -> Vec<&Square> {
+    pub fn capture_squares<'a>(&'a self, point: (i8, i8), game_state: &'a GameState) -> Vec<(i8, i8)> {
         match self.kind {
             PieceKind::Pawn => {
                 let mut acc = vec![];
-                for to_point in forward_diagonal_step_destination_points((self.x, self.y), self.player_number) {
+                for to_point in forward_diagonal_step_destination_points((point.0, point.1), self.player_number) {
                     if let Some(to) = find_by_x_and_y(&game_state.squares, to_point.0, to_point.1) {
-                        if to.occupied_by_opponent(self.player_number) || self.en_passant_condition(to, game_state) {
-                            acc.push(to);
+                        if to.occupied_by_opponent(self.player_number) || self.en_passant_condition(point, to_point, game_state) {
+                            acc.push(to_point);
                         }
                     }
                 }
@@ -168,45 +156,45 @@ impl Square {
             },
             PieceKind::King => {
                 let mut acc = vec![];
-                for to_point in one_step_destination_points((self.x, self.y)).iter() {
+                for to_point in one_step_destination_points((point.0, point.1)) {
                     if let Some(to) = find_by_x_and_y(&game_state.squares, to_point.0, to_point.1) {
                         if to.unoccupied_or_occupied_by_opponent(self.player_number) {
-                            acc.push(to);
+                            acc.push(to_point);
                         }
                     }
                 }
                 acc
             },
             _ => {
-                self.destinations(game_state)
+                self.destinations(point, game_state)
             }
         }
     }
 
-    fn castle_conditions(&self, to: &Square, game_state: &GameState) -> bool {
+    fn castle_conditions(&self, point: (i8, i8), to_point: (i8, i8), game_state: &GameState) -> bool {
         match self.player_number {
             1 => {
-                match (to.x, to.y) {
+                match (to_point.0, to_point.1) {
                     PLAYER_ONE_CASTLE_KING_SIDE => {
                         game_state.castle_moves.iter().any(|cm| cm.player_number == 1 && cm.side == Side::King) &&
-                            between_unoccupied(&game_state.squares, (self.x, self.y), PLAYER_ONE_KING_SIDE_ROOK)
+                            between_unoccupied(&game_state.squares, (point.0, point.1), PLAYER_ONE_KING_SIDE_ROOK)
                     },
                     PLAYER_ONE_CASTLE_QUEEN_SIDE => {
                         game_state.castle_moves.iter().any(|cm| cm.player_number == 1 && cm.side == Side::Queen) &&
-                            between_unoccupied(&game_state.squares, (self.x, self.y), PLAYER_ONE_QUEEN_SIDE_ROOK)
+                            between_unoccupied(&game_state.squares, (point.0, point.1), PLAYER_ONE_QUEEN_SIDE_ROOK)
                     },
                     _ => false
                 }
             },
             2 => {
-                match (to.x, to.y) {
+                match (to_point.0, to_point.1) {
                     PLAYER_TWO_CASTLE_KING_SIDE => {
                         game_state.castle_moves.iter().any(|cm| cm.player_number == 2 && cm.side == Side::King) &&
-                            between_unoccupied(&game_state.squares, (self.x, self.y), PLAYER_TWO_KING_SIDE_ROOK)
+                            between_unoccupied(&game_state.squares, (point.0, point.1), PLAYER_TWO_KING_SIDE_ROOK)
                     },
                     PLAYER_TWO_CASTLE_QUEEN_SIDE => {
                         game_state.castle_moves.iter().any(|cm| cm.player_number == 2 && cm.side == Side::Queen) &&
-                            between_unoccupied(&game_state.squares, (self.x, self.y), PLAYER_TWO_QUEEN_SIDE_ROOK)
+                            between_unoccupied(&game_state.squares, (point.0, point.1), PLAYER_TWO_QUEEN_SIDE_ROOK)
                     },
                     _ => false
                 }
@@ -215,38 +203,38 @@ impl Square {
         }
     }
 
-    fn pawn_destinations<'a>(&'a self, game_state: &'a GameState) -> Vec<&Square> {
+    fn pawn_destinations<'a>(&'a self, point: (i8, i8), game_state: &'a GameState) -> Vec<(i8, i8)> {
         match self.kind {
             PieceKind::Pawn => {
                 let mut acc = vec![];
 
-                for to_point in pawn_destination_points((self.x, self.y), self.player_number) {
+                for to_point in pawn_destination_points((point.0, point.1), self.player_number) {
                     if let Some(to) = find_by_x_and_y(&game_state.squares, to_point.0, to_point.1) {
-                        if to.unoccupied() && between_unoccupied(&game_state.squares, (self.x, self.y), (to.x, to.y)) {
-                            acc.push(to);
+                        if to.unoccupied() && between_unoccupied(&game_state.squares, (point.0, point.1), (to_point.0, to_point.1)) {
+                            acc.push(to_point);
                         }
                     }
                 }
 
-                for to_point in forward_diagonal_step_destination_points((self.x, self.y), self.player_number) {
+                for to_point in forward_diagonal_step_destination_points((point.0, point.1), self.player_number) {
                     if let Some(to) = find_by_x_and_y(&game_state.squares, to_point.0, to_point.1) {
-                        if to.occupied_by_opponent(self.player_number) || self.en_passant_condition(to, game_state) {
-                            acc.push(to);
+                        if to.occupied_by_opponent(self.player_number) || self.en_passant_condition(point, to_point, game_state) {
+                            acc.push(to_point);
                         }
                     }
                 }
 
                 acc
             },
-            _ => self.destinations(game_state)
+            _ => self.destinations(point, game_state)
         }
     }
 
-    fn en_passant_condition(&self, to: &Square, game_state: &GameState) -> bool {
+    fn en_passant_condition(&self, point: (i8, i8), to_point: (i8, i8), game_state: &GameState) -> bool {
         if let Some(target) = game_state.en_passant_target {
-            if to.x == target.x && to.y == target.y {
+            if to_point.0 == target.x && to_point.1 == target.y {
                 let mut result = false;
-                if let Some(opposing_to) = find_by_x_and_y(&game_state.squares, target.x, self.y) {
+                if let Some(opposing_to) = find_by_x_and_y(&game_state.squares, target.x, point.1) {
                     if opposing_to.occupied_by_opponent(self.player_number) {
                         result = true;
                     }
@@ -281,16 +269,8 @@ mod tests {
     use crate::chess::state::game_state::parse as parse_game_state;
 
     #[test]
-    fn point_test() {
-        let square = Square { x: 1, y: 2, player_number: 0, kind: PieceKind::Empty };
-        let expected = Point { x: 1, y: 2 };
-        let result = square.point();
-        assert_eq!(result, expected);
-    }
-
-    #[test]
     fn occupied_some_test() {
-        let square = Square { x: 1, y: 2,  player_number: 1, kind: PieceKind::Pawn };
+        let square = Square { player_number: 1, kind: PieceKind::Pawn };
         let expected = true;
         let result = square.occupied();
         assert_eq!(result, expected);
@@ -298,7 +278,7 @@ mod tests {
 
     #[test]
     fn occupied_none_test() {
-        let square = Square { x: 1, y: 2, player_number: 0, kind: PieceKind::Empty };
+        let square = Square { player_number: 0, kind: PieceKind::Empty };
         let expected = false;
         let result = square.occupied();
         assert_eq!(result, expected);
@@ -306,7 +286,7 @@ mod tests {
 
     #[test]
     fn occupied_by_opponent_one_test() {
-        let square = Square { x: 1, y: 2, player_number: 1, kind: PieceKind::Pawn };
+        let square = Square { player_number: 1, kind: PieceKind::Pawn };
         let expected = false;
         let result = square.occupied_by_opponent(1);
         assert_eq!(result, expected);
@@ -314,7 +294,7 @@ mod tests {
 
     #[test]
     fn occupied_by_opponent_two_test() {
-        let square = Square { x: 1, y: 2, player_number: 2, kind: PieceKind::Pawn };
+        let square = Square { player_number: 2, kind: PieceKind::Pawn };
         let expected = true;
         let result = square.occupied_by_opponent(1);
         assert_eq!(result, expected);
@@ -322,7 +302,7 @@ mod tests {
 
     #[test]
     fn occupied_by_opponent_none_test() {
-        let square = Square { x: 1, y: 2, player_number: 0, kind: PieceKind::Empty };
+        let square = Square { player_number: 0, kind: PieceKind::Empty };
         let expected = false;
         let result = square.occupied_by_opponent(1);
         assert_eq!(result, expected);
@@ -330,7 +310,7 @@ mod tests {
 
     #[test]
     fn unoccupied_or_occupied_by_opponent_one_test() {
-        let square = Square { x: 1, y: 2, player_number: 1, kind: PieceKind::Pawn };
+        let square = Square { player_number: 1, kind: PieceKind::Pawn };
         let expected = false;
         let result = square.unoccupied_or_occupied_by_opponent(1);
         assert_eq!(result, expected);
@@ -338,7 +318,7 @@ mod tests {
 
     #[test]
     fn unoccupied_or_occupied_by_opponent_two_test() {
-        let square = Square { x: 1, y: 2, player_number: 2, kind: PieceKind::Pawn };
+        let square = Square { player_number: 2, kind: PieceKind::Pawn };
         let expected = true;
         let result = square.unoccupied_or_occupied_by_opponent(1);
         assert_eq!(result, expected);
@@ -346,7 +326,7 @@ mod tests {
 
     #[test]
     fn unoccupied_or_occupied_by_opponent_none_test() {
-        let square = Square { x: 1, y: 2, player_number: 0, kind: PieceKind::Empty };
+        let square = Square { player_number: 0, kind: PieceKind::Empty };
         let expected = true;
         let result = square.unoccupied_or_occupied_by_opponent(1);
         assert_eq!(result, expected);
@@ -356,9 +336,10 @@ mod tests {
     fn destinations_some_test() {
         let encoded = String::from("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
         let game_state = parse_game_state(&encoded).unwrap();
-        let square = Square { x: 4, y: 6, player_number: 1, kind: PieceKind::Pawn };
+        let square = Square { player_number: 1, kind: PieceKind::Pawn };
+        let point = (4, 6);
         let expected = 2;
-        let result = square.destinations(&game_state).len();
+        let result = square.destinations(point, &game_state).len();
         assert_eq!(result, expected);
     }
 
@@ -366,24 +347,26 @@ mod tests {
     fn destinations_none_test() {
         let encoded = String::from("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
         let game_state = parse_game_state(&encoded).unwrap();
-        let square = Square { x: 4, y: 5, player_number: 0, kind: PieceKind::Empty };
+        let square = Square { player_number: 0, kind: PieceKind::Empty };
+        let point = (4, 5);
         let expected = 0;
-        let result = square.destinations(&game_state).len();
+        let result = square.destinations(point, &game_state).len();
         assert_eq!(result, expected);
     }
 
     #[test]
     fn destinations_pawn_moves_test() {
-        let from = Square { x: 4 , y: 6, kind: PieceKind::Pawn, player_number: 1 };
+        let from = Square { kind: PieceKind::Pawn, player_number: 1 };
+        let point = (4, 6);
         let encoded = String::from("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
         let result = parse_game_state(&encoded);
 
         match result {
             Ok(game_state) => {
-                let result = from.destinations(&game_state);
+                let result = from.destinations(point, &game_state);
                 let expected = vec![
-                    &Square { x: 4, y: 4, player_number: 0, kind: PieceKind::Empty },
-                    &Square { x: 4, y: 5, player_number: 0, kind: PieceKind::Empty },
+                    (4, 4),
+                    (4, 5)
                 ];
                 assert_eq!(result, expected);
             },
@@ -393,15 +376,16 @@ mod tests {
 
     #[test]
     fn destinations_pawn_moves_from_non_starting_row_test() {
-        let from = Square { x: 0, y: 4, kind: PieceKind::Pawn, player_number: 1 };
+        let from = Square { kind: PieceKind::Pawn, player_number: 1 };
+        let point = (0, 4);
         let encoded = String::from("rnbqkbnr/pppppppp/8/8/P/8/1PPPPPPP/RNBQKBNR w KQkq - 0 1");
         let result = parse_game_state(&encoded);
 
         match result {
             Ok(game_state) => {
-                let result = from.destinations(&game_state);
+                let result = from.destinations(point, &game_state);
                 let expected = vec![
-                    &Square { x: 0, y: 3, player_number: 0, kind: PieceKind::Empty }
+                    (0, 3)
                 ];
                 assert_eq!(result, expected);
             },
@@ -411,17 +395,18 @@ mod tests {
 
     #[test]
     fn destinations_pawn_captures_test() {
-        let from = Square { x: 4 , y: 6, kind: PieceKind::Pawn, player_number: 1 };
+        let from = Square { kind: PieceKind::Pawn, player_number: 1 };
+        let point = (4, 6);
         let encoded = String::from("rnbqkbnr/ppp1pppp/8/8/8/3p4/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
         let result = parse_game_state(&encoded);
 
         match result {
             Ok(game_state) => {
-                let result = from.destinations(&game_state);
+                let result = from.destinations(point, &game_state);
                 let expected = vec![
-                    &Square { x: 4, y: 4, kind: PieceKind::Empty, player_number: 0 },
-                    &Square { x: 4, y: 5, kind: PieceKind::Empty, player_number: 0 },
-                    &Square { x: 3, y: 5, kind: PieceKind::Pawn, player_number: 2 }
+                    (4, 4),
+                    (4, 5),
+                    (3, 5)
                 ];
                 assert_eq!(result, expected);
             },
@@ -431,14 +416,15 @@ mod tests {
 
     #[test]
     fn destinations_pawn_captures_blocked_test() {
-        let from = Square { x: 0, y: 1, kind: PieceKind::Pawn, player_number: 2 };
+        let from = Square { kind: PieceKind::Pawn, player_number: 2 };
+        let point = (0, 1);
         let encoded = String::from("rnbqkbnr/pppppppp/P7/8/8/8/1PPPPPPP/RNBQKBNR b KQkq - 0 1");
         let result = parse_game_state(&encoded);
 
         match result {
             Ok(game_state) => {
-                let result = from.destinations(&game_state);
-                let expected: Vec<&Square> = vec![];
+                let result = from.destinations(point, &game_state);
+                let expected: Vec<(i8, i8)> = vec![];
                 assert_eq!(result, expected);
             },
             Err(e) => assert!(false, "{}", e)
@@ -447,16 +433,17 @@ mod tests {
 
     #[test]
     fn destinations_pawn_en_passant_test() {
-        let from = Square { x: 4, y: 3, kind: PieceKind::Pawn, player_number: 1 };
+        let from = Square { kind: PieceKind::Pawn, player_number: 1 };
+        let point = (4, 3);
         let encoded = String::from("rnbqkbnr/ppp1pppp/8/3pP3/8/8/PPPPPPPP/RNBQKBNR w KQkq d6 0 1");
         let result = parse_game_state(&encoded);
 
         match result {
             Ok(game_state) => {
-                let result = from.destinations(&game_state);
+                let result = from.destinations(point, &game_state);
                 let expected = vec![
-                    &Square { x: 4, y: 2, player_number: 0, kind: PieceKind::Empty },
-                    &Square { x: 3, y: 2, player_number: 0, kind: PieceKind::Empty }
+                    (4, 2),
+                    (3, 2)
                 ];
                 assert_eq!(result, expected);
             },
@@ -466,60 +453,64 @@ mod tests {
 
     #[test]
     fn destinations_pawn_no_en_passant_test() {
-        let from = Square { x: 4, y: 3, kind: PieceKind::Pawn, player_number: 1 };
+        let from = Square {kind: PieceKind::Pawn, player_number: 1 };
+        let point = (4, 3);
         let encoded = String::from("rnbqkbnr/ppp1pppp/8/3pP3/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
         let game_state = parse_game_state(&encoded).unwrap();
 
-        let result = from.destinations(&game_state);
+        let result = from.destinations(point, &game_state);
         let expected = vec![
-            &Square { x: 4, y: 2, player_number: 0, kind: PieceKind::Empty }
+            (4, 2)
         ];
         assert_eq!(result, expected);
     }
 
     #[test]
     fn destinations_pawn_no_en_passant_same_row_test() {
-        let from = Square { x: 0, y: 4, kind: PieceKind::Pawn, player_number: 1 };
+        let from = Square {kind: PieceKind::Pawn, player_number: 1 };
+        let point = (0, 4);
         let encoded = String::from("4k3/8/8/2p4/P7/8/8/4K3 w - c2 0 1");
         let game_state = parse_game_state(&encoded).unwrap();
 
-        let result = from.destinations(&game_state);
+        let result = from.destinations(point, &game_state);
         let expected = vec![
-            &Square { x: 0, y: 3, player_number: 0, kind: PieceKind::Empty }
+            (0, 3)
         ];
         assert_eq!(result, expected);
     }
 
     #[test]
     fn destinations_pawn_en_passant_same_column_test() {
-        let from = Square { x: 1, y: 6, kind: PieceKind::Pawn, player_number: 1 };
+        let from = Square { kind: PieceKind::Pawn, player_number: 1 };
+        let point = (1, 6);
         let encoded = String::from("4k3/8/8/1Pp4/8/8/1Pp4/4K3 w - c2 0 1");
         let game_state = parse_game_state(&encoded).unwrap();
 
-        let result = from.destinations(&game_state);
+        let result = from.destinations(point, &game_state);
         let expected = vec![
-            &Square { x: 1, y: 4, player_number: 0, kind: PieceKind::Empty },
-            &Square { x: 1, y: 5, player_number: 0, kind: PieceKind::Empty }
+            (1, 4),
+            (1, 5)
         ];
         assert_eq!(result, expected);
     }
 
     #[test]
     fn destinations_rook_test() {
-        let from = Square { x: 7, y: 7, kind: PieceKind::Rook, player_number: 1 };
+        let from = Square { kind: PieceKind::Rook, player_number: 1 };
+        let point = (7, 7);
         let encoded = String::from("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPP1/RNBQKBNR w KQkq - 0 1");
         let result = parse_game_state(&encoded);
 
         match result {
             Ok(game_state) => {
-                let result = from.destinations(&game_state);
+                let result = from.destinations(point, &game_state);
                 let expected = vec![
-                    &Square { x: 7, y: 1, kind: PieceKind::Pawn, player_number: 2 },
-                    &Square { x: 7, y: 2, player_number: 0, kind: PieceKind::Empty },
-                    &Square { x: 7, y: 3, player_number: 0, kind: PieceKind::Empty },
-                    &Square { x: 7, y: 4, player_number: 0, kind: PieceKind::Empty },
-                    &Square { x: 7, y: 5, player_number: 0, kind: PieceKind::Empty },
-                    &Square { x: 7, y: 6, player_number: 0, kind: PieceKind::Empty }
+                    (7, 1),
+                    (7, 2),
+                    (7, 3),
+                    (7, 4),
+                    (7, 5),
+                    (7, 6)
                 ];
                 assert_eq!(result, expected);
             },
@@ -529,16 +520,17 @@ mod tests {
 
     #[test]
     fn destinations_knight_test() {
-        let from = Square { x: 6, y: 7, kind: PieceKind::Knight, player_number: 1 };
+        let from = Square { kind: PieceKind::Knight, player_number: 1 };
+        let point = (6, 7);
         let encoded = String::from("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
         let result = parse_game_state(&encoded);
 
         match result {
             Ok(game_state) => {
-                let result = from.destinations(&game_state);
+                let result = from.destinations(point, &game_state);
                 let expected = vec![
-                    &Square { x: 5, y: 5, player_number: 0, kind: PieceKind::Empty },
-                    &Square { x: 7, y: 5, player_number: 0, kind: PieceKind::Empty }
+                    (5, 5),
+                    (7, 5)
                 ];
                 assert_eq!(result, expected);
             },
@@ -548,18 +540,19 @@ mod tests {
 
     #[test]
     fn destinations_bishop_test() {
-        let from = Square { x: 5, y: 7, kind: PieceKind::Bishop, player_number: 1 };
+        let from = Square { kind: PieceKind::Bishop, player_number: 1 };
+        let point = (5, 7);
         let encoded = String::from("rnbqkbnr/p1pppppp/8/1p6/8/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1");
         let result = parse_game_state(&encoded);
 
         match result {
             Ok(game_state) => {
-                let result = from.destinations(&game_state);
+                let result = from.destinations(point, &game_state);
                 let expected = vec![
-                    &Square { x: 1, y: 3, player_number: 2, kind: PieceKind::Pawn },
-                    &Square { x: 2, y: 4, player_number: 0, kind: PieceKind::Empty },
-                    &Square { x: 3, y: 5, player_number: 0, kind: PieceKind::Empty },
-                    &Square { x: 4, y: 6, player_number: 0, kind: PieceKind::Empty }
+                    (1, 3),
+                    (2, 4),
+                    (3, 5),
+                    (4, 6)
                 ];
                 assert_eq!(result, expected);
             },
@@ -569,20 +562,21 @@ mod tests {
 
     #[test]
     fn destinations_queen_test() {
-        let from = Square { x: 3, y: 7, kind: PieceKind::Queen, player_number: 1 };
+        let from = Square { kind: PieceKind::Queen, player_number: 1 };
+        let point = (3, 7);
         let encoded = String::from("rnbqkbnr/ppp1pppp/8/8/3p4/2P5/PP2PPPP/RNBQKBNR w KQkq - 0 1");
         let result = parse_game_state(&encoded);
 
         match result {
             Ok(game_state) => {
-                let result = from.destinations(&game_state);
+                let result = from.destinations(point, &game_state);
                 let expected = vec![
-                    &Square { x: 0, y: 4, player_number: 0, kind: PieceKind::Empty },
-                    &Square { x: 3, y: 4, player_number: 2, kind: PieceKind::Pawn },
-                    &Square { x: 1, y: 5, player_number: 0, kind: PieceKind::Empty },
-                    &Square { x: 3, y: 5, player_number: 0, kind: PieceKind::Empty },
-                    &Square { x: 2, y: 6, player_number: 0, kind: PieceKind::Empty },
-                    &Square { x: 3, y: 6, player_number: 0, kind: PieceKind::Empty }
+                    (0, 4),
+                    (3, 4),
+                    (1, 5),
+                    (3, 5),
+                    (2, 6),
+                    (3, 6)
                 ];
                 assert_eq!(result, expected);
             },
@@ -592,16 +586,17 @@ mod tests {
 
     #[test]
     fn destinations_king_normal_test() {
-        let from = Square { x: 4, y: 7, kind: PieceKind::King, player_number: 1 };
+        let from = Square { kind: PieceKind::King, player_number: 1 };
+        let point = (4, 7);
         let encoded = String::from("rnbqkbnr/ppp1pppp/8/8/8/8/PPPp1PPP/RNBQKBNR w KQkq - 0 1");
         let result = parse_game_state(&encoded);
 
         match result {
             Ok(game_state) => {
-                let result = from.destinations(&game_state);
+                let result = from.destinations(point, &game_state);
                 let expected = vec![
-                    &Square { x: 3, y: 6, player_number: 2, kind: PieceKind::Pawn },
-                    &Square { x: 4, y: 6, player_number: 0, kind: PieceKind::Empty }
+                    (3, 6),
+                    (4, 6)
                 ];
                 assert_eq!(result, expected);
             },
@@ -611,16 +606,17 @@ mod tests {
 
     #[test]
     fn destinations_king_castle_test() {
-        let from = Square { x: 4, y: 7, kind: PieceKind::King, player_number: 1 };
+        let from = Square { kind: PieceKind::King, player_number: 1 };
+        let point = (4, 7);
         let encoded = String::from("rnbqkbnr/pppppppp/8/8/8/5BN1/PPPPPPPP/RNBQK2R w KQkq - 0 1");
         let result = parse_game_state(&encoded);
 
         match result {
             Ok(game_state) => {
-                let result = from.destinations(&game_state);
+                let result = from.destinations(point, &game_state);
                 let expected = vec![
-                    &Square { x: 5, y: 7, player_number: 0, kind: PieceKind::Empty },
-                    &Square { x: 6, y: 7, player_number: 0, kind: PieceKind::Empty }
+                    (5, 7),
+                    (6, 7)
                 ];
                 assert_eq!(result, expected);
             },
@@ -630,15 +626,16 @@ mod tests {
 
     #[test]
     fn destinations_king_queen_side_castle_blocked_test() {
-        let from = Square { x: 4, y: 7, kind: PieceKind::King, player_number: 1 };
+        let from = Square { kind: PieceKind::King, player_number: 1 };
+        let point = (4, 7);
         let encoded = String::from("rnbqkbnr/pppppppp/8/8/8/5BN1/PPPPPPPP/RN2KBNR w KQkq - 0 1");
         let result = parse_game_state(&encoded);
 
         match result {
             Ok(game_state) => {
-                let result = from.destinations(&game_state);
+                let result = from.destinations(point, &game_state);
                 let expected = vec![
-                    &Square { x: 3, y: 7, player_number: 0, kind: PieceKind::Empty }
+                    (3, 7)
                 ];
                 assert_eq!(result, expected);
             },
@@ -648,15 +645,16 @@ mod tests {
 
     #[test]
     fn pawn_capture_squares_test() {
-        let from = Square { x: 4 , y: 6, kind: PieceKind::Pawn, player_number: 1 };
+        let from = Square { kind: PieceKind::Pawn, player_number: 1 };
+        let point = (4, 6);
         let encoded = String::from("rnbqkbnr/ppp1pppp/8/8/8/3p4/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
         let result = parse_game_state(&encoded);
 
         match result {
             Ok(game_state) => {
-                let result = from.capture_squares(&game_state);
+                let result = from.capture_squares(point, &game_state);
                 let expected = vec![
-                    &Square { x: 3, y: 5, kind: PieceKind::Pawn, player_number: 2 }
+                    (3, 5)
                 ];
                 assert_eq!(result, expected);
             },
@@ -666,15 +664,16 @@ mod tests {
 
     #[test]
     fn king_capture_squares_test() {
-        let from = Square { x: 4, y: 7, kind: PieceKind::King, player_number: 1 };
+        let from = Square { kind: PieceKind::King, player_number: 1 };
+        let point = (4, 7);
         let encoded = String::from("rnbqkbnr/pppppppp/8/8/8/5BN1/PPPPPPPP/RNBQK2R w KQkq - 0 1");
         let result = parse_game_state(&encoded);
 
         match result {
             Ok(game_state) => {
-                let result = from.capture_squares(&game_state);
+                let result = from.capture_squares(point, &game_state);
                 let expected = vec![
-                    &Square { x: 5, y: 7, player_number: 0, kind: PieceKind::Empty }
+                    (5, 7)
                 ];
                 assert_eq!(result, expected);
             },
@@ -684,20 +683,21 @@ mod tests {
 
     #[test]
     fn other_capture_squares_test() {
-        let from = Square { x: 7, y: 7, kind: PieceKind::Rook, player_number: 1 };
+        let from = Square { kind: PieceKind::Rook, player_number: 1 };
+        let point = (7, 7);
         let encoded = String::from("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPP1/RNBQKBNR w KQkq - 0 1");
         let result = parse_game_state(&encoded);
 
         match result {
             Ok(game_state) => {
-                let result = from.capture_squares(&game_state);
+                let result = from.capture_squares(point, &game_state);
                 let expected = vec![
-                    &Square { x: 7, y: 1, kind: PieceKind::Pawn, player_number: 2 },
-                    &Square { x: 7, y: 2, player_number: 0, kind: PieceKind::Empty },
-                    &Square { x: 7, y: 3, player_number: 0, kind: PieceKind::Empty },
-                    &Square { x: 7, y: 4, player_number: 0, kind: PieceKind::Empty },
-                    &Square { x: 7, y: 5, player_number: 0, kind: PieceKind::Empty },
-                    &Square { x: 7, y: 6, player_number: 0, kind: PieceKind::Empty }
+                    (7, 1),
+                    (7, 2),
+                    (7, 3),
+                    (7, 4),
+                    (7, 5),
+                    (7, 6)
                 ];
                 assert_eq!(result, expected);
             },
@@ -707,25 +707,25 @@ mod tests {
 
     #[test]
     fn forwards_direction_one_test() {
-        let square = Square { x: 0, y: 0, kind: PieceKind::Pawn, player_number: 1 };
+        let square = Square { kind: PieceKind::Pawn, player_number: 1 };
         assert_eq!(-1, square.forwards_direction());
     }
 
     #[test]
     fn forwards_direction_two_test() {
-        let square = Square { x: 0, y: 0,  kind: PieceKind::Pawn, player_number: 2 };
+        let square = Square { kind: PieceKind::Pawn, player_number: 2 };
         assert_eq!(1, square.forwards_direction());
     }
 
     #[test]
     fn promotion_rank_one_test() {
-        let square = Square { x: 0, y: 0,  kind: PieceKind::Pawn, player_number: 1 };
+        let square = Square { kind: PieceKind::Pawn, player_number: 1 };
         assert_eq!(0, square.promotion_rank());
     }
 
     #[test]
     fn promotion_rank_two_test() {
-        let square = Square { x: 0, y: 0, kind: PieceKind::Pawn, player_number: 2 };
+        let square = Square { kind: PieceKind::Pawn, player_number: 2 };
         assert_eq!(7, square.promotion_rank());
     }
 }
