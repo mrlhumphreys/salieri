@@ -1,20 +1,20 @@
-use crate::chess::state::vector::direction_unit_n;
-use crate::chess::state::vector::length;
+use crate::chess::state::point::direction_unit_n;
+use crate::chess::state::point::length;
 use crate::chess::state::point::valid;
-use crate::chess::state::vector::orthogonal_or_diagonal;
+use crate::chess::state::point::orthogonal_or_diagonal;
 use crate::chess::state::square::Square;
 
-pub fn find_by_x_and_y_mut(squares: &mut Vec<Vec<Square>>, x: i8, y: i8) -> Option<&mut Square> {
-    if valid((x, y)) {
-        Some(&mut squares[y as usize][x as usize])
+pub fn find_by_x_and_y_mut(squares: &mut Vec<Vec<Square>>, point: (i8, i8)) -> Option<&mut Square> {
+    if valid(point) {
+        Some(&mut squares[point.1 as usize][point.0 as usize])
     } else {
         None
     }
 }
 
-pub fn find_by_x_and_y(squares: &Vec<Vec<Square>>, x: i8, y: i8) -> Option<&Square> {
-    if valid((x, y)) {
-        Some(&squares[y as usize][x as usize])
+pub fn find_by_x_and_y(squares: &Vec<Vec<Square>>, point: (i8, i8)) -> Option<&Square> {
+    if valid(point) {
+        Some(&squares[point.1 as usize][point.0 as usize])
     } else {
         None
     }
@@ -23,7 +23,7 @@ pub fn find_by_x_and_y(squares: &Vec<Vec<Square>>, x: i8, y: i8) -> Option<&Squa
 pub fn between_unoccupied(squares: &Vec<Vec<Square>>, from: (i8, i8), to: (i8, i8)) -> bool {
     let mut result = true;
 
-    if orthogonal_or_diagonal(from.0, from.1, to.0, to.1) && length(from.0, from.1, to.0, to.1) > 1 {
+    if orthogonal_or_diagonal(from, to) && length(from, to) > 1 {
         let direction_unit_x = direction_unit_n(from.0, to.0);
         let direction_unit_y = direction_unit_n(from.1, to.1);
         let end_x = to.0;
@@ -31,7 +31,7 @@ pub fn between_unoccupied(squares: &Vec<Vec<Square>>, from: (i8, i8), to: (i8, i
         let mut counter_x = from.0 + direction_unit_x;
         let mut counter_y = from.1 + direction_unit_y;
         while counter_x != end_x || counter_y != end_y {
-            if let Some(square) = find_by_x_and_y(squares, counter_x, counter_y) {
+            if let Some(square) = find_by_x_and_y(squares, (counter_x, counter_y)) {
                if square.occupied() {
                    result = false;
                    break;
@@ -62,7 +62,7 @@ mod tests {
             ]
         ];
 
-        let result = find_by_x_and_y_mut(&mut squares, 1, 1);
+        let result = find_by_x_and_y_mut(&mut squares, (1, 1));
         match result {
             Some(s) => {
                 assert_eq!(s.player_number, 1);
@@ -85,7 +85,7 @@ mod tests {
             ]
         ];
 
-        let result = find_by_x_and_y(&squares, 1, 1);
+        let result = find_by_x_and_y(&squares, (1, 1));
         match result {
             Some(s) => {
                 assert_eq!(s.player_number, 1);

@@ -1,5 +1,4 @@
 pub mod point;
-mod vector;
 mod castle_move;
 mod piece_factory;
 pub mod square;

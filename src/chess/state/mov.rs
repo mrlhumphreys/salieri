@@ -1,4 +1,3 @@
-use crate::chess::state::point::Point;
 use crate::chess::state::square::PieceKind;
 use crate::chess::state::castle_move::CastleMove;
 
@@ -8,8 +7,8 @@ pub struct Move {
     pub moving_piece_kind: PieceKind,
     pub capture_piece_kind: Option<PieceKind>, // Undo -> place piece back
     pub promote_piece_kind: Option<PieceKind>, // Undo -> revert promotion
-    pub en_passant_point: Option<Point>, // Undo - add capture piece back next to from
-    pub en_passant_target: Option<Point>, // Undo - set game state en_passant_target back
+    pub en_passant_point: Option<(i8, i8)>, // Undo - add capture piece back next to from
+    pub en_passant_target: Option<(i8, i8)>, // Undo - set game state en_passant_target back
     pub castle_move: Option<CastleMove> // Undo - Move king and rook back to start.
 }
 

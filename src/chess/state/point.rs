@@ -1,4 +1,5 @@
-use std::ops;
+use std::cmp::Ordering;
+use crate::chess::state::castle_move::Side;
 
 pub const MIN_N: i8 = 0;
 pub const MAX_N: i8 = 7;
@@ -15,6 +16,37 @@ pub const PLAYER_TWO_QUEEN_SIDE_ROOK: (i8, i8) = (0, 0);
 
 pub fn valid(point: (i8, i8)) -> bool {
     point.0 >= MIN_N && point.0 <= MAX_N && point.1 >= MIN_N && point.1 <= MAX_N
+}
+
+pub fn length(from: (i8, i8), to: (i8, i8)) -> i8 {
+    let dx = (to.0 - from.0).abs();
+    let dy = (to.1 - from.1).abs();
+    if dx > dy {
+        dx
+    } else {
+        dy
+    }
+}
+
+pub fn direction_unit_n(from_n: i8, to_n: i8) -> i8 {
+    let dn = to_n - from_n;
+    if let Some(c) = dn.partial_cmp(&0) {
+        match c {
+            Ordering::Less => -1,
+            Ordering::Greater => 1,
+            Ordering::Equal => 0,
+        }
+    } else {
+        0
+    }
+}
+
+pub fn side(from_x: i8, to_x: i8) -> Side {
+    if to_x > from_x {
+        Side::King
+    } else {
+        Side::Queen
+    }
 }
 
 pub fn orthogonal_destination_points(from: (i8, i8)) -> Vec<(i8, i8)> {
@@ -168,22 +200,6 @@ fn range(y: i8, player_number: i8) -> i8 {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub struct Point {
-    pub x: i8,
-    pub y: i8,
-}
-
-impl ops::Add<Point> for Point {
-    type Output = Point;
-
-    fn add(self, rhs: Point) -> Point {
-        let x = self.x + rhs.x;
-        let y = self.y + rhs.y;
-        Point { x, y }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -203,12 +219,35 @@ mod tests {
     }
 
     #[test]
-    fn adding() {
-        let left = Point { x: 4, y: 4 };
-        let right = Point { x: 2, y: 6 };
-        let result = left + right;
-        assert_eq!(result.x, 6);
-        assert_eq!(result.y, 10);
+    fn length_test() {
+        let from = (1, 1);
+        let to = (2, 4);
+        let result = length(from, to);
+        assert_eq!(result, 3);
+    }
+
+    #[test]
+    fn direction_unit_y_test() {
+        let from_y = 4;
+        let to_y = 6;
+        let result = direction_unit_n(from_y, to_y);
+        assert_eq!(result, 1);
+    }
+
+    #[test]
+    fn side_king_test() {
+        let from_x = 5;
+        let to_x = 7;
+        let result = side(from_x, to_x);
+        assert_eq!(result, Side::King);
+    }
+
+    #[test]
+    fn side_queen_test() {
+        let from_x = 5;
+        let to_x = 3;
+        let result = side(from_x, to_x);
+        assert_eq!(result, Side::Queen);
     }
 
     #[test]

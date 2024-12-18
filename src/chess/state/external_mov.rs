@@ -1,5 +1,4 @@
 use std::convert::TryFrom;
-use crate::chess::state::point::Point;
 use crate::chess::state::square::PieceKind;
 use crate::chess::state::castle_move::CastleMove;
 use crate::chess::state::castle_move::Side;
@@ -18,8 +17,8 @@ pub struct ExternalMove {
     pub moving_piece_kind: PieceKind,
     pub capture_piece_kind: Option<PieceKind>, // Undo -> place piece back
     pub promote_piece_kind: Option<PieceKind>, // Undo -> revert promotion
-    pub en_passant_point: Option<Point>, // Undo - add capture piece back next to from
-    pub en_passant_target: Option<Point>, // Undo - set game state en_passant_target back
+    pub en_passant_point: Option<(i8, i8)>, // Undo - add capture piece back next to from
+    pub en_passant_target: Option<(i8, i8)>, // Undo - set game state en_passant_target back
     pub castle_move: Option<CastleMove>, // Undo - Move king and rook back to start.
     pub file_disambiguation: bool,
     pub rank_disambiguation: bool,
@@ -224,7 +223,7 @@ mod tests {
         let to = (3, 2);
         let moving_piece_kind = PieceKind::Pawn;
         let capture_piece_kind = Some(PieceKind::Pawn);
-        let en_passant_point = Some(Point { x: 3, y: 3 });
+        let en_passant_point = Some((3, 3));
         let mov = ExternalMove {
             from,
             to,
@@ -232,7 +231,7 @@ mod tests {
             capture_piece_kind,
             promote_piece_kind: None,
             en_passant_point,
-            en_passant_target: Some(Point { x: 3, y: 2 }),
+            en_passant_target: Some((3, 2)),
             castle_move: None,
             file_disambiguation: true,
             rank_disambiguation: false,

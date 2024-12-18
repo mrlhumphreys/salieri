@@ -1,9 +1,8 @@
 use std::convert::TryFrom;
 use crate::chess::state::point::valid;
-use crate::chess::state::point::Point;
-use crate::chess::state::vector::direction_unit_n;
-use crate::chess::state::vector::length;
-use crate::chess::state::vector::side;
+use crate::chess::state::point::direction_unit_n;
+use crate::chess::state::point::length;
+use crate::chess::state::point::side;
 use crate::chess::state::mov::Move;
 use crate::chess::state::piece_factory::parse as parse_piece;
 use crate::chess::state::castle_move::parse as parse_castle_move;
@@ -21,7 +20,7 @@ const PROMOTE_PIECE_KINDS: [PieceKind; 4] = [
 pub struct GameState {
     pub current_player_number: i8,
     pub squares: Vec<Vec<Square>>,
-    pub en_passant_target: Option<Point>,
+    pub en_passant_target: Option<(i8, i8)>,
     pub castle_moves: Vec<CastleMove>
 }
 
@@ -90,7 +89,7 @@ impl GameState {
                     if square.player_number != 0 {
                         // if any capture square match king square
                         let point = (x as i8, y as i8);
-                        check = square.player_number == other_player_number && square.capture_squares(point, self).iter().any(|s| s.0 == king_point.0 && s.1 == king_point.1 );
+                        check = square.player_number == other_player_number && square.capture_squares(point, self).iter().any(|s| *s == king_point );
                     }
                 }
             }
@@ -114,7 +113,7 @@ impl GameState {
                         for to_point in from.destinations(from_point, &self) {
 
                             let mut capture_piece_kind: Option<PieceKind> = None;
-                            if let Some(to) = find_by_x_and_y(&self.squares, to_point.0,to_point.1) {
+                            if let Some(to) = find_by_x_and_y(&self.squares, to_point) {
                                 if to.player_number != 0 {
                                    if subject_player_number != to.player_number {
                                        capture_piece_kind = Some(to.kind);
@@ -128,19 +127,18 @@ impl GameState {
                                 // state: en_passant_target
                                 //     - indicates that the previous move was a pawn that jumped previously
                                 //     - contains the jumped over square of the pawn that jumped previously.
-                                let mut en_passant_point: Option<Point> = None;
+                                let mut en_passant_point: Option<(i8, i8)> = None;
                                 if let Some(target) =  self.en_passant_target {
                                     if from.kind == PieceKind::Pawn &&
-                                        (to_point.0 == target.x && to_point.1 == target.y) &&
-                                        (from_point.0 == target.x + 1 || from_point.0 == target.x - 1) &&
-                                        from_point.1 + from.forwards_direction() == target.y {
+                                        (to_point == target) &&
+                                        (from_point.0 == target.0 + 1 || from_point.0 == target.0 - 1) &&
+                                        from_point.1 + from.forwards_direction() == target.1 {
 
-                                        let capture_x = target.x;
-                                        let capture_y = target.y - from.forwards_direction();
-                                        if let Some(capture_square) = find_by_x_and_y(&self.squares, capture_x, capture_y) {
+                                        let capture = (target.0, target.1 - from.forwards_direction());
+                                        if let Some(capture_square) = find_by_x_and_y(&self.squares, capture) {
                                             if capture_square.occupied_by_opponent(from.player_number) {
                                                 capture_piece_kind = Some(PieceKind::Pawn);
-                                                en_passant_point = Some(Point { x: capture_x, y: capture_y });
+                                                en_passant_point = Some(capture);
                                             }
                                         }
                                     }
@@ -150,7 +148,7 @@ impl GameState {
                                 if from.kind == PieceKind::King {
                                     // exclude castle move if in check
                                     if !self.in_check(subject_player_number) {
-                                        if from_point.1 == to_point.1 && length(from_point.0, from_point.1, to_point.0, to_point.1) == 2 {
+                                        if from_point.1 == to_point.1 && length(from_point, to_point) == 2 {
                                             let s = side(from_point.0, to_point.0);
                                             let cm = CastleMove { player_number: subject_player_number, side: s };
                                             castle_move = Some(cm);
@@ -210,7 +208,7 @@ impl GameState {
         let piece_player_number: i8;
         let piece_kind: PieceKind;
 
-        match find_by_x_and_y_mut(&mut self.squares, mov.from.0, mov.from.1) {
+        match find_by_x_and_y_mut(&mut self.squares, mov.from) {
             Some(s) => {
                 if s.occupied() {
                     piece_player_number = s.player_number;
@@ -224,7 +222,7 @@ impl GameState {
             None => return Err("Invalid From Square")
         }
 
-        match find_by_x_and_y_mut(&mut self.squares, mov.to.0, mov.to.1) {
+        match find_by_x_and_y_mut(&mut self.squares, mov.to) {
             Some(s) => {
                 s.player_number = piece_player_number;
                 s.kind = piece_kind;
@@ -234,7 +232,7 @@ impl GameState {
 
         // maybe use en_passant_target
         if let Some(p) = mov.en_passant_point {
-            match find_by_x_and_y_mut(&mut self.squares, p.x, p.y) {
+            match find_by_x_and_y_mut(&mut self.squares, p) {
                 Some(s) => {
                     s.player_number = 0;
                     s.kind = PieceKind::Empty;
@@ -249,7 +247,7 @@ impl GameState {
             let piece_player_number: i8;
             let piece_kind: PieceKind;
 
-            match find_by_x_and_y_mut(&mut self.squares, from.x, from.y) {
+            match find_by_x_and_y_mut(&mut self.squares, from) {
                Some(s) => {
                     piece_player_number = s.player_number;
                     piece_kind = s.kind;
@@ -259,7 +257,7 @@ impl GameState {
                None => return Err("Invalid From Square")
             }
 
-            match find_by_x_and_y_mut(&mut self.squares, to.x, to.y) {
+            match find_by_x_and_y_mut(&mut self.squares, to) {
                 Some(s) => {
                     s.kind = piece_kind;
                     s.player_number = piece_player_number;
@@ -272,7 +270,7 @@ impl GameState {
            let promote_piece_kind = pk;
            let promote_piece_player_number = self.current_player_number;
 
-           match find_by_x_and_y_mut(&mut self.squares, mov.to.0, mov.to.1) {
+           match find_by_x_and_y_mut(&mut self.squares, mov.to) {
                Some(s) => {
                    s.player_number = promote_piece_player_number;
                    s.kind = promote_piece_kind;
@@ -282,11 +280,11 @@ impl GameState {
         }
 
         // set en passant target
-        if mov.moving_piece_kind == PieceKind::Pawn && length(mov.from.0, mov.from.1, mov.to.0, mov.to.1) == 2 {
+        if mov.moving_piece_kind == PieceKind::Pawn && length(mov.from, mov.to) == 2 {
             let backwards = direction_unit_n(mov.from.1, mov.to.1)*-1;
             let x = mov.to.0;
             let y = mov.to.1 + backwards; // 3: 4 -1 or 2 + 1
-            self.en_passant_target = Some(Point { x, y });
+            self.en_passant_target = Some((x, y));
         } else {
             self.en_passant_target = None;
         }
@@ -324,7 +322,7 @@ impl GameState {
             let piece_player_number: i8;
             let piece_kind: PieceKind;
 
-            match find_by_x_and_y_mut(&mut self.squares, to.x, to.y) {
+            match find_by_x_and_y_mut(&mut self.squares, to) {
                Some(s) => {
                     piece_player_number = s.player_number;
                     piece_kind = s.kind;
@@ -334,7 +332,7 @@ impl GameState {
                None => return Err("Invalid From Square")
             }
 
-            match find_by_x_and_y_mut(&mut self.squares, from.x, from.y) {
+            match find_by_x_and_y_mut(&mut self.squares, from) {
                 Some(s) => {
                     s.player_number = piece_player_number;
                     s.kind = piece_kind;
@@ -347,7 +345,7 @@ impl GameState {
         let moving_piece_kind: PieceKind;
 
         // move
-        match find_by_x_and_y_mut(&mut self.squares, mov.to.0, mov.to.1) {
+        match find_by_x_and_y_mut(&mut self.squares, mov.to) {
             Some(s) => {
                 moving_piece_kind = s.kind;
                 moving_piece_player_number = s.player_number;
@@ -357,7 +355,7 @@ impl GameState {
             None => return Err("Invalid To Square")
         };
 
-        match find_by_x_and_y_mut(&mut self.squares, mov.from.0, mov.from.1) {
+        match find_by_x_and_y_mut(&mut self.squares, mov.from) {
             Some(s) => {
                 s.kind = moving_piece_kind;
                 s.player_number = moving_piece_player_number;
@@ -377,7 +375,7 @@ impl GameState {
             match mov.en_passant_point {
                 Some(p) => {
                     // en passant
-                    match find_by_x_and_y_mut(&mut self.squares, p.x, p.y) {
+                    match find_by_x_and_y_mut(&mut self.squares, p) {
                         Some(s) => {
                             s.kind = PieceKind::Pawn;
                             s.player_number = other_player_number;
@@ -390,7 +388,7 @@ impl GameState {
                     let capture_piece_kind = pk;
                     let capture_piece_player_number = other_player_number;
 
-                    match find_by_x_and_y_mut(&mut self.squares, mov.to.0, mov.to.1) {
+                    match find_by_x_and_y_mut(&mut self.squares, mov.to) {
                         Some(s) => {
                             s.kind = capture_piece_kind;
                             s.player_number = capture_piece_player_number;
@@ -405,7 +403,7 @@ impl GameState {
             let unpromote_piece_kind = PieceKind::Pawn;
             let unpromote_player_number = moving_piece_player_number;
 
-            match find_by_x_and_y_mut(&mut self.squares, mov.from.0, mov.from.1) {
+            match find_by_x_and_y_mut(&mut self.squares, mov.from) {
                 Some(s) => {
                     s.kind = unpromote_piece_kind;
                     s.player_number = unpromote_player_number;
@@ -416,9 +414,9 @@ impl GameState {
 
         // castle moves
         if mov.moving_piece_kind == PieceKind::King {
-            if let Some(from) = find_by_x_and_y(&self.squares, mov.from.0, mov.from.1) {
+            if let Some(from) = find_by_x_and_y(&self.squares, mov.from) {
                if from.player_number != 0 {
-                   if from.player_number == 1 && mov.from.0 == 4 && mov.from.1 == 7 {
+                   if from.player_number == 1 && mov.from == (4, 7) {
                         let castle_move_a = CastleMove { player_number: 1, side: Side::King };
                         let castle_move_b = CastleMove { player_number: 1, side: Side::Queen };
                         if !self.castle_moves.contains(&castle_move_a) {
@@ -428,7 +426,7 @@ impl GameState {
                         if !self.castle_moves.contains(&castle_move_b) {
                             self.castle_moves.push(castle_move_b);
                         }
-                   } else if from.player_number == 2 && mov.from.0 == 0 && mov.from.1 == 7 {
+                   } else if from.player_number == 2 && mov.from == (4, 0) {
                         let castle_move_a = CastleMove { player_number: 2, side: Side::King };
                         let castle_move_b = CastleMove { player_number: 2, side: Side::Queen };
 
@@ -445,24 +443,24 @@ impl GameState {
         }
 
         if mov.moving_piece_kind == PieceKind::Rook {
-            if let Some(from) = find_by_x_and_y(&self.squares, mov.from.0, mov.from.1) {
+            if let Some(from) = find_by_x_and_y(&self.squares, mov.from) {
                if from.player_number != 0 {
-                   if from.player_number == 1 && mov.from.0 == 0 && mov.from.1 == 7 {
+                   if from.player_number == 1 && mov.from == (0, 7) {
                         let castle_move = CastleMove { player_number: 1, side: Side::Queen };
                         if !self.castle_moves.contains(&castle_move) {
                             self.castle_moves.push(castle_move);
                         }
-                   } else if from.player_number == 1 && mov.from.0 == 7 && mov.from.1 == 7 {
+                   } else if from.player_number == 1 && mov.from == (7, 7) {
                         let castle_move = CastleMove { player_number: 1, side: Side::King };
                         if !self.castle_moves.contains(&castle_move) {
                             self.castle_moves.push(castle_move);
                         }
-                   } else if from.player_number == 2 && mov.from.0 == 0 && mov.from.1 == 0 {
+                   } else if from.player_number == 2 && mov.from == (0, 0) {
                         let castle_move = CastleMove { player_number: 2, side: Side::Queen };
                         if !self.castle_moves.contains(&castle_move) {
                             self.castle_moves.push(castle_move);
                         }
-                   } else if from.player_number == 2 && mov.from.0 == 7 && mov.from.1 == 0 {
+                   } else if from.player_number == 2 && mov.from == (7, 0) {
                         let castle_move = CastleMove { player_number: 2, side: Side::King };
                         if !self.castle_moves.contains(&castle_move) {
                             self.castle_moves.push(castle_move);
@@ -653,7 +651,7 @@ pub fn parse(encoded: &String) -> Result<GameState, &'static str> {
                             match i8::try_from(unwrapped) {
                                 Ok(i8_num) => {
                                     let en_passant_y = 8 - i8_num;
-                                    en_passant_target = Some(Point { x: en_passant_x, y: en_passant_y });
+                                    en_passant_target = Some((en_passant_x, en_passant_y));
                                 },
                                 Err(_) => ()
                             };
@@ -927,8 +925,8 @@ mod tests {
         assert_eq!(result[1].moving_piece_kind, PieceKind::Pawn);
         assert_eq!(result[1].capture_piece_kind, Some(PieceKind::Pawn));
         assert_eq!(result[1].promote_piece_kind, None);
-        assert_eq!(result[1].en_passant_point, Some(Point { x: 1, y: 3}));
-        assert_eq!(result[1].en_passant_target, Some(Point { x: 1, y: 2}));
+        assert_eq!(result[1].en_passant_point, Some((1, 3)));
+        assert_eq!(result[1].en_passant_target, Some((1, 2)));
         assert_eq!(result[1].castle_move, None);
     }
 
@@ -1019,10 +1017,10 @@ mod tests {
 
         assert_eq!(result, Ok(()));
         assert_eq!(state.current_player_number, 2);
-        let from = find_by_x_and_y(&state.squares, 0, 6).unwrap();
+        let from = find_by_x_and_y(&state.squares, (0, 6)).unwrap();
         assert_eq!(from.player_number, 0);
         assert_eq!(from.kind, PieceKind::Empty);
-        let to = find_by_x_and_y(&state.squares,0, 5).unwrap();
+        let to = find_by_x_and_y(&state.squares, (0, 5)).unwrap();
         assert_eq!(to.player_number, 1);
         assert_eq!(to.kind, PieceKind::Pawn);
         assert_eq!(state.en_passant_target, None);
@@ -1095,13 +1093,13 @@ mod tests {
 
         assert_eq!(result, Ok(()));
         assert_eq!(state.current_player_number, 2);
-        let from = find_by_x_and_y(&state.squares, 0, 6).unwrap();
+        let from = find_by_x_and_y(&state.squares, (0, 6)).unwrap();
         assert_eq!(from.player_number, 0);
         assert_eq!(from.kind, PieceKind::Empty);
-        let to = find_by_x_and_y(&state.squares, 0, 4).unwrap();
+        let to = find_by_x_and_y(&state.squares, (0, 4)).unwrap();
         assert_eq!(to.player_number, 1);
         assert_eq!(to.kind, PieceKind::Pawn);
-        assert_eq!(state.en_passant_target, Some(Point { x: 0, y: 5 }));
+        assert_eq!(state.en_passant_target, Some((0, 5)));
     }
 
     #[test]
@@ -1123,13 +1121,13 @@ mod tests {
 
         assert_eq!(result, Ok(()));
         assert_eq!(state.current_player_number, 1);
-        let from = find_by_x_and_y(&state.squares, 0, 1).unwrap();
+        let from = find_by_x_and_y(&state.squares, (0, 1)).unwrap();
         assert_eq!(from.player_number, 0);
         assert_eq!(from.kind, PieceKind::Empty);
-        let to = find_by_x_and_y(&state.squares, 0, 3).unwrap();
+        let to = find_by_x_and_y(&state.squares, (0, 3)).unwrap();
         assert_eq!(to.player_number, 2);
         assert_eq!(to.kind, PieceKind::Pawn);
-        assert_eq!(state.en_passant_target, Some(Point { x: 0, y: 2 }));
+        assert_eq!(state.en_passant_target, Some((0, 2)));
     }
 
     #[test]
@@ -1151,10 +1149,10 @@ mod tests {
 
         assert_eq!(result, Ok(()));
         assert_eq!(state.current_player_number, 2);
-        let from = find_by_x_and_y(&state.squares,0, 6).unwrap();
+        let from = find_by_x_and_y(&state.squares,(0, 6)).unwrap();
         assert_eq!(from.player_number, 0);
         assert_eq!(from.kind, PieceKind::Empty);
-        let to = find_by_x_and_y(&state.squares, 1, 5).unwrap();
+        let to = find_by_x_and_y(&state.squares, (1, 5)).unwrap();
         assert_eq!(to.player_number, 1);
         assert_eq!(to.kind, PieceKind::Pawn);
     }
@@ -1178,10 +1176,10 @@ mod tests {
 
         assert_eq!(result, Ok(()));
         assert_eq!(state.current_player_number, 2);
-        let from = find_by_x_and_y(&state.squares, 0, 1).unwrap();
+        let from = find_by_x_and_y(&state.squares, (0, 1)).unwrap();
         assert_eq!(from.player_number, 0);
         assert_eq!(from.kind, PieceKind::Empty);
-        let to = find_by_x_and_y(&state.squares, 0, 0).unwrap();
+        let to = find_by_x_and_y(&state.squares, (0, 0)).unwrap();
         assert_eq!(to.player_number, 1);
         assert_eq!(to.kind, PieceKind::Queen);
     }
@@ -1196,8 +1194,8 @@ mod tests {
             moving_piece_kind: PieceKind::Pawn,
             capture_piece_kind: Some(PieceKind::Pawn),
             promote_piece_kind: None,
-            en_passant_point: Some(Point { x: 1, y: 3 }),
-            en_passant_target: Some(Point { x: 1, y: 2 }),
+            en_passant_point: Some((1, 3)),
+            en_passant_target: Some((1, 2)),
             castle_move: None
         };
 
@@ -1205,13 +1203,13 @@ mod tests {
 
         assert_eq!(result, Ok(()));
         assert_eq!(state.current_player_number, 2);
-        let from = find_by_x_and_y(&state.squares, 0, 3).unwrap();
+        let from = find_by_x_and_y(&state.squares, (0, 3)).unwrap();
         assert_eq!(from.player_number, 0);
         assert_eq!(from.kind, PieceKind::Empty);
-        let to = find_by_x_and_y(&state.squares, 1, 2).unwrap();
+        let to = find_by_x_and_y(&state.squares, (1, 2)).unwrap();
         assert_eq!(to.player_number, 1);
         assert_eq!(to.kind, PieceKind::Pawn);
-        let capture = find_by_x_and_y(&state.squares, 1, 3).unwrap();
+        let capture = find_by_x_and_y(&state.squares, (1, 3)).unwrap();
         assert_eq!(capture.player_number, 0);
         assert_eq!(capture.kind, PieceKind::Empty);
     }
@@ -1227,14 +1225,14 @@ mod tests {
             capture_piece_kind: None,
             promote_piece_kind: None,
             en_passant_point: None,
-            en_passant_target: Some(Point { x: 0, y: 2 }),
+            en_passant_target: Some((0, 2)),
             castle_move: None
         };
 
         let result = state.perform_move(&mov);
 
         assert_eq!(result, Ok(()));
-        assert_eq!(state.en_passant_target, Some(Point { x: 0, y: 5 }));
+        assert_eq!(state.en_passant_target, Some((0, 5)));
     }
 
     #[test]
@@ -1255,7 +1253,7 @@ mod tests {
         let result = state.perform_move(&mov);
 
         assert_eq!(result, Ok(()));
-        assert_eq!(state.en_passant_target, Some(Point { x: 0, y: 2 }));
+        assert_eq!(state.en_passant_target, Some((0, 2)));
     }
 
     #[test]
@@ -1269,7 +1267,7 @@ mod tests {
             capture_piece_kind: None,
             promote_piece_kind: None,
             en_passant_point: None,
-            en_passant_target: Some(Point { x: 0, y: 5 }),
+            en_passant_target: Some((0, 5)),
             castle_move: None
         };
 
@@ -1298,18 +1296,18 @@ mod tests {
 
         assert_eq!(result, Ok(()));
         assert_eq!(state.current_player_number, 2);
-        let from = find_by_x_and_y(&state.squares, 4, 7).unwrap();
+        let from = find_by_x_and_y(&state.squares, (4, 7)).unwrap();
         assert_eq!(from.player_number, 0);
         assert_eq!(from.kind, PieceKind::Empty);
-        let to = find_by_x_and_y(&state.squares, 6, 7).unwrap();
+        let to = find_by_x_and_y(&state.squares, (6, 7)).unwrap();
         assert_eq!(to.player_number, 1);
         assert_eq!(to.kind, PieceKind::King);
 
-        let from_rook = find_by_x_and_y(&state.squares, 7, 7).unwrap();
+        let from_rook = find_by_x_and_y(&state.squares, (7, 7)).unwrap();
         assert_eq!(from_rook.player_number, 0);
         assert_eq!(from_rook.kind, PieceKind::Empty);
 
-        let to_rook = find_by_x_and_y(&state.squares, 5, 7).unwrap();
+        let to_rook = find_by_x_and_y(&state.squares, (5, 7)).unwrap();
         assert_eq!(to_rook.player_number, 1);
         assert_eq!(to_rook.kind, PieceKind::Rook);
 
@@ -1335,10 +1333,10 @@ mod tests {
 
         assert_eq!(result, Ok(()));
         assert_eq!(state.current_player_number, 1);
-        let from = find_by_x_and_y(&state.squares, 0, 6).unwrap();
+        let from = find_by_x_and_y(&state.squares, (0, 6)).unwrap();
         assert_eq!(from.player_number, 1);
         assert_eq!(from.kind, PieceKind::Pawn);
-        let to = find_by_x_and_y(&state.squares, 0, 5).unwrap();
+        let to = find_by_x_and_y(&state.squares, (0, 5)).unwrap();
         assert_eq!(to.player_number, 0);
         assert_eq!(to.kind, PieceKind::Empty);
     }
@@ -1404,8 +1402,8 @@ mod tests {
             moving_piece_kind: PieceKind::Pawn,
             capture_piece_kind: Some(PieceKind::Pawn),
             promote_piece_kind: None,
-            en_passant_point: Some(Point { x: 1, y: 3}),
-            en_passant_target: Some(Point { x: 1, y: 2}),
+            en_passant_point: Some((1, 3)),
+            en_passant_target: Some((1, 2)),
             castle_move: None
         };
 
@@ -1481,10 +1479,10 @@ mod tests {
 
         assert_eq!(result, Ok(()));
         assert_eq!(state.current_player_number, 1);
-        let from = find_by_x_and_y(&state.squares, 0, 6).unwrap();
+        let from = find_by_x_and_y(&state.squares, (0, 6)).unwrap();
         assert_eq!(from.player_number, 1);
         assert_eq!(from.kind, PieceKind::Pawn);
-        let to = find_by_x_and_y(&state.squares, 0, 4).unwrap();
+        let to = find_by_x_and_y(&state.squares, (0, 4)).unwrap();
         assert_eq!(to.player_number, 0);
         assert_eq!(to.kind, PieceKind::Empty);
         assert_eq!(state.en_passant_target, None);
@@ -1509,10 +1507,10 @@ mod tests {
 
         assert_eq!(result, Ok(()));
         assert_eq!(state.current_player_number, 2);
-        let from = find_by_x_and_y(&state.squares, 0, 1).unwrap();
+        let from = find_by_x_and_y(&state.squares, (0, 1)).unwrap();
         assert_eq!(from.player_number, 2);
         assert_eq!(from.kind, PieceKind::Pawn);
-        let to = find_by_x_and_y(&state.squares, 0, 2).unwrap();
+        let to = find_by_x_and_y(&state.squares, (0, 2)).unwrap();
         assert_eq!(to.player_number, 0);
         assert_eq!(to.kind, PieceKind::Empty);
         assert_eq!(state.en_passant_target, None);
@@ -1537,10 +1535,10 @@ mod tests {
 
         assert_eq!(result, Ok(()));
         assert_eq!(state.current_player_number, 1);
-        let from = find_by_x_and_y(&state.squares, 0, 6).unwrap();
+        let from = find_by_x_and_y(&state.squares, (0, 6)).unwrap();
         assert_eq!(from.player_number, 1);
         assert_eq!(from.kind, PieceKind::Pawn);
-        let to = find_by_x_and_y(&state.squares, 1, 5).unwrap();
+        let to = find_by_x_and_y(&state.squares, (1, 5)).unwrap();
         assert_eq!(to.player_number, 2);
         assert_eq!(to.kind, PieceKind::Pawn);
     }
@@ -1564,10 +1562,10 @@ mod tests {
 
         assert_eq!(result, Ok(()));
         assert_eq!(state.current_player_number, 1);
-        let from = find_by_x_and_y(&state.squares, 0, 1).unwrap();
+        let from = find_by_x_and_y(&state.squares, (0, 1)).unwrap();
         assert_eq!(from.player_number, 1);
         assert_eq!(from.kind, PieceKind::Pawn);
-        let to = find_by_x_and_y(&state.squares, 0, 0).unwrap();
+        let to = find_by_x_and_y(&state.squares, (0, 0)).unwrap();
         assert_eq!(to.player_number, 0);
         assert_eq!(to.kind, PieceKind::Empty);
     }
@@ -1582,8 +1580,8 @@ mod tests {
             moving_piece_kind: PieceKind::Pawn,
             capture_piece_kind: Some(PieceKind::Pawn),
             promote_piece_kind: None,
-            en_passant_point: Some(Point { x: 1, y: 3 }),
-            en_passant_target: Some(Point { x: 1, y: 2 }),
+            en_passant_point: Some((1, 3)),
+            en_passant_target: Some((1, 2)),
             castle_move: None
         };
 
@@ -1591,16 +1589,16 @@ mod tests {
 
         assert_eq!(result, Ok(()));
         assert_eq!(state.current_player_number, 1);
-        let from = find_by_x_and_y(&state.squares, 0, 3).unwrap();
+        let from = find_by_x_and_y(&state.squares, (0, 3)).unwrap();
         assert_eq!(from.player_number, 1);
         assert_eq!(from.kind, PieceKind::Pawn);
-        let to = find_by_x_and_y(&state.squares, 1, 2).unwrap();
+        let to = find_by_x_and_y(&state.squares, (1, 2)).unwrap();
         assert_eq!(to.player_number, 0);
         assert_eq!(to.kind, PieceKind::Empty);
-        let capture = find_by_x_and_y(&state.squares, 1, 3).unwrap();
+        let capture = find_by_x_and_y(&state.squares, (1, 3)).unwrap();
         assert_eq!(capture.player_number, 2);
         assert_eq!(capture.kind, PieceKind::Pawn);
-        assert_eq!(state.en_passant_target, Some(Point { x: 1, y: 2 }));
+        assert_eq!(state.en_passant_target, Some((1, 2)));
     }
 
     #[test]
@@ -1622,16 +1620,16 @@ mod tests {
 
         assert_eq!(result, Ok(()));
         assert_eq!(state.current_player_number, 1);
-        let from = find_by_x_and_y(&state.squares, 4, 7).unwrap();
+        let from = find_by_x_and_y(&state.squares, (4, 7)).unwrap();
         assert_eq!(from.player_number, 1);
         assert_eq!(from.kind, PieceKind::King);
-        let to = find_by_x_and_y(&state.squares, 6, 7).unwrap();
+        let to = find_by_x_and_y(&state.squares, (6, 7)).unwrap();
         assert_eq!(to.player_number, 0);
         assert_eq!(to.kind, PieceKind::Empty);
-        let from_rook = find_by_x_and_y(&state.squares, 7, 7).unwrap();
+        let from_rook = find_by_x_and_y(&state.squares, (7, 7)).unwrap();
         assert_eq!(from_rook.player_number, 1);
         assert_eq!(from_rook.kind, PieceKind::Rook);
-        let to_rook = find_by_x_and_y(&state.squares, 5, 7).unwrap();
+        let to_rook = find_by_x_and_y(&state.squares, (5, 7)).unwrap();
         assert_eq!(to_rook.player_number, 0);
         assert_eq!(to_rook.kind, PieceKind::Empty);
     }
