@@ -496,12 +496,7 @@ mod tests {
             Ok(game_state) => {
                 let result = from.destinations(point, &game_state);
                 let expected = vec![
-                    (7, 1),
-                    (7, 2),
-                    (7, 3),
-                    (7, 4),
-                    (7, 5),
-                    (7, 6)
+                    (7, 6), (7, 5), (7, 4), (7, 3), (7, 2), (7, 1)
                 ];
                 assert_eq!(result, expected);
             },
@@ -540,10 +535,7 @@ mod tests {
             Ok(game_state) => {
                 let result = from.destinations(point, &game_state);
                 let expected = vec![
-                    (1, 3),
-                    (2, 4),
-                    (3, 5),
-                    (4, 6)
+                    (4, 6), (3, 5), (2, 4), (1, 3)
                 ];
                 assert_eq!(result, expected);
             },
@@ -562,12 +554,7 @@ mod tests {
             Ok(game_state) => {
                 let result = from.destinations(point, &game_state);
                 let expected = vec![
-                    (0, 4),
-                    (3, 4),
-                    (1, 5),
-                    (3, 5),
-                    (2, 6),
-                    (3, 6)
+                    (2, 6), (1, 5), (0, 4), (3, 6), (3, 5), (3, 4)
                 ];
                 assert_eq!(result, expected);
             },
@@ -683,12 +670,7 @@ mod tests {
             Ok(game_state) => {
                 let result = from.capture_squares(point, &game_state);
                 let expected = vec![
-                    (7, 1),
-                    (7, 2),
-                    (7, 3),
-                    (7, 4),
-                    (7, 5),
-                    (7, 6)
+                    (7, 6), (7, 5), (7, 4), (7, 3), (7, 2), (7, 1)
                 ];
                 assert_eq!(result, expected);
             },
