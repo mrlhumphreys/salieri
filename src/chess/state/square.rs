@@ -65,13 +65,10 @@ impl Square {
     }
 
     pub fn destinations<'a>(&'a self, point: (i8, i8), game_state: &'a GameState) -> Vec<(i8, i8)> {
+        let mut acc = vec![];
         match self.kind {
-            PieceKind::Empty => {
-                vec![]
-            },
+            PieceKind::Empty => (),
             PieceKind::Pawn => {
-                let mut acc = vec![];
-
                 for to_point in pawn_destination_points(point, self.player_number) {
                     if let Some(to) = find_by_x_and_y(&game_state.squares, to_point) {
                         if to.unoccupied() && between_unoccupied(&game_state.squares, point, to_point) {
@@ -87,11 +84,8 @@ impl Square {
                         }
                     }
                 }
-
-                acc
             },
             PieceKind::Rook => {
-                let mut acc = vec![];
                 for to_point in orthogonal_destination_points(point) {
                     if let Some(to) = find_by_x_and_y(&game_state.squares, to_point) {
                         if to.unoccupied_or_occupied_by_opponent(self.player_number) &&
@@ -100,10 +94,8 @@ impl Square {
                         }
                     }
                 }
-                acc
             },
             PieceKind::Knight => {
-                let mut acc = vec![];
                 for to_point in l_shape_destination_points(point) {
                     if let Some(to) = find_by_x_and_y(&game_state.squares, to_point) {
                         if to.unoccupied_or_occupied_by_opponent(self.player_number) {
@@ -111,10 +103,8 @@ impl Square {
                         }
                     }
                 }
-                acc
             },
             PieceKind::Bishop => {
-                let mut acc = vec![];
                 for to_point in diagonal_destination_points(point) {
                     if let Some(to) = find_by_x_and_y(&game_state.squares, to_point) {
                         if to.unoccupied_or_occupied_by_opponent(self.player_number) &&
@@ -123,10 +113,8 @@ impl Square {
                         }
                     }
                 }
-                acc
             },
             PieceKind::Queen => {
-                let mut acc = vec![];
                 for to_point in orthogonal_or_diagonal_destination_points(point) {
                     if let Some(to) = find_by_x_and_y(&game_state.squares, to_point) {
                         if to.unoccupied_or_occupied_by_opponent(self.player_number) &&
@@ -135,10 +123,8 @@ impl Square {
                         }
                     }
                 }
-                acc
             },
             PieceKind::King => {
-                let mut acc = vec![];
                 for to_point in one_step_destination_points(point) {
                     if let Some(to) = find_by_x_and_y(&game_state.squares, to_point) {
                         if to.unoccupied_or_occupied_by_opponent(self.player_number) {
@@ -154,15 +140,15 @@ impl Square {
                         }
                     }
                 }
-                acc
             }
         }
+        acc
     }
 
     pub fn capture_squares<'a>(&'a self, point: (i8, i8), game_state: &'a GameState) -> Vec<(i8, i8)> {
+        let mut acc = vec![];
         match self.kind {
             PieceKind::Pawn => {
-                let mut acc = vec![];
                 for to_point in forward_diagonal_step_destination_points(point, self.player_number) {
                     if let Some(to) = find_by_x_and_y(&game_state.squares, to_point) {
                         if to.occupied_by_opponent(self.player_number) || self.en_passant_condition(point, to_point, game_state) {
@@ -170,10 +156,8 @@ impl Square {
                         }
                     }
                 }
-                acc
             },
             PieceKind::King => {
-                let mut acc = vec![];
                 for to_point in one_step_destination_points(point) {
                     if let Some(to) = find_by_x_and_y(&game_state.squares, to_point) {
                         if to.unoccupied_or_occupied_by_opponent(self.player_number) {
@@ -181,12 +165,12 @@ impl Square {
                         }
                     }
                 }
-                acc
             },
             _ => {
-                self.destinations(point, game_state)
+                acc = self.destinations(point, game_state);
             }
         }
+        acc
     }
 
     fn castle_conditions(&self, point: (i8, i8), to_point: (i8, i8), game_state: &GameState) -> bool {
@@ -222,21 +206,15 @@ impl Square {
     }
 
     fn en_passant_condition(&self, point: (i8, i8), to_point: (i8, i8), game_state: &GameState) -> bool {
+        let mut result = false;
         if let Some(target) = game_state.en_passant_target {
-            if to_point.0 == target.0 && to_point.1 == target.1 {
-                let mut result = false;
+            if to_point == target {
                 if let Some(opposing_to) = find_by_x_and_y(&game_state.squares, (target.0, point.1)) {
-                    if opposing_to.occupied_by_opponent(self.player_number) {
-                        result = true;
-                    }
+                    result = opposing_to.occupied_by_opponent(self.player_number);
                 }
-                result
-            } else {
-                false
             }
-        } else {
-            false
         }
+        result
     }
 
     pub fn forwards_direction(&self) -> i8 {
