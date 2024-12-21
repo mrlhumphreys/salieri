@@ -1,4 +1,5 @@
-use crate::chess::state::point::direction_unit_n;
+use crate::chess::state::point::add;
+use crate::chess::state::point::direction_unit;
 use crate::chess::state::point::length;
 use crate::chess::state::point::valid;
 use crate::chess::state::point::orthogonal_or_diagonal;
@@ -24,21 +25,17 @@ pub fn between_unoccupied(squares: &Vec<Vec<Square>>, from: (i8, i8), to: (i8, i
     let mut result = true;
 
     if orthogonal_or_diagonal(from, to) && length(from, to) > 1 {
-        let direction_unit_x = direction_unit_n(from.0, to.0);
-        let direction_unit_y = direction_unit_n(from.1, to.1);
-        let end_x = to.0;
-        let end_y = to.1;
-        let mut counter_x = from.0 + direction_unit_x;
-        let mut counter_y = from.1 + direction_unit_y;
-        while counter_x != end_x || counter_y != end_y {
-            if let Some(square) = find_by_x_and_y(squares, (counter_x, counter_y)) {
+        let direction_unit = direction_unit(from, to);
+        let end = to;
+        let mut counter = add(from, direction_unit);
+        while counter != end {
+            if let Some(square) = find_by_x_and_y(squares, counter) {
                if square.occupied() {
                    result = false;
                    break;
                }
             }
-            counter_x = counter_x + direction_unit_x;
-            counter_y = counter_y + direction_unit_y;
+            counter = add(counter, direction_unit);
         }
     }
     result

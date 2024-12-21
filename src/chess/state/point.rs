@@ -45,6 +45,10 @@ pub fn direction_unit_n(from_n: i8, to_n: i8) -> i8 {
     }
 }
 
+pub fn direction_unit(from: (i8, i8), to: (i8, i8)) -> (i8, i8) {
+    (direction_unit_n(from.0, to.0), direction_unit_n(from.1, to.1))
+}
+
 pub fn side(from_x: i8, to_x: i8) -> Side {
     if to_x > from_x {
         Side::King
@@ -296,11 +300,19 @@ mod tests {
     }
 
     #[test]
-    fn direction_unit_y_test() {
+    fn direction_unit_n_test() {
         let from_y = 4;
         let to_y = 6;
         let result = direction_unit_n(from_y, to_y);
         assert_eq!(result, 1);
+    }
+
+    #[test]
+    fn direction_unit_test() {
+        let from = (4, 4);
+        let to = (6, 2);
+        let result = direction_unit(from, to);
+        assert_eq!(result, (1, -1));
     }
 
     #[test]
