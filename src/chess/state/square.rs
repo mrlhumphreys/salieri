@@ -32,19 +32,10 @@ pub enum PieceKind {
     Empty
 }
 
-#[derive(Copy, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Square {
     pub player_number: i8,
     pub kind: PieceKind
-}
-
-impl Clone for Square {
-    fn clone(&self) -> Square {
-        Square {
-            player_number: self.player_number,
-            kind: self.kind
-        }
-    }
 }
 
 impl Square {
@@ -238,7 +229,7 @@ mod tests {
     use crate::chess::state::game_state::parse as parse_game_state;
 
     #[test]
-    fn occupied_some_test() {
+    fn occupied_true_test() {
         let square = Square { player_number: 1, kind: PieceKind::Pawn };
         let expected = true;
         let result = square.occupied();
@@ -246,10 +237,26 @@ mod tests {
     }
 
     #[test]
-    fn occupied_none_test() {
+    fn occupied_false_test() {
         let square = Square { player_number: 0, kind: PieceKind::Empty };
         let expected = false;
         let result = square.occupied();
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn unoccupied_true_test() {
+        let square = Square { player_number: 0, kind: PieceKind::Empty };
+        let expected = true;
+        let result = square.unoccupied();
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn unoccupied_false_test() {
+        let square = Square { player_number: 1, kind: PieceKind::Pawn };
+        let expected = false;
+        let result = square.unoccupied();
         assert_eq!(result, expected);
     }
 
@@ -270,7 +277,7 @@ mod tests {
     }
 
     #[test]
-    fn occupied_by_opponent_none_test() {
+    fn occupied_by_opponent_zero_test() {
         let square = Square { player_number: 0, kind: PieceKind::Empty };
         let expected = false;
         let result = square.occupied_by_opponent(1);
@@ -294,7 +301,7 @@ mod tests {
     }
 
     #[test]
-    fn unoccupied_or_occupied_by_opponent_none_test() {
+    fn unoccupied_or_occupied_by_opponent_zero_test() {
         let square = Square { player_number: 0, kind: PieceKind::Empty };
         let expected = true;
         let result = square.unoccupied_or_occupied_by_opponent(1);

@@ -92,18 +92,16 @@ pub fn orthogonal_destination_points(from: (i8, i8)) -> Vec<(i8, i8)> {
 }
 
 pub fn l_shape_destination_points(from: (i8, i8)) -> Vec<(i8, i8)> {
-    let mut acc = vec![];
-
-    acc.push(add(from, (-1, -2)));
-    acc.push(add(from, ( 1, -2)));
-    acc.push(add(from, ( 2, -1)));
-    acc.push(add(from, ( 2,  1)));
-    acc.push(add(from, ( 1,  2)));
-    acc.push(add(from, (-1,  2)));
-    acc.push(add(from, (-2,  1)));
-    acc.push(add(from, (-2, -1)));
-
-    acc
+    vec![
+        add(from, (-1, -2)),
+        add(from, ( 1, -2)),
+        add(from, ( 2, -1)),
+        add(from, ( 2,  1)),
+        add(from, ( 1,  2)),
+        add(from, (-1,  2)),
+        add(from, (-2,  1)),
+        add(from, (-2, -1))
+    ]
 }
 
 pub fn diagonal_destination_points(from: (i8, i8)) -> Vec<(i8, i8)> {
@@ -203,18 +201,16 @@ pub fn orthogonal_or_diagonal_destination_points(from: (i8, i8)) -> Vec<(i8, i8)
 }
 
 pub fn one_step_destination_points(from: (i8, i8)) -> Vec<(i8, i8)> {
-    let mut acc = vec![];
-
-    acc.push(add(from, (-1, -1)));
-    acc.push(add(from, ( 0, -1)));
-    acc.push(add(from, ( 1, -1)));
-    acc.push(add(from, ( 1,  0)));
-    acc.push(add(from, ( 1,  1)));
-    acc.push(add(from, ( 0,  1)));
-    acc.push(add(from, (-1,  1)));
-    acc.push(add(from, (-1,  0)));
-
-    acc
+    vec![
+        add(from, (-1, -1)),
+        add(from, ( 0, -1)),
+        add(from, ( 1, -1)),
+        add(from, ( 1,  0)),
+        add(from, ( 1,  1)),
+        add(from, ( 0,  1)),
+        add(from, (-1,  1)),
+        add(from, (-1,  0))
+    ]
 }
 
 pub fn king_castle_destination_points(from: (i8, i8)) -> Vec<(i8, i8)> {
@@ -297,6 +293,14 @@ mod tests {
         let to = (2, 4);
         let result = length(from, to);
         assert_eq!(result, 3);
+    }
+
+    #[test]
+    fn add_test() {
+        let a = (1, 1);
+        let b = (-1, 0);
+        let result = add(a, b);
+        assert_eq!(result, (0, 1));
     }
 
     #[test]
@@ -447,5 +451,35 @@ mod tests {
         ];
         let result = forward_diagonal_step_destination_points(from, player_number);
         assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn orthogonal_or_diagonal_true_test() {
+       let from = (0, 1);
+       let to = (0, 4);
+       let result = orthogonal_or_diagonal(from, to);
+       assert_eq!(result, true);
+    }
+
+    #[test]
+    fn orthogonal_or_diagonal_false_test() {
+       let from = (0, 1);
+       let to = (1, 3);
+       let result = orthogonal_or_diagonal(from, to);
+       assert_eq!(result, false);
+    }
+
+    #[test]
+    fn forwards_direction_one_test() {
+        let player_number = 1;
+        let result = forwards_direction(player_number);
+        assert_eq!(result, -1);
+    }
+
+    #[test]
+    fn forwards_direction_two_test() {
+        let player_number = 2;
+        let result = forwards_direction(player_number);
+        assert_eq!(result, 1);
     }
 }

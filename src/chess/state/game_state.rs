@@ -627,7 +627,7 @@ pub fn parse(encoded: &String) -> Result<GameState, &'static str> {
                             }
                             x += 1; // increment column
                             empty_counter += 1;
-                        };
+                        }
                     } else {
                         parse_error = true;
                     }

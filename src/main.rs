@@ -15,6 +15,9 @@ mod chess_controller;
 mod go;
 mod go_controller;
 
+mod shogi;
+mod shogi_controller;
+
 async fn index() -> impl Responder {
     HttpResponse::Ok().body("200 OK\n")
 }
@@ -46,7 +49,10 @@ async fn post_game_move(info: web::Path<String>, req_body: String) -> impl Respo
                 Some(m) => HttpResponse::Ok().body(format!("{}\n", m)),
                 None => go_controller::minimax(&req_body)
             }
-        }
+        },
+        "shogi" => {
+            shogi_controller::minimax(&req_body)
+        },
         _ => return HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n")
     }
 }
@@ -86,7 +92,13 @@ async fn post_game_algorithm_move(info: web::Path<(String, String)>, req_body: S
                 "mcts" => go_controller::mcts(&req_body),
                 _ => return HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n")
             }
-        }
+        },
+        "shogi" => {
+            match algorithm.as_str() {
+                "minimax" => shogi_controller::minimax(&req_body),
+                _ => return HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n")
+            }
+        },
         _ => return HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n")
     }
 }
@@ -361,6 +373,60 @@ mod tests {
         let req = test::TestRequest::post()
             .insert_header(ContentType::plaintext())
             .uri("/api/v0/go")
+            .set_payload(game_state)
+            .to_request();
+        let res = test::call_and_read_body(&app, req).await;
+        assert_eq!(res, Bytes::from_static(b"422 Unprocessable Entity\n"));
+    }
+
+    // shogi with valid params
+    #[actix_rt::test]
+    async fn test_shogi_status_with_valid_params() {
+        let game_state = String::from("lnsgk2nl/1r4gs1/p1pppp1pp/1p4p2/7P1/2P6/PP1PPPP1P/1SG4R1/LN2KGSNL b Bb");
+        let app = test::init_service(App::new().route("/api/v0/{game_type}", web::post().to(post_game_move))).await;
+        let req = test::TestRequest::post()
+            .insert_header(ContentType::plaintext())
+            .uri("/api/v0/shogi")
+            .set_payload(game_state)
+            .to_request();
+        let res = test::call_service(&app, req).await;
+        assert!(res.status().is_success());
+    }
+
+    #[actix_rt::test]
+    async fn test_shogi_body_with_valid_params() {
+        let game_state = String::from("lnsgk2nl/1r4gs1/p1pppp1pp/1p4p2/7P1/2P6/PP1PPPP1P/1SG4R1/LN2KGSNL b Bb");
+        let app = test::init_service(App::new().route("/api/v0/{game_type}", web::post().to(post_game_move))).await;
+        let req = test::TestRequest::post()
+            .insert_header(ContentType::plaintext())
+            .uri("/api/v0/shogi")
+            .set_payload(game_state)
+            .to_request();
+        let res = test::call_and_read_body(&app, req).await;
+        assert_eq!(res, Bytes::from_static(b"B*41\n"));
+    }
+
+    // shogi with invalid params
+    #[actix_rt::test]
+    async fn test_shogi_status_with_invalid_params() {
+        let game_state = String::from("asdf");
+        let app = test::init_service(App::new().route("/api/v0/{game_type}", web::post().to(post_game_move))).await;
+        let req = test::TestRequest::post()
+            .insert_header(ContentType::plaintext())
+            .uri("/api/v0/shogi")
+            .set_payload(game_state)
+            .to_request();
+        let res = test::call_service(&app, req).await;
+        assert!(res.status().is_client_error());
+    }
+
+    #[actix_rt::test]
+    async fn test_shogi_body_with_invalid_params() {
+        let game_state = String::from("asdf");
+        let app = test::init_service(App::new().route("/api/v0/{game_type}", web::post().to(post_game_move))).await;
+        let req = test::TestRequest::post()
+            .insert_header(ContentType::plaintext())
+            .uri("/api/v0/shogi")
             .set_payload(game_state)
             .to_request();
         let res = test::call_and_read_body(&app, req).await;
