@@ -4,6 +4,7 @@ use crate::shogi::state::square::compulsory_promotion_ranks;
 use crate::shogi::state::square::destinations;
 use crate::shogi::state::square::Square;
 use crate::shogi::state::square::PieceKind;
+use crate::shogi::state::point::one_step_destination_points;
 use crate::shogi::state::square_set::find_by_x_and_y_mut;
 use crate::shogi::state::square_set::find_by_x_and_y;
 use crate::shogi::state::mov::Move;
@@ -28,6 +29,57 @@ impl GameState {
 
     pub fn in_checkmate(&mut self, player_number: i8) -> bool {
         self.in_check(player_number) && self.possible_moves_for_player(player_number).is_empty()
+    }
+
+    pub fn in_immediate_checkmate(&mut self, player_number: i8) -> bool {
+        self.in_check(player_number) && self.ou_cannot_move(player_number)
+    }
+
+    pub fn ou_cannot_move(&mut self, player_number: i8) -> bool {
+        let mut ou_point = None;
+        let mut can_move = false;
+
+        let moving_piece_kind = if player_number == 1 {
+            PieceKind::Oushou
+        } else {
+            PieceKind::Gyokushou
+        };
+
+        for (y, row) in self.squares.iter().enumerate() {
+            for (x, s) in row.iter().enumerate() {
+                if s.kind == moving_piece_kind {
+                    ou_point = Some((x as i8, y as i8));
+                }
+            }
+        }
+
+        match ou_point {
+            Some(from) => {
+                for to in one_step_destination_points(from) {
+                    let mut new_game_state = self.clone();
+                    let mov = Move {
+                       from: Some(from),
+                       to,
+                       moving_piece_kind,
+                       capture_piece_kind: None,
+                       promote: false
+                    };
+                    let result = new_game_state.perform_move(&mov);
+
+                    if result.is_err() {
+                        break;
+                    }
+
+                    if !new_game_state.in_check(player_number) {
+                        can_move = true;
+                        break;
+                    }
+                }
+            },
+            None => ()
+        }
+
+        !can_move
     }
 
     pub fn in_check(&self, player_number: i8) -> bool {
@@ -103,7 +155,7 @@ impl GameState {
                                     to: to_point,
                                     moving_piece_kind: from.kind,
                                     capture_piece_kind,
-                                    promote: false 
+                                    promote: false
                                 };
                                 moves.push(mov);
                             }
@@ -117,45 +169,55 @@ impl GameState {
         // all piece in players hands
         // all unoccupied squares
         // exclude squares with compulsory promotion
-        // exclude squares that put opponents king in check - 
+        // if pawn, excludes squares that put opponents king in checkmate
+        // if pawn, excludes squares that place two fuhyou of the same player in the same file
         let hand = &self.hands[subject_player_number as usize];
-        let opponent_king_kind = if subject_player_number == 1 {
-            PieceKind::Gyokushou
+
+        let opposing_player_number = if self.current_player_number == 1 {
+            2
         } else {
-            PieceKind::Oushou
+            1
         };
-
-        let mut opponent_king_point = (0, 0);
-
-        for (y, row) in self.squares.iter().enumerate() {
-            for (x, square) in row.iter().enumerate() {
-                if square.kind == opponent_king_kind {
-                    opponent_king_point = (x as i8, y as i8);
-                    break;
-                }
-            }
-            if opponent_king_point != (0, 0) {
-                break;
-            }
-        }
 
         for piece_kind in hand.iter() {
             for (y, row) in self.squares.iter().enumerate() {
                 let compulsory_promote = compulsory_promotion_ranks(*piece_kind, subject_player_number).contains(&(y as i8));
                 for (x, square) in row.iter().enumerate() {
 
-                    let potential_destinations = destinations(*piece_kind, subject_player_number, (x as i8, y as i8), &self);
+                    let mut fuhyou_exists_in_file = false;
+                    if *piece_kind == PieceKind::Fuhyou {
+                        for rank in 0..=8 {
+                            let square = self.squares[rank][x];
+                            if square.kind == PieceKind::Fuhyou && square.player_number == self.current_player_number {
+                                fuhyou_exists_in_file = true;
+                                break;
+                            }
+                        }
+                    }
 
-                    let puts_in_check = potential_destinations.contains(&opponent_king_point);
-                    if square.unoccupied() && !compulsory_promote && !puts_in_check {
+                    if square.unoccupied() && !compulsory_promote && !fuhyou_exists_in_file {
                         let mov = Move {
                             from: None,
                             to: (x as i8, y as i8),
                             moving_piece_kind: *piece_kind,
                             capture_piece_kind: None,
-                            promote: false 
+                            promote: false
                         };
-                        moves.push(mov);
+
+                        let mut perform_result: Result<(), &str> = Ok(());
+                        let mut in_checkmate = false;
+
+                        if *piece_kind == PieceKind::Fuhyou {
+                            let mut new_game_state = self.clone();
+                            perform_result = new_game_state.perform_move(&mov);
+                            // causes stack overflow
+                            in_checkmate = new_game_state.in_immediate_checkmate(opposing_player_number);
+                        }
+
+                        // exclude if fuhyou and move put it in checkmate
+                        if perform_result.is_ok() && !in_checkmate {
+                            moves.push(mov);
+                        }
                     }
                 }
             }
@@ -204,7 +266,7 @@ impl GameState {
         if let Some(s) = find_by_x_and_y_mut(&mut self.squares, mov.to) {
             // add piece to hand
             if s.kind != PieceKind::Empty {
-                let hand = &mut self.hands[self.current_player_number as usize];        
+                let hand = &mut self.hands[self.current_player_number as usize];
                 hand.push(s.kind);
             }
             s.player_number = piece_player_number;
@@ -239,7 +301,7 @@ impl GameState {
         let moving_piece_player_number: i8;
         let moving_piece_kind: PieceKind;
 
-        // get piece on to 
+        // get piece on to
         if let Some(s) = find_by_x_and_y_mut(&mut self.squares, mov.to) {
             moving_piece_kind = s.kind;
             moving_piece_player_number = s.player_number;
@@ -318,7 +380,7 @@ impl GameState {
     }
 }
 
-// state player hand move count 
+// state player hand move count
 // lnsgk2nl/1r4gs1/p1pppp1pp/1p4p2/7P1/2P6/PP1PPPP1P/1SG4R1/LN2KGSNL b Bb
 pub fn parse(encoded: &String) -> Result<GameState, &'static str> {
     let mut read_board = true;
@@ -461,7 +523,7 @@ pub fn parse(encoded: &String) -> Result<GameState, &'static str> {
                 } else if read_hand {
                     match parse_piece(c, false) {
                         Ok(p) => {
-                           hands[p.player_number as usize].push(p.kind); 
+                           hands[p.player_number as usize].push(p.kind);
                         },
                         Err(_) => {
                             parse_error = true;
@@ -492,7 +554,7 @@ pub fn parse(encoded: &String) -> Result<GameState, &'static str> {
                         }
                     } else if read_move_count {
                         // do nothing
-                        () 
+                        ()
                     } else {
                         parse_error = true;
                     }
@@ -544,7 +606,7 @@ pub fn parse(encoded: &String) -> Result<GameState, &'static str> {
                 } else if read_hand {
                     match parse_piece(c, false) {
                         Ok(p) => {
-                           hands[p.player_number as usize].push(p.kind); 
+                           hands[p.player_number as usize].push(p.kind);
                         },
                         Err(_) => {
                             parse_error = true;
@@ -556,14 +618,14 @@ pub fn parse(encoded: &String) -> Result<GameState, &'static str> {
             },
             '-' => {
                 if read_hand {
-                    () // do nothing 
+                    () // do nothing
                 } else {
                     parse_error = true;
                 }
             },
             '0' => {
                 () // ignore for now
-            }, 
+            },
             _ => {
                 parse_error = true;
             }
@@ -603,12 +665,36 @@ mod tests {
     }
 
     #[test]
+    fn winner_test() {
+        let encoded = String::from("k8/PG6/G8/9/9/9/9/9/8K b -");
+        let mut game_state = parse(&encoded).unwrap();
+        let result = game_state.winner();
+        assert_eq!(result, Some(1));
+    }
+
+    #[test]
+    fn in_checkmate_test() {
+        let encoded = String::from("k8/PG6/G8/9/9/9/9/9/8K b -");
+        let mut game_state = parse(&encoded).unwrap();
+        let result = game_state.in_checkmate(2);
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    fn in_immediate_checkmate_test() {
+        let encoded = String::from("k8/PG6/G8/9/9/9/9/9/8K b -");
+        let mut game_state = parse(&encoded).unwrap();
+        let result = game_state.in_immediate_checkmate(2);
+        assert_eq!(result, true);
+    }
+
+    #[test]
     fn possible_moves_test() {
         let encoded = String::from("lnsgk2nl/1r4gs1/p1pppp1pp/1p4p2/7P1/2P6/PP1PPPP1P/1SG4R1/LN2KGSNL b Bb");
         let mut game_state = parse(&encoded).unwrap();
         let result = game_state.possible_moves();
 
-        assert_eq!(result.len(), 71);
+        assert_eq!(result.len(), 76);
 
         assert_eq!(result[0].from, Some((7, 4)));
         assert_eq!(result[0].to, (7, 3));
@@ -616,11 +702,11 @@ mod tests {
         assert_eq!(result[0].capture_piece_kind, None);
         assert_eq!(result[0].promote, false);
 
-        assert_eq!(result[70].from, None);
-        assert_eq!(result[70].to, (3, 8));
-        assert_eq!(result[70].moving_piece_kind, PieceKind::Kakugyou);
-        assert_eq!(result[70].capture_piece_kind, None);
-        assert_eq!(result[70].promote, false);
+        assert_eq!(result[75].from, None);
+        assert_eq!(result[75].to, (3, 8));
+        assert_eq!(result[75].moving_piece_kind, PieceKind::Kakugyou);
+        assert_eq!(result[75].capture_piece_kind, None);
+        assert_eq!(result[75].promote, false);
     }
 
     #[test]
@@ -629,7 +715,7 @@ mod tests {
         let mut game_state = parse(&encoded).unwrap();
         let result = game_state.possible_moves_for_player(1);
 
-        assert_eq!(result.len(), 71);
+        assert_eq!(result.len(), 76);
 
         assert_eq!(result[0].from, Some((7, 4)));
         assert_eq!(result[0].to, (7, 3));
@@ -637,11 +723,11 @@ mod tests {
         assert_eq!(result[0].capture_piece_kind, None);
         assert_eq!(result[0].promote, false);
 
-        assert_eq!(result[70].from, None);
-        assert_eq!(result[70].to, (3, 8));
-        assert_eq!(result[70].moving_piece_kind, PieceKind::Kakugyou);
-        assert_eq!(result[70].capture_piece_kind, None);
-        assert_eq!(result[70].promote, false);
+        assert_eq!(result[75].from, None);
+        assert_eq!(result[75].to, (3, 8));
+        assert_eq!(result[75].moving_piece_kind, PieceKind::Kakugyou);
+        assert_eq!(result[75].capture_piece_kind, None);
+        assert_eq!(result[75].promote, false);
     }
 
     #[test]
@@ -651,7 +737,7 @@ mod tests {
         let result = game_state.possible_moves_for_player(1);
 
         assert_eq!(result.len(), 73);
-        
+
         assert_eq!(result[72].from, None);
         assert_eq!(result[72].to, (7, 8));
         assert_eq!(result[72].moving_piece_kind, PieceKind::Fuhyou);
@@ -666,20 +752,33 @@ mod tests {
         let result = game_state.possible_moves_for_player(1);
 
         let mov = result.iter().find(|s| s.to == (1, 0));
-        
+
         assert_eq!(mov.is_none(), true);
     }
 
     #[test]
-    fn possible_moves_for_player_check_test() {
-        let encoded = String::from("k8/9/9/9/9/9/9/9/8K b Pp");
+    fn possible_moves_for_player_checkmate_test() {
+        let encoded = String::from("k8/2G6/G8/9/9/9/9/9/8K b Pp");
+        let mut game_state = parse(&encoded).unwrap();
+        let result = game_state.possible_moves_for_player(1);
+
+        assert_eq!(result.len(), 81);
+
+        let mov = result.iter().find(|s| s.moving_piece_kind == PieceKind::Fuhyou && s.to == (0, 1));
+
+        assert_eq!(mov.is_none(), true);
+    }
+
+    #[test]
+    fn possible_moves_for_player_two_fuhyou_in_file_test() {
+        let encoded = String::from("k8/2G6/G8/9/9/9/9/7P1/8K b Pp");
         let mut game_state = parse(&encoded).unwrap();
         let result = game_state.possible_moves_for_player(1);
 
         assert_eq!(result.len(), 73);
 
-        let mov = result.iter().find(|s| s.to == (0, 1));
-        
+        let mov = result.iter().find(|s| s.moving_piece_kind == PieceKind::Fuhyou && s.to == (7, 5));
+
         assert_eq!(mov.is_none(), true);
     }
 
@@ -768,7 +867,7 @@ mod tests {
             to: (7, 2),
             moving_piece_kind: PieceKind::Fuhyou,
             capture_piece_kind: None,
-            promote: true 
+            promote: true
         };
         let result = game_state.perform_move(&mov);
 
@@ -778,7 +877,7 @@ mod tests {
         let from = find_by_x_and_y(&game_state.squares, (7, 3)).unwrap();
         assert_eq!(from.player_number, 0);
         assert_eq!(from.kind, PieceKind::Empty);
-        
+
         let to = find_by_x_and_y(&game_state.squares, (7, 2)).unwrap();
         assert_eq!(to.player_number, 1);
         assert_eq!(to.kind, PieceKind::Tokin);
@@ -870,7 +969,7 @@ mod tests {
             to: (7, 2),
             moving_piece_kind: PieceKind::Fuhyou,
             capture_piece_kind: None,
-            promote: true 
+            promote: true
         };
         let result = game_state.undo_move(&mov);
 
@@ -880,7 +979,7 @@ mod tests {
         let from = find_by_x_and_y(&game_state.squares, (7, 3)).unwrap();
         assert_eq!(from.player_number, 1);
         assert_eq!(from.kind, PieceKind::Fuhyou);
-        
+
         let to = find_by_x_and_y(&game_state.squares, (7, 2)).unwrap();
         assert_eq!(to.player_number, 0);
         assert_eq!(to.kind, PieceKind::Empty);
