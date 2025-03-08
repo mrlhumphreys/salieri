@@ -221,6 +221,33 @@ pub fn compulsory_promotion_ranks(kind: PieceKind, player_number: i8) -> Vec<i8>
     }
 }
 
+pub fn has_legal_moves_from_y(kind: PieceKind, player_number: i8, y: i8) -> bool {
+    match kind {
+        PieceKind::Fuhyou => {
+            if player_number == 1 {
+              y != 0
+            } else {
+              y != 8
+            }
+        },
+        PieceKind::Kyousha  => {
+            if player_number == 1 {
+              y != 0
+            } else {
+              y != 8
+            }
+        },
+        PieceKind::Keima => {
+            if player_number == 1 {
+              y != 0 && y != 1
+            } else {
+              y != 8 && y != 7
+            }
+        },
+        _ => true
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -776,5 +803,122 @@ mod tests {
         let result = square.demotes_to();
         let expected = None;
         assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn has_legal_moves_from_y_fuhyou_player_one_true_test() {
+        let kind = PieceKind::Fuhyou;
+        let player_number = 1;
+        let y = 1;
+        let result = has_legal_moves_from_y(kind, player_number, y);
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    fn has_legal_moves_from_y_fuhyou_player_one_false_test() {
+        let kind = PieceKind::Fuhyou;
+        let player_number = 1;
+        let y = 0;
+        let result = has_legal_moves_from_y(kind, player_number, y);
+        assert_eq!(result, false);
+    }
+
+    #[test]
+    fn has_legal_moves_from_y_fuhyou_player_two_true_test() {
+        let kind = PieceKind::Fuhyou;
+        let player_number = 2;
+        let y = 7;
+        let result = has_legal_moves_from_y(kind, player_number, y);
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    fn has_legal_moves_from_y_fuhyou_player_two_false_test() {
+        let kind = PieceKind::Fuhyou;
+        let player_number = 2;
+        let y = 8;
+        let result = has_legal_moves_from_y(kind, player_number, y);
+        assert_eq!(result, false);
+    }
+
+    #[test]
+    fn has_legal_moves_from_y_keima_player_one_true_test() {
+        let kind = PieceKind::Keima;
+        let player_number = 1;
+        let y = 2;
+        let result = has_legal_moves_from_y(kind, player_number, y);
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    fn has_legal_moves_from_y_keima_player_one_false_test() {
+        let kind = PieceKind::Keima;
+        let player_number = 1;
+        let y = 1;
+        let result = has_legal_moves_from_y(kind, player_number, y);
+        assert_eq!(result, false);
+    }
+
+    #[test]
+    fn has_legal_moves_from_y_keima_player_two_true_test() {
+        let kind = PieceKind::Keima;
+        let player_number = 2;
+        let y = 6;
+        let result = has_legal_moves_from_y(kind, player_number, y);
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    fn has_legal_moves_from_y_keima_player_two_false_test() {
+        let kind = PieceKind::Keima;
+        let player_number = 2;
+        let y = 7;
+        let result = has_legal_moves_from_y(kind, player_number, y);
+        assert_eq!(result, false);
+    }
+
+    #[test]
+    fn has_legal_moves_from_y_kyousha_player_one_true_test() {
+        let kind = PieceKind::Kyousha;
+        let player_number = 1;
+        let y = 1;
+        let result = has_legal_moves_from_y(kind, player_number, y);
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    fn has_legal_moves_from_y_kyousha_player_one_false_test() {
+        let kind = PieceKind::Kyousha;
+        let player_number = 1;
+        let y = 0;
+        let result = has_legal_moves_from_y(kind, player_number, y);
+        assert_eq!(result, false);
+    }
+
+    #[test]
+    fn has_legal_moves_from_y_kyousha_player_two_true_test() {
+        let kind = PieceKind::Kyousha;
+        let player_number = 2;
+        let y = 7;
+        let result = has_legal_moves_from_y(kind, player_number, y);
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    fn has_legal_moves_from_y_kyousha_player_two_false_test() {
+        let kind = PieceKind::Kyousha;
+        let player_number = 2;
+        let y = 8;
+        let result = has_legal_moves_from_y(kind, player_number, y);
+        assert_eq!(result, false);
+    }
+
+    #[test]
+    fn has_legal_moves_from_y_default_test() {
+        let kind = PieceKind::Ginshou;
+        let player_number = 1;
+        let y = 0;
+        let result = has_legal_moves_from_y(kind, player_number, y);
+        assert_eq!(result, true);
     }
 }

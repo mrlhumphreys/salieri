@@ -3,10 +3,14 @@ use crate::shogi::state::piece_factory::parse as parse_piece;
 use crate::shogi::state::square::compulsory_promotion_ranks;
 use crate::shogi::state::square::destinations;
 use crate::shogi::state::square::Square;
+use crate::shogi::state::square::has_legal_moves_from_y;
 use crate::shogi::state::square::PieceKind;
 use crate::shogi::state::point::one_step_destination_points;
 use crate::shogi::state::square_set::find_by_x_and_y_mut;
 use crate::shogi::state::square_set::find_by_x_and_y;
+use crate::shogi::state::square_set::find_ou_point_for_player;
+use crate::shogi::state::square_set::threats_to_point;
+use crate::shogi::state::square_set::between;
 use crate::shogi::state::mov::Move;
 
 #[derive(Clone)]
@@ -28,11 +32,7 @@ impl GameState {
     }
 
     pub fn in_checkmate(&mut self, player_number: i8) -> bool {
-        self.in_check(player_number) && self.possible_moves_for_player(player_number).is_empty()
-    }
-
-    pub fn in_immediate_checkmate(&mut self, player_number: i8) -> bool {
-        self.in_check(player_number) && self.ou_cannot_move(player_number)
+        self.in_check(player_number) && (self.ou_cannot_move(player_number) && !self.threats_to_ou_can_be_captured(player_number) && !self.threats_to_ou_can_be_blocked(player_number))
     }
 
     pub fn ou_cannot_move(&mut self, player_number: i8) -> bool {
@@ -80,6 +80,58 @@ impl GameState {
         }
 
         !can_move
+    }
+
+    pub fn threats_to_ou_can_be_captured(&self, player_number: i8) -> bool {
+        // player number - owner of ou
+        let opposing_player = if player_number == 2 {
+            1
+        } else {
+            2
+        };
+
+        let ou_point = find_ou_point_for_player(&self.squares, player_number);
+        match ou_point {
+            Some(point) => {
+                let threats_to_ou = threats_to_point(&self.squares, point, player_number, self);
+                threats_to_ou.iter().all(|threat| {
+                    let threats_to_threats = threats_to_point(&self.squares, *threat, opposing_player, &self);
+                    return threats_to_threats.len() > 0;
+                })
+            },
+            None => true
+        }
+    }
+
+    pub fn threats_to_ou_can_be_blocked(&self, player_number: i8) -> bool {
+        // player number - owner of ou
+        let opposing_player = if player_number == 2 {
+            1
+        } else {
+            2
+        };
+
+        let ou_point = find_ou_point_for_player(&self.squares, player_number);
+        let player_hand = &self.hands[player_number as usize];
+        match ou_point {
+            Some(point) => {
+                let threats_to_ou = threats_to_point(&self.squares, point, player_number, self);
+                // every threat (normally 1) can be blocked?
+                threats_to_ou.iter().all(|threat| {
+                    let between_squares = between(*threat, point);
+                    // any square between can be blocked by move or drop?
+                    between_squares.iter().any(|b| {
+                        let threats_to_between = threats_to_point(&self.squares, *b, opposing_player, self);
+                        let has_threats = threats_to_between.len() > 0;
+                        let can_drop = player_hand.iter().any(|p| {
+                            has_legal_moves_from_y(*p, player_number, b.1)
+                        });
+                        has_threats || can_drop
+                    })
+                })
+            },
+            None => true
+        }
     }
 
     pub fn in_check(&self, player_number: i8) -> bool {
@@ -211,7 +263,7 @@ impl GameState {
                             let mut new_game_state = self.clone();
                             perform_result = new_game_state.perform_move(&mov);
                             // causes stack overflow
-                            in_checkmate = new_game_state.in_immediate_checkmate(opposing_player_number);
+                            in_checkmate = new_game_state.in_checkmate(opposing_player_number);
                         }
 
                         // exclude if fuhyou and move put it in checkmate
@@ -681,10 +733,74 @@ mod tests {
     }
 
     #[test]
-    fn in_immediate_checkmate_test() {
-        let encoded = String::from("k8/PG6/G8/9/9/9/9/9/8K b -");
+    fn in_checkmate_threat_can_be_captured_test() {
+        let encoded = String::from("k8/9/9/9/9/9/7Bg/6g1p/8K b -");
         let mut game_state = parse(&encoded).unwrap();
-        let result = game_state.in_immediate_checkmate(2);
+        let result = game_state.in_checkmate(1);
+        assert_eq!(result, false);
+    }
+
+    #[test]
+    fn in_checkmate_threat_can_be_blocked_test() {
+        let encoded = String::from("k8/9/9/8r/R8/9/9/6g2/8K b -");
+        let mut game_state = parse(&encoded).unwrap();
+        let result = game_state.in_checkmate(1);
+        assert_eq!(result, false);
+    }
+
+    #[test]
+    fn ou_cannot_move_true_test() {
+        let encoded = String::from("k8/9/9/9/9/9/7Bg/6g1p/8K w -");
+        let mut game_state = parse(&encoded).unwrap();
+        let result = game_state.ou_cannot_move(1);
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    fn ou_cannot_move_false_test() {
+        let encoded = String::from("k8/9/9/9/9/9/7B1/6g1p/8K w -");
+        let mut game_state = parse(&encoded).unwrap();
+        let result = game_state.ou_cannot_move(1);
+        assert_eq!(result, false);
+    }
+
+    #[test]
+    fn threats_to_ou_can_be_captured_true_test() {
+        let encoded = String::from("k8/9/9/9/9/9/7Bg/6g1p/8K w -");
+        let game_state = parse(&encoded).unwrap();
+        let result = game_state.threats_to_ou_can_be_captured(1);
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    fn threats_to_ou_can_be_captured_false_test() {
+        let encoded = String::from("k8/9/9/9/9/9/8g/6g1p/8K w -");
+        let game_state = parse(&encoded).unwrap();
+        let result = game_state.threats_to_ou_can_be_captured(1);
+        assert_eq!(result, false);
+    }
+
+    #[test]
+    fn threats_to_ou_can_be_blocked_by_move_true_test() {
+        let encoded = String::from("k8/9/9/8r/R8/9/9/6g2/8K b -");
+        let game_state = parse(&encoded).unwrap();
+        let result = game_state.threats_to_ou_can_be_blocked(1);
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    fn threats_to_ou_can_be_blocked_false_test() {
+        let encoded = String::from("k8/9/9/8r/P8/9/9/6g2/8K b -");
+        let game_state = parse(&encoded).unwrap();
+        let result = game_state.threats_to_ou_can_be_blocked(1);
+        assert_eq!(result, false);
+    }
+
+    #[test]
+    fn threats_to_ou_can_be_blocked_by_drop_true_test() {
+        let encoded = String::from("k8/9/9/8r/P8/9/9/6g2/8K b P");
+        let game_state = parse(&encoded).unwrap();
+        let result = game_state.threats_to_ou_can_be_blocked(1);
         assert_eq!(result, true);
     }
 
