@@ -38,19 +38,19 @@ pub fn minimax(game_data: &String) -> HttpResponse {
 //         Ok(gs) => gs,
 //         Err(_) => return HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n")
 //     };
-// 
+//
 //     let mcts_simulation_count: i16 = env::var("SHOGI_MCTS_SIMULATION_COUNT")
 //         .unwrap_or_else(|_| "1000".to_string())
 //         .parse()
 //         .expect("SHOGI_MCTS_SIMULATION_COUNT must be a number");
-// 
+//
 //     let mcts_simulation_depth: i16 = env::var("SHOGI_MCTS_SIMULATION_DEPTH")
 //         .unwrap_or_else(|_| "50".to_string())
 //         .parse()
 //         .expect("SHOGI_MCTS_SIMULATION_DEPTH must be a number");
-// 
+//
 //     let recommended_move = shogi::mcts::recommended_move(game_state, mcts_simulation_count, mcts_simulation_depth);
-// 
+//
 //     match recommended_move {
 //         Ok(m) => HttpResponse::Ok().body(format!("{}\n", m.format())),
 //         Err(e) => {
@@ -78,7 +78,7 @@ fn build_external_move(game_state: &shogi::state::game_state::GameState, mov: sh
             }
             file_disambiguation_count > 1
         },
-        None => false 
+        None => false
     };
 
     let rank_disambiguation = match mov.from {
@@ -97,13 +97,17 @@ fn build_external_move(game_state: &shogi::state::game_state::GameState, mov: sh
         },
         None => false
     };
-    
+
     let disambiguation = file_disambiguation || rank_disambiguation;
 
-    let promotion_rank = if game_state.current_player_number == 1 {
-        mov.to.1 == 0 || mov.to.1 == 1 || mov.to.1 == 2
+    let promotion_possible = if shogi::state::square::PROMOTABLE_PIECE_KINDS.iter().any(|pk| *pk == mov.moving_piece_kind) {
+        if game_state.current_player_number == 1 {
+            mov.to.1 == 0 || mov.to.1 == 1 || mov.to.1 == 2
+        } else {
+            mov.to.1 == 6 || mov.to.1 == 7 || mov.to.1 == 8
+        }
     } else {
-        mov.to.1 == 6 || mov.to.1 == 7 || mov.to.1 == 8 
+        false
     };
 
     let external_mov = shogi::state::external_mov::ExternalMove {
@@ -112,7 +116,7 @@ fn build_external_move(game_state: &shogi::state::game_state::GameState, mov: sh
         moving_piece_kind: mov.moving_piece_kind,
         capture_piece_kind: mov.capture_piece_kind,
         promote: mov.promote,
-        promotion_rank,
+        promotion_possible,
         disambiguation
     };
 

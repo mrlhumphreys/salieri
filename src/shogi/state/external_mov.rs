@@ -15,7 +15,7 @@ pub struct ExternalMove {
     pub moving_piece_kind: PieceKind,
     pub capture_piece_kind: Option<PieceKind>, // Undo -> place piece back
     pub promote: bool, // Undo -> revert promotion
-    pub promotion_rank: bool,
+    pub promotion_possible: bool,
     pub disambiguation: bool
 }
 
@@ -89,7 +89,7 @@ impl ExternalMove {
         if self.promote {
             String::from("+")
         } else {
-            if self.from.is_some() && self.promotion_rank {
+            if self.from.is_some() && self.promotion_possible {
                 String::from("=")
             } else {
                 String::from("")
@@ -106,7 +106,7 @@ impl Clone for ExternalMove {
             moving_piece_kind: self.moving_piece_kind,
             capture_piece_kind: self.capture_piece_kind,
             promote: self.promote,
-            promotion_rank: self.promotion_rank,
+            promotion_possible: self.promotion_possible,
             disambiguation: self.disambiguation
         }
     }
@@ -127,7 +127,7 @@ mod tests {
             moving_piece_kind,
             capture_piece_kind: None,
             promote: false,
-            promotion_rank: false,
+            promotion_possible: false,
             disambiguation: false
         };
 
@@ -145,7 +145,7 @@ mod tests {
             moving_piece_kind,
             capture_piece_kind: None,
             promote: false,
-            promotion_rank: false,
+            promotion_possible: false,
             disambiguation: false
         };
 
@@ -163,7 +163,7 @@ mod tests {
             moving_piece_kind,
             capture_piece_kind: None,
             promote: false,
-            promotion_rank: false,
+            promotion_possible: false,
             disambiguation: false
         };
 
@@ -182,7 +182,7 @@ mod tests {
             moving_piece_kind,
             capture_piece_kind,
             promote: false,
-            promotion_rank: false,
+            promotion_possible: false,
             disambiguation: false
         };
 
@@ -200,7 +200,7 @@ mod tests {
             moving_piece_kind,
             capture_piece_kind: None,
             promote: false,
-            promotion_rank: false,
+            promotion_possible: false,
             disambiguation: true
         };
 
@@ -218,7 +218,7 @@ mod tests {
             moving_piece_kind,
             capture_piece_kind: None,
             promote: true,
-            promotion_rank: true,
+            promotion_possible: true,
             disambiguation: false
         };
 
@@ -236,7 +236,7 @@ mod tests {
             moving_piece_kind,
             capture_piece_kind: None,
             promote: false,
-            promotion_rank: true,
+            promotion_possible: true,
             disambiguation: false
         };
 
