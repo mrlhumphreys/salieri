@@ -3,6 +3,12 @@ use std::cmp::Ordering;
 pub const MIN_N: i8 = 0;
 pub const MAX_N: i8 = 8;
 
+pub fn diff<'a>(a: &'a Vec<(i8, i8)>, b: &'a Vec<(i8, i8)>) -> Vec<&'a (i8, i8)> {
+    return a.iter().filter(|ae| {
+        return !b.iter().any(|be| { return be == *ae; });
+    }).collect();
+}
+
 pub fn valid(point: (i8, i8)) -> bool {
     point.0 >= MIN_N && point.0 <= MAX_N && point.1 >= MIN_N && point.1 <= MAX_N
 }
@@ -202,6 +208,15 @@ pub fn forwards_direction(player_number: i8) -> i8 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn diff_test_test() {
+       let a = vec![(0, 0), (1, 1), (2, 2), (3, 3)];
+       let b = vec![(2, 2), (3, 3)];
+       let expected: Vec<&(i8, i8)> = vec![&(0, 0), &(1, 1)];
+       let result = diff(&a, &b);
+       assert_eq!(result, expected);
+    }
 
     #[test]
     fn valid_true_test() {

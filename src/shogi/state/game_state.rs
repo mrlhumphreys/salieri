@@ -5,11 +5,13 @@ use crate::shogi::state::square::destinations;
 use crate::shogi::state::square::Square;
 use crate::shogi::state::square::has_legal_moves_from_y;
 use crate::shogi::state::square::PieceKind;
+use crate::shogi::state::point::diff;
 use crate::shogi::state::point::one_step_destination_points;
 use crate::shogi::state::square_set::find_by_x_and_y_mut;
 use crate::shogi::state::square_set::find_by_x_and_y;
 use crate::shogi::state::square_set::find_ou_point_for_player;
 use crate::shogi::state::square_set::threats_to_point;
+use crate::shogi::state::square_set::pinned_to_point;
 use crate::shogi::state::square_set::between;
 use crate::shogi::state::mov::Move;
 
@@ -94,9 +96,10 @@ impl GameState {
         match ou_point {
             Some(point) => {
                 let threats_to_ou = threats_to_point(&self.squares, point, player_number, self);
+                let pinned_to_ou = pinned_to_point(&self.squares, point, player_number, self);
                 threats_to_ou.iter().all(|threat| {
                     let threats_to_threats = threats_to_point(&self.squares, *threat, opposing_player, &self);
-                    return threats_to_threats.len() > 0;
+                    return diff(&threats_to_threats, &pinned_to_ou).len() > 0;
                 })
             },
             None => true
@@ -116,13 +119,14 @@ impl GameState {
         match ou_point {
             Some(point) => {
                 let threats_to_ou = threats_to_point(&self.squares, point, player_number, self);
+                let pinned_to_ou = pinned_to_point(&self.squares, point, player_number, self);
                 // every threat (normally 1) can be blocked?
                 threats_to_ou.iter().all(|threat| {
                     let between_squares = between(*threat, point);
                     // any square between can be blocked by move or drop?
                     between_squares.iter().any(|b| {
                         let threats_to_between = threats_to_point(&self.squares, *b, opposing_player, self);
-                        let has_threats = threats_to_between.len() > 0;
+                        let has_threats = diff(&threats_to_between, &pinned_to_ou).len() > 0;
                         let can_drop = player_hand.iter().any(|p| {
                             has_legal_moves_from_y(*p, player_number, b.1)
                         });
@@ -773,6 +777,14 @@ mod tests {
     }
 
     #[test]
+    fn threats_to_ou_can_be_captured_pinned_false_test() {
+        let encoded = String::from("6Rbk/8P/9/9/9/9/9/8R/8K w -");
+        let game_state = parse(&encoded).unwrap();
+        let result = game_state.threats_to_ou_can_be_captured(2);
+        assert_eq!(result, false);
+    }
+
+    #[test]
     fn threats_to_ou_can_be_captured_false_test() {
         let encoded = String::from("k8/9/9/9/9/9/8g/6g1p/8K w -");
         let game_state = parse(&encoded).unwrap();
@@ -786,6 +798,14 @@ mod tests {
         let game_state = parse(&encoded).unwrap();
         let result = game_state.threats_to_ou_can_be_blocked(1);
         assert_eq!(result, true);
+    }
+
+    #[test]
+    fn threats_to_ou_can_be_blocked_by_move_pinned_test() {
+        let encoded = String::from("6Rbk/9/9/9/9/9/9/8R/8K w -");
+        let game_state = parse(&encoded).unwrap();
+        let result = game_state.threats_to_ou_can_be_blocked(2);
+        assert_eq!(result, false);
     }
 
     #[test]

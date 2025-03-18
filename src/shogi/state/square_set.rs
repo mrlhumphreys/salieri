@@ -105,6 +105,32 @@ pub fn threats_to_point(squares: &Vec<Vec<Square>>, point: (i8, i8), player_numb
     acc
 }
 
+pub fn pinned_to_point(squares: &Vec<Vec<Square>>, point: (i8, i8), player_number: i8, game_state: &GameState) -> Vec<(i8, i8)> {
+    let opposing_player = if player_number == 2 {
+        1
+    } else {
+        2
+    };
+
+    let mut acc = vec![];
+
+    for (y, row) in squares.iter().enumerate() {
+        for (x, s) in row.iter().enumerate() {
+            // get opposing squares
+            if s.player_number == opposing_player && vec![PieceKind::Hisha, PieceKind::Ryuuou, PieceKind::Kakugyou, PieceKind::Ryuuma, PieceKind::Kyousha].contains(&s.kind) {
+                let between_points = between((x as i8, y as i8), point);
+                between_points.iter().for_each(|b| {
+                    if squares[b.1 as usize][b.0 as usize].player_number == player_number {
+                        acc.push(*b);
+                    }
+                });
+            }
+        }
+    }
+    // TODO: consider pieces movement. i.e. captureSquares
+    acc
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -260,6 +286,20 @@ mod tests {
             (8, 7)
         ];
         let result = threats_to_point(squares, point, player_number, &game_state);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn pinned_to_point_test() {
+        let encoded = String::from("6Rbk/8P/9/9/9/9/9/8R/8K w -");
+        let game_state = parse(&encoded).unwrap();
+        let point = (8,0);
+        let player_number = 2;
+        let squares = &game_state.squares.clone();
+        let result = pinned_to_point(squares, point, player_number, &game_state);
+        let expected = vec![
+            (7, 0)
+        ];
         assert_eq!(result, expected);
     }
 }
