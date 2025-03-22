@@ -101,7 +101,7 @@ impl Square {
     }
 }
 
-pub fn destinations(piece_kind: PieceKind, player_number: i8, point: (i8, i8), game_state: &GameState) -> Vec<(i8, i8)> {
+pub fn destinations(piece_kind: PieceKind, player_number: i8, point: (i8, i8), game_state: &GameState, ignore_blocks: bool) -> Vec<(i8, i8)> {
     let mut acc = vec![];
     match piece_kind {
         PieceKind::Empty => (),
@@ -116,12 +116,10 @@ pub fn destinations(piece_kind: PieceKind, player_number: i8, point: (i8, i8), g
         },
         PieceKind::Kyousha => {
             for to_point in forward_destination_points(point, player_number) {
-
                 if let Some(to) = find_by_x_and_y(&game_state.squares, to_point) {
-                    if to.unoccupied_or_occupied_by_opponent(player_number) && between_unoccupied(&game_state.squares, point, to_point) {
+                    if to.unoccupied_or_occupied_by_opponent(player_number)  && (ignore_blocks || between_unoccupied(&game_state.squares, point, to_point)) {
                         acc.push(to_point);
                     }
-
                 }
             }
         },
@@ -155,7 +153,7 @@ pub fn destinations(piece_kind: PieceKind, player_number: i8, point: (i8, i8), g
         PieceKind::Kakugyou => {
             for to_point in diagonal_destination_points(point) {
                 if let Some(to) = find_by_x_and_y(&game_state.squares, to_point) {
-                    if to.unoccupied_or_occupied_by_opponent(player_number) && between_unoccupied(&game_state.squares, point, to_point) {
+                    if to.unoccupied_or_occupied_by_opponent(player_number) && (ignore_blocks || between_unoccupied(&game_state.squares, point, to_point)) {
                         acc.push(to_point);
                     }
                 }
@@ -164,7 +162,7 @@ pub fn destinations(piece_kind: PieceKind, player_number: i8, point: (i8, i8), g
         PieceKind::Hisha => {
             for to_point in orthogonal_destination_points(point) {
                 if let Some(to) = find_by_x_and_y(&game_state.squares, to_point) {
-                    if to.unoccupied_or_occupied_by_opponent(player_number) && between_unoccupied(&game_state.squares, point, to_point) {
+                    if to.unoccupied_or_occupied_by_opponent(player_number) && (ignore_blocks || between_unoccupied(&game_state.squares, point, to_point)) {
                         acc.push(to_point);
                     }
                 }
@@ -182,7 +180,7 @@ pub fn destinations(piece_kind: PieceKind, player_number: i8, point: (i8, i8), g
         PieceKind::Ryuuma => {
             for to_point in ryuuma_destination_points(point) {
                 if let Some(to) = find_by_x_and_y(&game_state.squares, to_point) {
-                    if to.unoccupied_or_occupied_by_opponent(player_number) && between_unoccupied(&game_state.squares, point, to_point) {
+                    if to.unoccupied_or_occupied_by_opponent(player_number) && (ignore_blocks || between_unoccupied(&game_state.squares, point, to_point)) {
                         acc.push(to_point);
                     }
                 }
@@ -191,7 +189,7 @@ pub fn destinations(piece_kind: PieceKind, player_number: i8, point: (i8, i8), g
         PieceKind::Ryuuou => {
             for to_point in ryuuou_destination_points(point) {
                 if let Some(to) = find_by_x_and_y(&game_state.squares, to_point) {
-                    if to.unoccupied_or_occupied_by_opponent(player_number) && between_unoccupied(&game_state.squares, point, to_point) {
+                    if to.unoccupied_or_occupied_by_opponent(player_number) && (ignore_blocks || between_unoccupied(&game_state.squares, point, to_point)) {
                         acc.push(to_point);
                     }
                 }
@@ -343,7 +341,7 @@ mod tests {
 
         match result {
             Ok(game_state) => {
-                let result = destinations(kind, player_number, point, &game_state);
+                let result = destinations(kind, player_number, point, &game_state, false);
                 let expected = vec![
                     (4, 5)
                 ];
@@ -363,9 +361,29 @@ mod tests {
 
         match result {
             Ok(game_state) => {
-                let result = destinations(kind, player_number, point, &game_state);
+                let result = destinations(kind, player_number, point, &game_state, false);
                 let expected = vec![
                     (0, 7), (0, 6), (0, 5)
+                ];
+                assert_eq!(result, expected);
+            },
+            Err(e) => assert!(false, "{}", e)
+        }
+    }
+
+    #[test]
+    fn destinations_kyousha_moves_ignore_blocks_test() {
+        let kind = PieceKind::Kyousha;
+        let player_number = 1;
+        let point = (0, 8);
+        let encoded = String::from("lnsgkgsnl/1r5b1/9/9/9/p8/9/1B5R1/LNSGKGSNL b -");
+        let result = parse_game_state(&encoded);
+
+        match result {
+            Ok(game_state) => {
+                let result = destinations(kind, player_number, point, &game_state, true);
+                let expected = vec![
+                    (0, 7), (0, 6), (0, 5), (0, 4), (0, 3), (0, 2), (0, 1), (0, 0)
                 ];
                 assert_eq!(result, expected);
             },
@@ -383,7 +401,7 @@ mod tests {
 
         match result {
             Ok(game_state) => {
-                let result = destinations(kind, player_number, point, &game_state);
+                let result = destinations(kind, player_number, point, &game_state, false);
                 let expected = vec![
                     (0, 6), (2, 6)
                 ];
@@ -403,7 +421,7 @@ mod tests {
 
         match result {
             Ok(game_state) => {
-                let result = destinations(kind, player_number, point, &game_state);
+                let result = destinations(kind, player_number, point, &game_state, false);
                 let expected = vec![
                     (1, 6), (3, 6), (3, 8), (1, 8), (2, 6)
                 ];
@@ -423,7 +441,7 @@ mod tests {
 
         match result {
             Ok(game_state) => {
-                let result = destinations(kind, player_number, point, &game_state);
+                let result = destinations(kind, player_number, point, &game_state, false);
                 let expected = vec![
                     (3, 6), (4, 7), (3, 8), (2, 7), (2, 6), (4, 6)
                 ];
@@ -443,9 +461,29 @@ mod tests {
 
         match result {
             Ok(game_state) => {
-                let result = destinations(kind, player_number, point, &game_state);
+                let result = destinations(kind, player_number, point, &game_state, false);
                 let expected = vec![
                     (0, 6), (2, 6), (2, 8), (0, 8)
+                ];
+                assert_eq!(result, expected);
+            },
+            Err(e) => assert!(false, "{}", e)
+        }
+    }
+
+    #[test]
+    fn destinations_kakugyou_moves_ignore_blocks_test() {
+        let kind = PieceKind::Kakugyou;
+        let player_number = 1;
+        let point = (1, 7);
+        let encoded = String::from("lnsgkgsnl/9/9/9/9/9/2p6/1B7/8K b -");
+        let result = parse_game_state(&encoded);
+
+        match result {
+            Ok(game_state) => {
+                let result = destinations(kind, player_number, point, &game_state, true);
+                let expected = vec![
+                    (0, 6), (2, 6), (3, 5), (4, 4), (5, 3), (6, 2), (7, 1), (8, 0), (2, 8), (0, 8)
                 ];
                 assert_eq!(result, expected);
             },
@@ -463,9 +501,29 @@ mod tests {
 
         match result {
             Ok(game_state) => {
-                let result = destinations(kind, player_number, point, &game_state);
+                let result = destinations(kind, player_number, point, &game_state, false);
                 let expected = vec![
                     (7, 6), (8, 7), (7, 8), (6, 7), (5, 7), (4, 7), (3, 7), (2, 7), (1, 7), (0, 7)
+                ];
+                assert_eq!(result, expected);
+            },
+            Err(e) => assert!(false, "{}", e)
+        }
+    }
+
+    #[test]
+    fn destinations_hisha_moves_ignore_blocks_test() {
+        let kind = PieceKind::Hisha;
+        let player_number = 1;
+        let point = (7, 7);
+        let encoded = String::from("lnsgkgsnl/9/9/9/9/9/7p1/7R1/8K b -");
+        let result = parse_game_state(&encoded);
+
+        match result {
+            Ok(game_state) => {
+                let result = destinations(kind, player_number, point, &game_state, true);
+                let expected = vec![
+                    (7, 6), (7, 5), (7, 4), (7, 3), (7, 2), (7, 1), (7, 0), (8, 7), (7, 8), (6, 7), (5, 7), (4, 7), (3, 7), (2, 7), (1, 7), (0, 7)
                 ];
                 assert_eq!(result, expected);
             },
@@ -483,7 +541,7 @@ mod tests {
 
         match result {
             Ok(game_state) => {
-                let result = destinations(kind, player_number, point, &game_state);
+                let result = destinations(kind, player_number, point, &game_state, false);
                 let expected = vec![
                     (3, 0), (4, 0), (5, 0), (5, 1), (5, 2), (4, 2), (3, 2), (3, 1)
                 ];
@@ -503,7 +561,7 @@ mod tests {
 
         match result {
             Ok(game_state) => {
-                let result = destinations(kind, player_number, point, &game_state);
+                let result = destinations(kind, player_number, point, &game_state, false);
                 let expected = vec![
                     (3, 6), (4, 6), (5, 6), (5, 7), (5, 8), (4, 8), (3, 8), (3, 7)
                 ];
@@ -523,7 +581,7 @@ mod tests {
 
         match result {
             Ok(game_state) => {
-                let result = destinations(kind, player_number, point, &game_state);
+                let result = destinations(kind, player_number, point, &game_state, false);
                 let expected = vec![
                     (2, 6), (3, 7), (2, 8), (1, 7), (1, 6), (3, 6)
                 ];
@@ -543,7 +601,7 @@ mod tests {
 
         match result {
             Ok(game_state) => {
-                let result = destinations(kind, player_number, point, &game_state);
+                let result = destinations(kind, player_number, point, &game_state, false);
                 let expected = vec![
                     (2, 6), (3, 7), (2, 8), (1, 7), (1, 6), (3, 6)
                 ];
@@ -563,7 +621,7 @@ mod tests {
 
         match result {
             Ok(game_state) => {
-                let result = destinations(kind, player_number, point, &game_state);
+                let result = destinations(kind, player_number, point, &game_state, false);
                 let expected = vec![
                     (2, 6), (3, 7), (2, 8), (1, 7), (1, 6), (3, 6)
                 ];
@@ -583,7 +641,7 @@ mod tests {
 
         match result {
             Ok(game_state) => {
-                let result = destinations(kind, player_number, point, &game_state);
+                let result = destinations(kind, player_number, point, &game_state, false);
                 let expected = vec![
                     (2, 6), (3, 7), (2, 8), (1, 7), (1, 6), (3, 6)
                 ];
@@ -603,9 +661,29 @@ mod tests {
 
         match result {
             Ok(game_state) => {
-                let result = destinations(kind, player_number, point, &game_state);
+                let result = destinations(kind, player_number, point, &game_state, false);
                 let expected = vec![
                     (2, 6), (3, 7), (4, 7), (5, 7), (6, 7), (7, 7), (8, 7), (2, 8), (1, 7), (0, 7), (1, 6), (3, 6), (3, 8), (1, 8)
+                ];
+                assert_eq!(result, expected);
+            },
+            Err(e) => assert!(false, "{}", e)
+        }
+    }
+
+    #[test]
+    fn destinations_ryuuou_moves_ignore_blocks_test() {
+        let kind = PieceKind::Ryuuou;
+        let player_number = 1;
+        let point = (2, 7);
+        let encoded = String::from("lnsgkgsnl/9/9/9/9/9/2p6/2+R6/L3KGSNL b -");
+        let result = parse_game_state(&encoded);
+
+        match result {
+            Ok(game_state) => {
+                let result = destinations(kind, player_number, point, &game_state, true);
+                let expected = vec![
+                    (2, 6), (2, 5), (2, 4), (2, 3), (2, 2), (2, 1), (2, 0), (3, 7), (4, 7), (5, 7), (6, 7), (7, 7), (8, 7), (2, 8), (1, 7), (0, 7), (1, 6), (3, 6), (3, 8), (1, 8)
                 ];
                 assert_eq!(result, expected);
             },
@@ -618,12 +696,32 @@ mod tests {
         let kind = PieceKind::Ryuuma;
         let player_number = 1;
         let point = (2, 7);
+        let encoded = String::from("lnsgkgsnl/9/9/9/9/9/1p7/2+B6/L3KGSNL b -");
+        let result = parse_game_state(&encoded);
+
+        match result {
+            Ok(game_state) => {
+                let result = destinations(kind, player_number, point, &game_state, false);
+                let expected = vec![
+                    (1, 6), (3, 6), (4, 5), (5, 4), (6, 3), (7, 2), (8, 1), (3, 8), (1, 8), (2, 6), (3, 7), (2, 8), (1, 7)
+                ];
+                assert_eq!(result, expected);
+            },
+            Err(e) => assert!(false, "{}", e)
+        }
+    }
+
+    #[test]
+    fn destinations_ryuuma_moves_ignore_blocks_test() {
+        let kind = PieceKind::Ryuuma;
+        let player_number = 1;
+        let point = (2, 7);
         let encoded = String::from("lnsgkgsnl/9/9/9/9/9/2p6/2+B6/L3KGSNL b -");
         let result = parse_game_state(&encoded);
 
         match result {
             Ok(game_state) => {
-                let result = destinations(kind, player_number, point, &game_state);
+                let result = destinations(kind, player_number, point, &game_state, true);
                 let expected = vec![
                     (1, 6), (0, 5), (3, 6), (4, 5), (5, 4), (6, 3), (7, 2), (8, 1), (3, 8), (1, 8), (2, 6), (3, 7), (2, 8), (1, 7)
                 ];

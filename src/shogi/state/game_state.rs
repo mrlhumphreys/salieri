@@ -163,7 +163,7 @@ impl GameState {
                 } else {
                     if square.player_number != 0 {
                         // if any capture square match king square
-                        check = square.player_number == other_player_number && destinations(square.kind, square.player_number, (x as i8, y as i8), self).iter().any(|s| *s == king_point );
+                        check = square.player_number == other_player_number && destinations(square.kind, square.player_number, (x as i8, y as i8), self, false).iter().any(|s| *s == king_point );
                     }
                 }
             }
@@ -183,7 +183,7 @@ impl GameState {
             for (x, from) in row.iter().enumerate() {
                 if from.player_number == subject_player_number {
                     let from_point = (x as i8, y as i8);
-                    for to_point in destinations(from.kind, from.player_number, from_point, &self) {
+                    for to_point in destinations(from.kind, from.player_number, from_point, &self, false) {
 
                         let mut capture_piece_kind: Option<PieceKind> = None;
                         if let Some(to) = find_by_x_and_y(&self.squares, to_point) {

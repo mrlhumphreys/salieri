@@ -93,7 +93,7 @@ pub fn threats_to_point(squares: &Vec<Vec<Square>>, point: (i8, i8), player_numb
             // get opposing squares
             if s.player_number == opposing_player && s.kind != PieceKind::Oushou && s.kind != PieceKind::Gyokushou {
                 // get opposing squares threatened points
-                let threatened_points = destinations(s.kind, s.player_number, (x as i8, y as i8), game_state);
+                let threatened_points = destinations(s.kind, s.player_number, (x as i8, y as i8), game_state, false);
                 // return the opposing point if a threatened point matches the specified point
                 if threatened_points.iter().any(|t| { return *t == point; }) {
                     acc.push((x as i8, y as i8));
@@ -118,16 +118,19 @@ pub fn pinned_to_point(squares: &Vec<Vec<Square>>, point: (i8, i8), player_numbe
         for (x, s) in row.iter().enumerate() {
             // get opposing squares
             if s.player_number == opposing_player && vec![PieceKind::Hisha, PieceKind::Ryuuou, PieceKind::Kakugyou, PieceKind::Ryuuma, PieceKind::Kyousha].contains(&s.kind) {
-                let between_points = between((x as i8, y as i8), point);
-                between_points.iter().for_each(|b| {
-                    if squares[b.1 as usize][b.0 as usize].player_number == player_number {
-                        acc.push(*b);
-                    }
-                });
+                let opposing_point = (x as i8, y as i8);
+                let threatened_points = destinations(s.kind, s.player_number, opposing_point, game_state, true);
+                if threatened_points.iter().any(|t| { return *t == point; }) {
+                    let between_points = between(opposing_point, point);
+                    between_points.iter().for_each(|b| {
+                        if squares[b.1 as usize][b.0 as usize].player_number == player_number {
+                            acc.push(*b);
+                        }
+                    });
+                }
             }
         }
     }
-    // TODO: consider pieces movement. i.e. captureSquares
     acc
 }
 
