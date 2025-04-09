@@ -63,42 +63,6 @@ impl Square {
     pub fn unoccupied_or_occupied_by_opponent(&self, player_number: i8) -> bool {
         self.player_number == 0 || self.player_number != player_number
     }
-
-    pub fn promotion_ranks(&self) -> Vec<i8> {
-        if PROMOTABLE_PIECE_KINDS.iter().any(|pk| *pk == self.kind) {
-            if self.player_number == 1 {
-                vec![0, 1, 2]
-            } else {
-                vec![6, 7, 8]
-            }
-        } else {
-            vec![]
-        }
-    }
-
-    pub fn promotes_to(&self) -> Option<PieceKind> {
-        match self.kind {
-            PieceKind::Fuhyou => Some(PieceKind::Tokin),
-            PieceKind::Kyousha => Some(PieceKind::Narikyou),
-            PieceKind::Keima => Some(PieceKind::Narikei),
-            PieceKind::Ginshou => Some(PieceKind::Narigin),
-            PieceKind::Hisha => Some(PieceKind::Ryuuou),
-            PieceKind::Kakugyou => Some(PieceKind::Ryuuma),
-            _ => None
-        }
-    }
-
-    pub fn demotes_to(&self) -> Option<PieceKind> {
-        match self.kind {
-            PieceKind::Tokin => Some(PieceKind::Fuhyou),
-            PieceKind::Narikyou => Some(PieceKind::Kyousha),
-            PieceKind::Narikei => Some(PieceKind::Keima),
-            PieceKind::Narigin => Some(PieceKind::Ginshou),
-            PieceKind::Ryuuou => Some(PieceKind::Hisha),
-            PieceKind::Ryuuma => Some(PieceKind::Kakugyou),
-            _ => None
-        }
-    }
 }
 
 pub fn destinations(piece_kind: PieceKind, player_number: i8, point: (i8, i8), game_state: &GameState, ignore_blocks: bool) -> Vec<(i8, i8)> {
@@ -199,6 +163,18 @@ pub fn destinations(piece_kind: PieceKind, player_number: i8, point: (i8, i8), g
     acc
 }
 
+pub fn promotion_ranks(kind: PieceKind, player_number: i8) -> Vec<i8> {
+    if PROMOTABLE_PIECE_KINDS.iter().any(|pk| *pk == kind) {
+        if player_number == 1 {
+            vec![0, 1, 2]
+        } else {
+            vec![6, 7, 8]
+        }
+    } else {
+        vec![]
+    }
+}
+
 pub fn compulsory_promotion_ranks(kind: PieceKind, player_number: i8) -> Vec<i8> {
     match kind {
         PieceKind::Fuhyou | PieceKind::Kyousha => {
@@ -216,6 +192,30 @@ pub fn compulsory_promotion_ranks(kind: PieceKind, player_number: i8) -> Vec<i8>
             }
         }
         _ => vec![]
+    }
+}
+
+pub fn promotes_to(kind: PieceKind) -> Option<PieceKind> {
+    match kind {
+        PieceKind::Fuhyou => Some(PieceKind::Tokin),
+        PieceKind::Kyousha => Some(PieceKind::Narikyou),
+        PieceKind::Keima => Some(PieceKind::Narikei),
+        PieceKind::Ginshou => Some(PieceKind::Narigin),
+        PieceKind::Hisha => Some(PieceKind::Ryuuou),
+        PieceKind::Kakugyou => Some(PieceKind::Ryuuma),
+        _ => None
+    }
+}
+
+pub fn demotes_to(kind: PieceKind) -> Option<PieceKind> {
+    match kind {
+        PieceKind::Tokin => Some(PieceKind::Fuhyou),
+        PieceKind::Narikyou => Some(PieceKind::Kyousha),
+        PieceKind::Narikei => Some(PieceKind::Keima),
+        PieceKind::Narigin => Some(PieceKind::Ginshou),
+        PieceKind::Ryuuou => Some(PieceKind::Hisha),
+        PieceKind::Ryuuma => Some(PieceKind::Kakugyou),
+        _ => None
     }
 }
 
@@ -244,6 +244,26 @@ pub fn has_legal_moves_from_y(kind: PieceKind, player_number: i8, y: i8) -> bool
         },
         _ => true
     }
+}
+
+pub fn ou_kind(player_number: i8) -> PieceKind {
+    if player_number == 1 {
+        PieceKind::Oushou
+    } else {
+        PieceKind::Gyokushou
+    }
+}
+
+pub fn opposing_player(player_number: i8) -> i8 {
+    if player_number == 1 {
+        2
+    } else {
+        1
+    }
+}
+
+pub fn ranging(kind: PieceKind) -> bool {
+    vec![PieceKind::Hisha, PieceKind::Ryuuou, PieceKind::Kakugyou, PieceKind::Ryuuma, PieceKind::Kyousha].contains(&kind)
 }
 
 #[cfg(test)]
@@ -733,24 +753,27 @@ mod tests {
 
     #[test]
     fn promotion_ranks_promotable_one_test() {
-        let square = Square { kind: PieceKind::Fuhyou, player_number: 1 };
-        let result = square.promotion_ranks();
+        let kind = PieceKind::Fuhyou;
+        let player_number = 1;
+        let result = promotion_ranks(kind, player_number);
         let expected = vec![0, 1, 2];
         assert_eq!(result, expected);
     }
 
     #[test]
     fn promotion_ranks_promotable_two_test() {
-        let square = Square { kind: PieceKind::Fuhyou, player_number: 2 };
-        let result = square.promotion_ranks();
+        let kind = PieceKind::Fuhyou;
+        let player_number = 2;
+        let result = promotion_ranks(kind, player_number);
         let expected = vec![6, 7, 8];
         assert_eq!(result, expected);
     }
 
     #[test]
     fn promotion_ranks_unpromotable_test() {
-        let square = Square { kind: PieceKind::Tokin, player_number: 1 };
-        let result = square.promotion_ranks();
+        let kind = PieceKind::Tokin;
+        let player_number = 1;
+        let result = promotion_ranks(kind, player_number);
         let expected: Vec<i8> = vec![];
         assert_eq!(result, expected);
     }
@@ -793,112 +816,112 @@ mod tests {
 
     #[test]
     fn promotes_to_fuhyou_test() {
-        let square = Square { kind: PieceKind::Fuhyou, player_number: 1 };
-        let result = square.promotes_to();
+        let kind = PieceKind::Fuhyou;
+        let result = promotes_to(kind);
         let expected = Some(PieceKind::Tokin);
         assert_eq!(result, expected);
     }
 
     #[test]
     fn promotes_to_kyousha_test() {
-        let square = Square { kind: PieceKind::Kyousha, player_number: 1 };
-        let result = square.promotes_to();
+        let kind = PieceKind::Kyousha;
+        let result = promotes_to(kind);
         let expected = Some(PieceKind::Narikyou);
         assert_eq!(result, expected);
     }
 
     #[test]
     fn promotes_to_keima_test() {
-        let square = Square { kind: PieceKind::Keima, player_number: 1 };
-        let result = square.promotes_to();
+        let kind = PieceKind::Keima;
+        let result = promotes_to(kind);
         let expected = Some(PieceKind::Narikei);
         assert_eq!(result, expected);
     }
 
     #[test]
     fn promotes_to_ginshou_test() {
-        let square = Square { kind: PieceKind::Ginshou, player_number: 1 };
-        let result = square.promotes_to();
+        let kind = PieceKind::Ginshou;
+        let result = promotes_to(kind);
         let expected = Some(PieceKind::Narigin);
         assert_eq!(result, expected);
     }
 
     #[test]
     fn promotes_to_hisha_test() {
-        let square = Square { kind: PieceKind::Hisha, player_number: 1 };
-        let result = square.promotes_to();
+        let kind = PieceKind::Hisha;
+        let result = promotes_to(kind);
         let expected = Some(PieceKind::Ryuuou);
         assert_eq!(result, expected);
     }
 
     #[test]
     fn promotes_to_kakugyou_test() {
-        let square = Square { kind: PieceKind::Kakugyou, player_number: 1 };
-        let result = square.promotes_to();
+        let kind = PieceKind::Kakugyou;
+        let result = promotes_to(kind);
         let expected = Some(PieceKind::Ryuuma);
         assert_eq!(result, expected);
     }
 
     #[test]
     fn promotes_to_kinshou_test() {
-        let square = Square { kind: PieceKind::Kinshou, player_number: 1 };
-        let result = square.promotes_to();
+        let kind = PieceKind::Kinshou;
+        let result = promotes_to(kind);
         let expected = None;
         assert_eq!(result, expected);
     }
 
     #[test]
     fn demotes_to_tokin_test() {
-        let square = Square { kind: PieceKind::Tokin, player_number: 1 };
-        let result = square.demotes_to();
+        let kind = PieceKind::Tokin;
+        let result = demotes_to(kind);
         let expected = Some(PieceKind::Fuhyou);
         assert_eq!(result, expected);
     }
 
     #[test]
     fn demotes_to_narikyou_test() {
-        let square = Square { kind: PieceKind::Narikyou, player_number: 1 };
-        let result = square.demotes_to();
+        let kind = PieceKind::Narikyou;
+        let result = demotes_to(kind);
         let expected = Some(PieceKind::Kyousha);
         assert_eq!(result, expected);
     }
 
     #[test]
     fn demotes_to_narikei_test() {
-        let square = Square { kind: PieceKind::Narikei, player_number: 1 };
-        let result = square.demotes_to();
+        let kind = PieceKind::Narikei;
+        let result = demotes_to(kind);
         let expected = Some(PieceKind::Keima);
         assert_eq!(result, expected);
     }
 
     #[test]
     fn demotes_to_narigin_test() {
-        let square = Square { kind: PieceKind::Narigin, player_number: 1 };
-        let result = square.demotes_to();
+        let kind = PieceKind::Narigin;
+        let result = demotes_to(kind);
         let expected = Some(PieceKind::Ginshou);
         assert_eq!(result, expected);
     }
 
     #[test]
     fn demotes_to_ryuuou_test() {
-        let square = Square { kind: PieceKind::Ryuuou, player_number: 1 };
-        let result = square.demotes_to();
+        let kind = PieceKind::Ryuuou;
+        let result = demotes_to(kind);
         let expected = Some(PieceKind::Hisha);
         assert_eq!(result, expected);
     }
 
     #[test]
     fn demotes_to_ryuuma_test() {
-        let square = Square { kind: PieceKind::Ryuuma, player_number: 1 };
-        let result = square.demotes_to();
+        let kind = PieceKind::Ryuuma;
+        let result = demotes_to(kind);
         let expected = Some(PieceKind::Kakugyou);
         assert_eq!(result, expected);
     }
 
     #[test]
     fn demotes_to_kinshou_test() {
-        let square = Square { kind: PieceKind::Kinshou, player_number: 1 };
-        let result = square.demotes_to();
+        let kind = PieceKind::Kinshou;
+        let result = demotes_to(kind);
         let expected = None;
         assert_eq!(result, expected);
     }
@@ -1018,5 +1041,41 @@ mod tests {
         let y = 0;
         let result = has_legal_moves_from_y(kind, player_number, y);
         assert_eq!(result, true);
+    }
+
+    #[test]
+    fn ou_kind_player_one_test() {
+        let result = ou_kind(1);
+        assert_eq!(result, PieceKind::Oushou);
+    }
+
+    #[test]
+    fn ou_kind_player_two_test() {
+        let result = ou_kind(2);
+        assert_eq!(result, PieceKind::Gyokushou);
+    }
+
+    #[test]
+    fn opposing_player_one_test() {
+        let result = opposing_player(1);
+        assert_eq!(result, 2);
+    }
+
+    #[test]
+    fn opposing_player_two_test() {
+        let result = opposing_player(2);
+        assert_eq!(result, 1);
+    }
+
+    #[test]
+    fn ranging_true_test() {
+       let result = ranging(PieceKind::Hisha);
+       assert_eq!(result, true);
+    }
+
+    #[test]
+    fn ranging_false_test() {
+       let result = ranging(PieceKind::Fuhyou);
+       assert_eq!(result, false);
     }
 }

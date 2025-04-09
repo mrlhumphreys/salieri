@@ -44,6 +44,21 @@ pub fn direction_unit(from: (i8, i8), to: (i8, i8)) -> (i8, i8) {
     (direction_unit_n(from.0, to.0), direction_unit_n(from.1, to.1))
 }
 
+pub fn between(from: (i8, i8), to: (i8, i8)) -> Vec<(i8, i8)> {
+    let mut acc = vec![];
+
+    if orthogonal_or_diagonal(from, to) && length(from, to) > 1 {
+        let direction_unit = direction_unit(from, to);
+        let end = to;
+        let mut counter = add(from, direction_unit);
+        while counter != end {
+            acc.push(counter);
+            counter = add(counter, direction_unit);
+        }
+    }
+    acc
+}
+
 pub fn orthogonal_destination_points(from: (i8, i8)) -> Vec<(i8, i8)> {
     let mut acc = vec![];
 
@@ -262,6 +277,28 @@ mod tests {
         let to = (6, 2);
         let result = direction_unit(from, to);
         assert_eq!(result, (1, -1));
+    }
+
+    #[test]
+    fn between_orthogonal_test() {
+        let from = (4, 4);
+        let to = (8, 4);
+        let expected = vec![
+            (5, 4), (6, 4), (7, 4)
+        ];
+        let result = between(from, to);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn between_diagonal_test() {
+        let from = (4, 4);
+        let to = (8, 8);
+        let expected = vec![
+            (5, 5), (6, 6), (7, 7)
+        ];
+        let result = between(from, to);
+        assert_eq!(result, expected);
     }
 
     #[test]

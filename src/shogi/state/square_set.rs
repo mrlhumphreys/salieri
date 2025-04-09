@@ -2,7 +2,11 @@ use crate::shogi::state::point::add;
 use crate::shogi::state::point::direction_unit;
 use crate::shogi::state::point::length;
 use crate::shogi::state::point::valid;
+use crate::shogi::state::point::between;
 use crate::shogi::state::point::orthogonal_or_diagonal;
+use crate::shogi::state::square::ou_kind;
+use crate::shogi::state::square::opposing_player;
+use crate::shogi::state::square::ranging;
 use crate::shogi::state::square::PieceKind;
 use crate::shogi::state::square::Square;
 use crate::shogi::state::square::destinations;
@@ -22,21 +26,6 @@ pub fn find_by_x_and_y(squares: &Vec<Vec<Square>>, point: (i8, i8)) -> Option<&S
     } else {
         None
     }
-}
-
-pub fn between(from: (i8, i8), to: (i8, i8)) -> Vec<(i8, i8)> {
-    let mut acc = vec![];
-
-    if orthogonal_or_diagonal(from, to) && length(from, to) > 1 {
-        let direction_unit = direction_unit(from, to);
-        let end = to;
-        let mut counter = add(from, direction_unit);
-        while counter != end {
-            acc.push(counter);
-            counter = add(counter, direction_unit);
-        }
-    }
-    acc
 }
 
 pub fn between_unoccupied(squares: &Vec<Vec<Square>>, from: (i8, i8), to: (i8, i8)) -> bool {
@@ -62,17 +51,15 @@ pub fn between_unoccupied(squares: &Vec<Vec<Square>>, from: (i8, i8), to: (i8, i
 pub fn find_ou_point_for_player(squares: &Vec<Vec<Square>>, player_number: i8) -> Option<(i8, i8)> {
     let mut ou_point = None;
 
-    let moving_piece_kind = if player_number == 1 {
-        PieceKind::Oushou
-    } else {
-        PieceKind::Gyokushou
-    };
-
     for (y, row) in squares.iter().enumerate() {
         for (x, s) in row.iter().enumerate() {
-            if s.kind == moving_piece_kind {
+            if s.kind == ou_kind(player_number) {
                 ou_point = Some((x as i8, y as i8));
+                break;
             }
+        }
+        if ou_point.is_some() {
+            break;
         }
     }
 
@@ -80,21 +67,18 @@ pub fn find_ou_point_for_player(squares: &Vec<Vec<Square>>, player_number: i8) -
 }
 
 pub fn threats_to_point(squares: &Vec<Vec<Square>>, point: (i8, i8), player_number: i8, game_state: &GameState) -> Vec<(i8, i8)> {
-    let opposing_player = if player_number == 2 {
-        1
-    } else {
-        2
-    };
-
     let mut acc = vec![];
+
+    let opposing_player_number = opposing_player(player_number);
 
     for (y, row) in squares.iter().enumerate() {
         for (x, s) in row.iter().enumerate() {
             // get opposing squares
-            if s.player_number == opposing_player && s.kind != PieceKind::Oushou && s.kind != PieceKind::Gyokushou {
+            if s.player_number == opposing_player_number && s.kind != PieceKind::Oushou && s.kind != PieceKind::Gyokushou {
                 // get opposing squares threatened points
                 let threatened_points = destinations(s.kind, s.player_number, (x as i8, y as i8), game_state, false);
-                // return the opposing point if a threatened point matches the specified point
+                // return the opposing square's point if a threatened point matches the specified point
+                // i.e. the opposing square is threatening the target
                 if threatened_points.iter().any(|t| { return *t == point; }) {
                     acc.push((x as i8, y as i8));
                 }
@@ -106,20 +90,18 @@ pub fn threats_to_point(squares: &Vec<Vec<Square>>, point: (i8, i8), player_numb
 }
 
 pub fn pinned_to_point(squares: &Vec<Vec<Square>>, point: (i8, i8), player_number: i8, game_state: &GameState) -> Vec<(i8, i8)> {
-    let opposing_player = if player_number == 2 {
-        1
-    } else {
-        2
-    };
+    let opposing_player_number = opposing_player(player_number);
 
     let mut acc = vec![];
 
     for (y, row) in squares.iter().enumerate() {
         for (x, s) in row.iter().enumerate() {
-            // get opposing squares
-            if s.player_number == opposing_player && vec![PieceKind::Hisha, PieceKind::Ryuuou, PieceKind::Kakugyou, PieceKind::Ryuuma, PieceKind::Kyousha].contains(&s.kind) {
+            // square is occupied by an opposing piece with range movement
+            if s.player_number == opposing_player_number && ranging(s.kind) {
                 let opposing_point = (x as i8, y as i8);
                 let threatened_points = destinations(s.kind, s.player_number, opposing_point, game_state, true);
+
+                // if any threatened point matches the subject point
                 if threatened_points.iter().any(|t| { return *t == point; }) {
                     let between_points = between(opposing_point, point);
                     between_points.iter().for_each(|b| {
