@@ -51,7 +51,10 @@ async fn post_game_move(info: web::Path<String>, req_body: String) -> impl Respo
             }
         },
         "shogi" => {
-            shogi_controller::minimax(&req_body)
+            match shogi::openings::recommended_move(&req_body) {
+                Some(m) => HttpResponse::Ok().body(format!("{}\n", m)),
+                None => shogi_controller::minimax(&req_body)
+            }
         },
         _ => return HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n")
     }
@@ -95,6 +98,7 @@ async fn post_game_algorithm_move(info: web::Path<(String, String)>, req_body: S
         },
         "shogi" => {
             match algorithm.as_str() {
+                "openings_db" => shogi_controller::opening(&req_body),
                 "minimax" => shogi_controller::minimax(&req_body),
                 _ => return HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n")
             }

@@ -4,12 +4,12 @@ use actix_web::HttpResponse;
 
 use super::shogi;
 
-// pub fn opening(game_data: &String) -> HttpResponse {
-//     match shogi::openings::recommended_move(game_data) {
-//         Some(m) => HttpResponse::Ok().body(format!("{}\n", m)),
-//         None => HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n")
-//     }
-// }
+pub fn opening(game_data: &String) -> HttpResponse {
+    match shogi::openings::recommended_move(game_data) {
+        Some(m) => HttpResponse::Ok().body(format!("{}\n", m)),
+        None => HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n")
+    }
+}
 
 pub fn minimax(game_data: &String) -> HttpResponse {
     let mut game_state = match shogi::state::game_state::parse(game_data) {
@@ -128,29 +128,29 @@ mod tests {
     use super::*;
     use actix_web::body::MessageBody;
 
-    // #[test]
-    // fn opening_valid_test() {
-    //     let game_state = String::from("B:W18,21,22,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,12,15");
-    //     let result = opening(&game_state);
+    #[test]
+    fn opening_valid_test() {
+        let game_state = String::from("lnsgkgsnl/1r5b1/ppppppppp/9/9/7P1/PPPPPPP1P/1B5R1/LNSGKGSNL w -");
+        let result = opening(&game_state);
 
-    //     assert_eq!(result.status(), 200);
-    //     match result.into_body().try_into_bytes() {
-    //        Ok(bytes) => assert_eq!(bytes, "8-11\n"),
-    //        Err(_) => assert!(false, "unexpected body")
-    //     };
-    // }
+        assert_eq!(result.status(), 200);
+        match result.into_body().try_into_bytes() {
+           Ok(bytes) => assert_eq!(bytes, "P-84\n"),
+           Err(_) => assert!(false, "unexpected body")
+        };
+    }
 
-    // #[test]
-    // fn opening_no_moves_test() {
-    //     let game_state = String::from("W:W:B1,2,3,4,5,6,7,8,9,10,12,15");
-    //     let result = opening(&game_state);
+    #[test]
+    fn opening_no_moves_test() {
+        let game_state = String::from("lnsgkgsn1/1r5bl/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b -");
+        let result = opening(&game_state);
 
-    //     assert_eq!(result.status(), 422);
-    //     match result.into_body().try_into_bytes() {
-    //        Ok(bytes) => assert_eq!(bytes, "422 Unprocessable Entity\n"),
-    //        Err(_) => assert!(false, "unexpected body")
-    //     };
-    // }
+        assert_eq!(result.status(), 422);
+        match result.into_body().try_into_bytes() {
+           Ok(bytes) => assert_eq!(bytes, "422 Unprocessable Entity\n"),
+           Err(_) => assert!(false, "unexpected body")
+        };
+    }
 
     #[test]
     fn minimax_valid_test() {
