@@ -420,6 +420,7 @@ pub fn parse(encoded: &String) -> Result<GameState, &'static str> {
     let mut y: i8 = 0;
     let mut x: i8 = 0;
     let mut promoted_piece = false;
+    let mut hand_piece_count = 1;
 
     let mut squares: Vec<Vec<Square>> = vec![
         vec![
@@ -551,7 +552,12 @@ pub fn parse(encoded: &String) -> Result<GameState, &'static str> {
                 } else if read_hand {
                     match parse_piece(c, false) {
                         Ok(p) => {
-                           hands[p.player_number as usize].push(p.kind);
+                            let mut counter = 0;
+                            while counter < hand_piece_count {
+                                hands[p.player_number as usize].push(p.kind);
+                                counter += 1;
+                            }
+                            hand_piece_count = 1;
                         },
                         Err(_) => {
                             parse_error = true;
@@ -580,12 +586,20 @@ pub fn parse(encoded: &String) -> Result<GameState, &'static str> {
                             x += 1; // increment column
                             empty_counter += 1;
                         }
-                    } else if read_move_count {
-                        // do nothing
-                        ()
                     } else {
                         parse_error = true;
                     }
+                } else if read_hand {
+                    if let Some(num) = c.to_digit(10) {
+                        hand_piece_count = num;
+                    } else {
+                        parse_error = true;
+                    }
+                } else if read_move_count {
+                    // do nothing
+                    ()
+                } else {
+                    parse_error = true;
                 }
             },
             '/' => {
@@ -690,6 +704,18 @@ mod tests {
 
         assert_eq!(result.squares[6][0].kind, PieceKind::Fuhyou);
         assert_eq!(result.squares[6][0].player_number, 1);
+    }
+
+    #[test]
+    fn parse_hand_test() {
+        let encoded = String::from("ln1gkg1nl/1r7/pppppp3/9/9/9/PPPPP4/9/LNS1KGSNL b RG4P2b2s3p");
+        let result = parse(&encoded).unwrap();
+        let expected: Vec<Vec<PieceKind>> = vec![
+           vec![],
+           vec![PieceKind::Hisha, PieceKind::Kinshou, PieceKind::Fuhyou, PieceKind::Fuhyou, PieceKind::Fuhyou, PieceKind::Fuhyou],
+           vec![PieceKind::Kakugyou, PieceKind::Ginshou, PieceKind::Ginshou, PieceKind::Fuhyou, PieceKind::Fuhyou, PieceKind::Fuhyou]
+        ];
+        assert_eq!(result.hands, expected);
     }
 
     #[test]
