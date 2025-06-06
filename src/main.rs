@@ -100,6 +100,7 @@ async fn post_game_algorithm_move(info: web::Path<(String, String)>, req_body: S
             match algorithm.as_str() {
                 "openings_db" => shogi_controller::opening(&req_body),
                 "minimax" => shogi_controller::minimax(&req_body),
+                "mcts" => shogi_controller::mcts(&req_body),
                 _ => return HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n")
             }
         },
