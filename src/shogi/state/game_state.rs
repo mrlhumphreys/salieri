@@ -7,7 +7,6 @@ use crate::shogi::state::square::demotes_to;
 use crate::shogi::state::square::destinations;
 use crate::shogi::state::square::has_legal_moves_from_y;
 use crate::shogi::state::square::opposing_player;
-use crate::shogi::state::square::ou_kind;
 use crate::shogi::state::square::PieceKind;
 use crate::shogi::state::square::Square;
 use crate::shogi::state::point::diff;
@@ -17,6 +16,8 @@ use crate::shogi::state::square_set::find_by_x_and_y_mut;
 use crate::shogi::state::square_set::find_by_x_and_y;
 use crate::shogi::state::square_set::find_ou_point_for_player;
 use crate::shogi::state::square_set::threats_to_point;
+use crate::shogi::state::square_set::any_threats_to_point;
+use crate::shogi::state::square_set::any_threats_to_point_through_pin;
 use crate::shogi::state::square_set::pinned_to_point;
 use crate::shogi::state::mov::Move;
 
@@ -44,27 +45,22 @@ impl GameState {
 
     pub fn ou_cannot_move(&mut self, player_number: i8) -> bool {
         let mut can_move = false;
-        let ou_piece_kind = ou_kind(player_number);
 
         match find_ou_point_for_player(&self.squares, player_number) {
             Some(from) => {
                 for to in one_step_destination_points(from) {
-                    let mut new_game_state = self.clone();
-                    let mov = Move {
-                       from: Some(from),
-                       to,
-                       moving_piece_kind: ou_piece_kind,
-                       capture_piece_kind: None,
-                       promote: false
-                    };
-                    let result = new_game_state.perform_move(&mov);
-
-                    if result.is_err() {
-                        break;
+                    match find_by_x_and_y(&self.squares, to) {
+                        Some(to_square) => {
+                            // square is free or owned by other player
+                            if to_square.player_number != player_number {
+                                let any_threats = any_threats_to_point(&self.squares, to, player_number, &self);
+                                let any_pin_threats = any_threats_to_point_through_pin(&self.squares, to, player_number, from);
+                                can_move = !any_threats && !any_pin_threats;
+                            }
+                        },
+                        None => ()
                     }
-
-                    if !new_game_state.in_check(player_number) {
-                        can_move = true;
+                    if can_move {
                         break;
                     }
                 }
@@ -870,13 +866,15 @@ mod tests {
         let mut game_state = parse(&encoded).unwrap();
         let result = game_state.possible_moves_for_player(1);
 
-        assert_eq!(result.len(), 73);
+        // K - 3
+        // P - 9 * 7 + 8 = 71
+        assert_eq!(result.len(), 74);
 
-        assert_eq!(result[72].from, None);
-        assert_eq!(result[72].to, (7, 8));
-        assert_eq!(result[72].moving_piece_kind, PieceKind::Fuhyou);
-        assert_eq!(result[72].capture_piece_kind, None);
-        assert_eq!(result[72].promote, false);
+        assert_eq!(result[73].from, None);
+        assert_eq!(result[73].to, (7, 8));
+        assert_eq!(result[73].moving_piece_kind, PieceKind::Fuhyou);
+        assert_eq!(result[73].capture_piece_kind, None);
+        assert_eq!(result[73].promote, false);
     }
 
     #[test]

@@ -59,6 +59,18 @@ pub fn between(from: (i8, i8), to: (i8, i8)) -> Vec<(i8, i8)> {
     acc
 }
 
+// the next points in a line following a, b
+pub fn points_in_line(a: (i8, i8), b: (i8, i8)) -> Vec<(i8, i8)> {
+    let du = direction_unit(a, b);
+    let mut counter = add(b, du);
+    let mut acc = vec![];
+    while counter.0 <= MAX_N && counter.0 >= MIN_N && counter.1 <= MAX_N && counter.1 >= MIN_N {
+        acc.push(counter);
+        counter = add(counter, du);
+    }
+    acc
+}
+
 pub fn orthogonal_destination_points(from: (i8, i8)) -> Vec<(i8, i8)> {
     let mut acc = vec![];
 
@@ -213,6 +225,22 @@ pub fn orthogonal_or_diagonal(from: (i8, i8), to: (i8, i8)) -> bool {
     (abs_dx == 0 || abs_dy == 0) || (abs_dx != 0 && abs_dx == abs_dy)
 }
 
+pub fn orthogonal(from: (i8, i8), to: (i8, i8)) -> bool {
+    (from.0 == to.0) || (from.1 == to.1)
+}
+
+pub fn diagonal(from: (i8, i8), to: (i8, i8)) -> bool {
+    let abs_dx = (to.0 - from.0).abs();
+    let abs_dy = (to.1 - from.1).abs();
+    abs_dx == abs_dy
+}
+
+pub fn forwards_for_player(from: (i8, i8), to: (i8, i8), player_number: i8) -> bool {
+    let dy = to.1 - from.1;
+    let direction = forwards_direction(player_number);
+    (dy > 0 && direction == 1) || (dy < 0 && direction == -1)
+}
+
 pub fn forwards_direction(player_number: i8) -> i8 {
     match player_number {
         1 => -1,
@@ -298,6 +326,28 @@ mod tests {
             (5, 5), (6, 6), (7, 7)
         ];
         let result = between(from, to);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn points_in_line_orthogonal_test() {
+        let from = (4, 4);
+        let to = (4, 3);
+        let expected = vec![
+            (4, 2), (4, 1), (4, 0)
+        ];
+        let result = points_in_line(from, to);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn points_in_line_diagonal_test() {
+        let from = (4, 4);
+        let to = (5, 3);
+        let expected = vec![
+            (6, 2), (7, 1), (8, 0)
+        ];
+        let result = points_in_line(from, to);
         assert_eq!(result, expected);
     }
 
@@ -420,6 +470,56 @@ mod tests {
        let to = (1, 3);
        let result = orthogonal_or_diagonal(from, to);
        assert_eq!(result, false);
+    }
+
+    #[test]
+    fn orthogonal_true_test() {
+        let from = (4, 4);
+        let to = (4, 3);
+        let result = orthogonal(from, to);
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    fn orthogonal_false_test() {
+        let from = (4, 4);
+        let to = (5, 3);
+        let result = orthogonal(from, to);
+        assert_eq!(result, false);
+    }
+
+    #[test]
+    fn diagonal_true_test() {
+        let from = (4, 4);
+        let to = (5, 3);
+        let result = diagonal(from, to);
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    fn diagonal_false_test() {
+        let from = (4, 4);
+        let to = (4, 3);
+        let result = diagonal(from, to);
+        assert_eq!(result, false);
+    }
+
+    #[test]
+    fn forwards_for_player_true_test() {
+        let from = (4, 4);
+        let to = (4, 3);
+        let player_number = 1;
+        let result = forwards_for_player(from, to, player_number);
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    fn forwards_for_player_false_test() {
+        let from = (4, 4);
+        let to = (4, 5);
+        let player_number = 1;
+        let result = forwards_for_player(from, to, player_number);
+        assert_eq!(result, false);
     }
 
     #[test]

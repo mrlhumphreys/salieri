@@ -81,7 +81,7 @@ pub fn destinations(piece_kind: PieceKind, player_number: i8, point: (i8, i8), g
         PieceKind::Kyousha => {
             for to_point in forward_destination_points(point, player_number) {
                 if let Some(to) = find_by_x_and_y(&game_state.squares, to_point) {
-                    if to.unoccupied_or_occupied_by_opponent(player_number)  && (ignore_blocks || between_unoccupied(&game_state.squares, point, to_point)) {
+                    if to.unoccupied_or_occupied_by_opponent(player_number) && (ignore_blocks || between_unoccupied(&game_state.squares, point, to_point)) {
                         acc.push(to_point);
                     }
                 }
@@ -161,6 +161,55 @@ pub fn destinations(piece_kind: PieceKind, player_number: i8, point: (i8, i8), g
         }
     }
     acc
+}
+
+pub fn threats_matches_point(piece_kind: PieceKind, player_number: i8, from: (i8, i8), game_state: &GameState, target_point: (i8, i8)) -> bool {
+    let mut result = false;
+    match piece_kind {
+        PieceKind::Empty => (),
+        PieceKind::Fuhyou => {
+            let points = one_step_forward_destination_points(from, player_number);
+            result = points.contains(&target_point);
+        },
+        PieceKind::Kyousha => {
+            let points = forward_destination_points(from, player_number);
+
+            result = points.contains(&target_point) && between_unoccupied(&game_state.squares, from, target_point);
+        },
+        PieceKind::Keima => {
+            let points = l_shape_forwards_destination_points(from, player_number);
+            result = points.contains(&target_point);
+        },
+        PieceKind::Ginshou => {
+            let points = gin_destination_points(from, player_number);
+            result = points.contains(&target_point);
+        },
+        PieceKind::Kinshou | PieceKind::Tokin | PieceKind::Narikyou | PieceKind::Narikei | PieceKind::Narigin => {
+            let points = kin_destination_points(from, player_number);
+            result = points.contains(&target_point);
+        },
+        PieceKind::Kakugyou => {
+            let points = diagonal_destination_points(from);
+            result = points.contains(&target_point) && between_unoccupied(&game_state.squares, from, target_point);
+        },
+        PieceKind::Hisha => {
+            let points = orthogonal_destination_points(from);
+            result = points.contains(&target_point) && between_unoccupied(&game_state.squares, from, target_point);
+        },
+        PieceKind::Gyokushou | PieceKind::Oushou => {
+            let points = one_step_destination_points(from);
+            result = points.contains(&target_point);
+        },
+        PieceKind::Ryuuma => {
+            let points = ryuuma_destination_points(from);
+            result = points.contains(&target_point) && between_unoccupied(&game_state.squares, from, target_point);
+        },
+        PieceKind::Ryuuou => {
+            let points = ryuuou_destination_points(from);
+            result = points.contains(&target_point) && between_unoccupied(&game_state.squares, from, target_point);
+        }
+    }
+    result
 }
 
 pub fn promotion_ranks(kind: PieceKind, player_number: i8) -> Vec<i8> {
@@ -357,18 +406,13 @@ mod tests {
         let player_number = 1;
         let point = (4, 6);
         let encoded = String::from("lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b -");
-        let result = parse_game_state(&encoded);
+        let game_state = parse_game_state(&encoded).unwrap();
 
-        match result {
-            Ok(game_state) => {
-                let result = destinations(kind, player_number, point, &game_state, false);
-                let expected = vec![
-                    (4, 5)
-                ];
-                assert_eq!(result, expected);
-            },
-            Err(e) => assert!(false, "{}", e)
-        }
+        let result = destinations(kind, player_number, point, &game_state, false);
+        let expected = vec![
+            (4, 5)
+        ];
+        assert_eq!(result, expected);
     }
 
     #[test]
@@ -377,18 +421,13 @@ mod tests {
         let player_number = 1;
         let point = (0, 8);
         let encoded = String::from("lnsgkgsnl/1r5b1/9/9/9/p8/9/1B5R1/LNSGKGSNL b -");
-        let result = parse_game_state(&encoded);
+        let game_state = parse_game_state(&encoded).unwrap();
 
-        match result {
-            Ok(game_state) => {
-                let result = destinations(kind, player_number, point, &game_state, false);
-                let expected = vec![
-                    (0, 7), (0, 6), (0, 5)
-                ];
-                assert_eq!(result, expected);
-            },
-            Err(e) => assert!(false, "{}", e)
-        }
+        let result = destinations(kind, player_number, point, &game_state, false);
+        let expected = vec![
+            (0, 7), (0, 6), (0, 5)
+        ];
+        assert_eq!(result, expected);
     }
 
     #[test]
@@ -397,18 +436,13 @@ mod tests {
         let player_number = 1;
         let point = (0, 8);
         let encoded = String::from("lnsgkgsnl/1r5b1/9/9/9/p8/9/1B5R1/LNSGKGSNL b -");
-        let result = parse_game_state(&encoded);
+        let game_state = parse_game_state(&encoded).unwrap();
 
-        match result {
-            Ok(game_state) => {
-                let result = destinations(kind, player_number, point, &game_state, true);
-                let expected = vec![
-                    (0, 7), (0, 6), (0, 5), (0, 4), (0, 3), (0, 2), (0, 1), (0, 0)
-                ];
-                assert_eq!(result, expected);
-            },
-            Err(e) => assert!(false, "{}", e)
-        }
+        let result = destinations(kind, player_number, point, &game_state, true);
+        let expected = vec![
+            (0, 7), (0, 6), (0, 5), (0, 4), (0, 3), (0, 2), (0, 1), (0, 0)
+        ];
+        assert_eq!(result, expected);
     }
 
     #[test]
@@ -417,18 +451,13 @@ mod tests {
         let player_number = 1;
         let point = (1, 8);
         let encoded = String::from("lnsgkgsnl/1r5b1/9/9/9/p8/9/1B5R1/LNSGKGSNL b -");
-        let result = parse_game_state(&encoded);
+        let game_state = parse_game_state(&encoded).unwrap();
 
-        match result {
-            Ok(game_state) => {
-                let result = destinations(kind, player_number, point, &game_state, false);
-                let expected = vec![
-                    (0, 6), (2, 6)
-                ];
-                assert_eq!(result, expected);
-            },
-            Err(e) => assert!(false, "{}", e)
-        }
+        let result = destinations(kind, player_number, point, &game_state, false);
+        let expected = vec![
+            (0, 6), (2, 6)
+        ];
+        assert_eq!(result, expected);
     }
 
     #[test]
@@ -437,18 +466,13 @@ mod tests {
         let player_number = 1;
         let point = (2, 7);
         let encoded = String::from("lnsgkgsnl/9/9/9/9/9/2p6/2S6/L3KGSNL b -");
-        let result = parse_game_state(&encoded);
+        let game_state = parse_game_state(&encoded).unwrap();
 
-        match result {
-            Ok(game_state) => {
-                let result = destinations(kind, player_number, point, &game_state, false);
-                let expected = vec![
-                    (1, 6), (3, 6), (3, 8), (1, 8), (2, 6)
-                ];
-                assert_eq!(result, expected);
-            },
-            Err(e) => assert!(false, "{}", e)
-        }
+        let result = destinations(kind, player_number, point, &game_state, false);
+        let expected = vec![
+            (1, 6), (3, 6), (3, 8), (1, 8), (2, 6)
+        ];
+        assert_eq!(result, expected);
     }
 
     #[test]
@@ -457,18 +481,13 @@ mod tests {
         let player_number = 1;
         let point = (3, 7);
         let encoded = String::from("lnsgkgsnl/9/9/9/9/9/3p5/3G5/8K b -");
-        let result = parse_game_state(&encoded);
+        let game_state = parse_game_state(&encoded).unwrap();
 
-        match result {
-            Ok(game_state) => {
-                let result = destinations(kind, player_number, point, &game_state, false);
-                let expected = vec![
-                    (3, 6), (4, 7), (3, 8), (2, 7), (2, 6), (4, 6)
-                ];
-                assert_eq!(result, expected);
-            },
-            Err(e) => assert!(false, "{}", e)
-        }
+        let result = destinations(kind, player_number, point, &game_state, false);
+        let expected = vec![
+            (3, 6), (4, 7), (3, 8), (2, 7), (2, 6), (4, 6)
+        ];
+        assert_eq!(result, expected);
     }
 
     #[test]
@@ -477,18 +496,13 @@ mod tests {
         let player_number = 1;
         let point = (1, 7);
         let encoded = String::from("lnsgkgsnl/9/9/9/9/9/2p6/1B7/8K b -");
-        let result = parse_game_state(&encoded);
+        let game_state = parse_game_state(&encoded).unwrap();
 
-        match result {
-            Ok(game_state) => {
-                let result = destinations(kind, player_number, point, &game_state, false);
-                let expected = vec![
-                    (0, 6), (2, 6), (2, 8), (0, 8)
-                ];
-                assert_eq!(result, expected);
-            },
-            Err(e) => assert!(false, "{}", e)
-        }
+        let result = destinations(kind, player_number, point, &game_state, false);
+        let expected = vec![
+            (0, 6), (2, 6), (2, 8), (0, 8)
+        ];
+        assert_eq!(result, expected);
     }
 
     #[test]
@@ -497,18 +511,13 @@ mod tests {
         let player_number = 1;
         let point = (1, 7);
         let encoded = String::from("lnsgkgsnl/9/9/9/9/9/2p6/1B7/8K b -");
-        let result = parse_game_state(&encoded);
+        let game_state = parse_game_state(&encoded).unwrap();
 
-        match result {
-            Ok(game_state) => {
-                let result = destinations(kind, player_number, point, &game_state, true);
-                let expected = vec![
-                    (0, 6), (2, 6), (3, 5), (4, 4), (5, 3), (6, 2), (7, 1), (8, 0), (2, 8), (0, 8)
-                ];
-                assert_eq!(result, expected);
-            },
-            Err(e) => assert!(false, "{}", e)
-        }
+        let result = destinations(kind, player_number, point, &game_state, true);
+        let expected = vec![
+            (0, 6), (2, 6), (3, 5), (4, 4), (5, 3), (6, 2), (7, 1), (8, 0), (2, 8), (0, 8)
+        ];
+        assert_eq!(result, expected);
     }
 
     #[test]
@@ -517,18 +526,13 @@ mod tests {
         let player_number = 1;
         let point = (7, 7);
         let encoded = String::from("lnsgkgsnl/9/9/9/9/9/7p1/7R1/8K b -");
-        let result = parse_game_state(&encoded);
+        let game_state = parse_game_state(&encoded).unwrap();
 
-        match result {
-            Ok(game_state) => {
-                let result = destinations(kind, player_number, point, &game_state, false);
-                let expected = vec![
-                    (7, 6), (8, 7), (7, 8), (6, 7), (5, 7), (4, 7), (3, 7), (2, 7), (1, 7), (0, 7)
-                ];
-                assert_eq!(result, expected);
-            },
-            Err(e) => assert!(false, "{}", e)
-        }
+        let result = destinations(kind, player_number, point, &game_state, false);
+        let expected = vec![
+            (7, 6), (8, 7), (7, 8), (6, 7), (5, 7), (4, 7), (3, 7), (2, 7), (1, 7), (0, 7)
+        ];
+        assert_eq!(result, expected);
     }
 
     #[test]
@@ -537,18 +541,13 @@ mod tests {
         let player_number = 1;
         let point = (7, 7);
         let encoded = String::from("lnsgkgsnl/9/9/9/9/9/7p1/7R1/8K b -");
-        let result = parse_game_state(&encoded);
+        let game_state = parse_game_state(&encoded).unwrap();
 
-        match result {
-            Ok(game_state) => {
-                let result = destinations(kind, player_number, point, &game_state, true);
-                let expected = vec![
-                    (7, 6), (7, 5), (7, 4), (7, 3), (7, 2), (7, 1), (7, 0), (8, 7), (7, 8), (6, 7), (5, 7), (4, 7), (3, 7), (2, 7), (1, 7), (0, 7)
-                ];
-                assert_eq!(result, expected);
-            },
-            Err(e) => assert!(false, "{}", e)
-        }
+        let result = destinations(kind, player_number, point, &game_state, true);
+        let expected = vec![
+            (7, 6), (7, 5), (7, 4), (7, 3), (7, 2), (7, 1), (7, 0), (8, 7), (7, 8), (6, 7), (5, 7), (4, 7), (3, 7), (2, 7), (1, 7), (0, 7)
+        ];
+        assert_eq!(result, expected);
     }
 
     #[test]
@@ -557,18 +556,13 @@ mod tests {
         let player_number = 2;
         let point = (4, 1);
         let encoded = String::from("9/4k4/9/9/9/9/4p4/4K4/9 b -");
-        let result = parse_game_state(&encoded);
+        let game_state = parse_game_state(&encoded).unwrap();
 
-        match result {
-            Ok(game_state) => {
-                let result = destinations(kind, player_number, point, &game_state, false);
-                let expected = vec![
-                    (3, 0), (4, 0), (5, 0), (5, 1), (5, 2), (4, 2), (3, 2), (3, 1)
-                ];
-                assert_eq!(result, expected);
-            },
-            Err(e) => assert!(false, "{}", e)
-        }
+        let result = destinations(kind, player_number, point, &game_state, false);
+        let expected = vec![
+            (3, 0), (4, 0), (5, 0), (5, 1), (5, 2), (4, 2), (3, 2), (3, 1)
+        ];
+        assert_eq!(result, expected);
     }
 
     #[test]
@@ -577,18 +571,13 @@ mod tests {
         let player_number = 1;
         let point = (4, 7);
         let encoded = String::from("lnsgkgsnl/9/9/9/9/9/4p4/4K4/9 b -");
-        let result = parse_game_state(&encoded);
+        let game_state = parse_game_state(&encoded).unwrap();
 
-        match result {
-            Ok(game_state) => {
-                let result = destinations(kind, player_number, point, &game_state, false);
-                let expected = vec![
-                    (3, 6), (4, 6), (5, 6), (5, 7), (5, 8), (4, 8), (3, 8), (3, 7)
-                ];
-                assert_eq!(result, expected);
-            },
-            Err(e) => assert!(false, "{}", e)
-        }
+        let result = destinations(kind, player_number, point, &game_state, false);
+        let expected = vec![
+            (3, 6), (4, 6), (5, 6), (5, 7), (5, 8), (4, 8), (3, 8), (3, 7)
+        ];
+        assert_eq!(result, expected);
     }
 
     #[test]
@@ -597,18 +586,13 @@ mod tests {
         let player_number = 1;
         let point = (2, 7);
         let encoded = String::from("lnsgkgsnl/9/9/9/9/9/2p6/2+P6/L3KGSNL b -");
-        let result = parse_game_state(&encoded);
+        let game_state = parse_game_state(&encoded).unwrap();
 
-        match result {
-            Ok(game_state) => {
-                let result = destinations(kind, player_number, point, &game_state, false);
-                let expected = vec![
-                    (2, 6), (3, 7), (2, 8), (1, 7), (1, 6), (3, 6)
-                ];
-                assert_eq!(result, expected);
-            },
-            Err(e) => assert!(false, "{}", e)
-        }
+        let result = destinations(kind, player_number, point, &game_state, false);
+        let expected = vec![
+            (2, 6), (3, 7), (2, 8), (1, 7), (1, 6), (3, 6)
+        ];
+        assert_eq!(result, expected);
     }
 
     #[test]
@@ -617,18 +601,13 @@ mod tests {
         let player_number = 1;
         let point = (2, 7);
         let encoded = String::from("lnsgkgsnl/9/9/9/9/9/2p6/2+L6/L3KGSNL b -");
-        let result = parse_game_state(&encoded);
+        let game_state = parse_game_state(&encoded).unwrap();
 
-        match result {
-            Ok(game_state) => {
-                let result = destinations(kind, player_number, point, &game_state, false);
-                let expected = vec![
-                    (2, 6), (3, 7), (2, 8), (1, 7), (1, 6), (3, 6)
-                ];
-                assert_eq!(result, expected);
-            },
-            Err(e) => assert!(false, "{}", e)
-        }
+        let result = destinations(kind, player_number, point, &game_state, false);
+        let expected = vec![
+            (2, 6), (3, 7), (2, 8), (1, 7), (1, 6), (3, 6)
+        ];
+        assert_eq!(result, expected);
     }
 
     #[test]
@@ -637,18 +616,13 @@ mod tests {
         let player_number = 1;
         let point = (2, 7);
         let encoded = String::from("lnsgkgsnl/9/9/9/9/9/2p6/2+N6/L3KGSNL b -");
-        let result = parse_game_state(&encoded);
+        let game_state = parse_game_state(&encoded).unwrap();
 
-        match result {
-            Ok(game_state) => {
-                let result = destinations(kind, player_number, point, &game_state, false);
-                let expected = vec![
-                    (2, 6), (3, 7), (2, 8), (1, 7), (1, 6), (3, 6)
-                ];
-                assert_eq!(result, expected);
-            },
-            Err(e) => assert!(false, "{}", e)
-        }
+        let result = destinations(kind, player_number, point, &game_state, false);
+        let expected = vec![
+            (2, 6), (3, 7), (2, 8), (1, 7), (1, 6), (3, 6)
+        ];
+        assert_eq!(result, expected);
     }
 
     #[test]
@@ -657,18 +631,13 @@ mod tests {
         let player_number = 1;
         let point = (2, 7);
         let encoded = String::from("lnsgkgsnl/9/9/9/9/9/2p6/2+S6/L3KGSNL b -");
-        let result = parse_game_state(&encoded);
+        let game_state = parse_game_state(&encoded).unwrap();
 
-        match result {
-            Ok(game_state) => {
-                let result = destinations(kind, player_number, point, &game_state, false);
-                let expected = vec![
-                    (2, 6), (3, 7), (2, 8), (1, 7), (1, 6), (3, 6)
-                ];
-                assert_eq!(result, expected);
-            },
-            Err(e) => assert!(false, "{}", e)
-        }
+        let result = destinations(kind, player_number, point, &game_state, false);
+        let expected = vec![
+            (2, 6), (3, 7), (2, 8), (1, 7), (1, 6), (3, 6)
+        ];
+        assert_eq!(result, expected);
     }
 
     #[test]
@@ -677,18 +646,13 @@ mod tests {
         let player_number = 1;
         let point = (2, 7);
         let encoded = String::from("lnsgkgsnl/9/9/9/9/9/2p6/2+R6/L3KGSNL b -");
-        let result = parse_game_state(&encoded);
+        let game_state = parse_game_state(&encoded).unwrap();
 
-        match result {
-            Ok(game_state) => {
-                let result = destinations(kind, player_number, point, &game_state, false);
-                let expected = vec![
-                    (2, 6), (3, 7), (4, 7), (5, 7), (6, 7), (7, 7), (8, 7), (2, 8), (1, 7), (0, 7), (1, 6), (3, 6), (3, 8), (1, 8)
-                ];
-                assert_eq!(result, expected);
-            },
-            Err(e) => assert!(false, "{}", e)
-        }
+        let result = destinations(kind, player_number, point, &game_state, false);
+        let expected = vec![
+            (2, 6), (3, 7), (4, 7), (5, 7), (6, 7), (7, 7), (8, 7), (2, 8), (1, 7), (0, 7), (1, 6), (3, 6), (3, 8), (1, 8)
+        ];
+        assert_eq!(result, expected);
     }
 
     #[test]
@@ -697,18 +661,13 @@ mod tests {
         let player_number = 1;
         let point = (2, 7);
         let encoded = String::from("lnsgkgsnl/9/9/9/9/9/2p6/2+R6/L3KGSNL b -");
-        let result = parse_game_state(&encoded);
+        let game_state = parse_game_state(&encoded).unwrap();
 
-        match result {
-            Ok(game_state) => {
-                let result = destinations(kind, player_number, point, &game_state, true);
-                let expected = vec![
-                    (2, 6), (2, 5), (2, 4), (2, 3), (2, 2), (2, 1), (2, 0), (3, 7), (4, 7), (5, 7), (6, 7), (7, 7), (8, 7), (2, 8), (1, 7), (0, 7), (1, 6), (3, 6), (3, 8), (1, 8)
-                ];
-                assert_eq!(result, expected);
-            },
-            Err(e) => assert!(false, "{}", e)
-        }
+        let result = destinations(kind, player_number, point, &game_state, true);
+        let expected = vec![
+            (2, 6), (2, 5), (2, 4), (2, 3), (2, 2), (2, 1), (2, 0), (3, 7), (4, 7), (5, 7), (6, 7), (7, 7), (8, 7), (2, 8), (1, 7), (0, 7), (1, 6), (3, 6), (3, 8), (1, 8)
+        ];
+        assert_eq!(result, expected);
     }
 
     #[test]
@@ -717,18 +676,13 @@ mod tests {
         let player_number = 1;
         let point = (2, 7);
         let encoded = String::from("lnsgkgsnl/9/9/9/9/9/1p7/2+B6/L3KGSNL b -");
-        let result = parse_game_state(&encoded);
+        let game_state = parse_game_state(&encoded).unwrap();
 
-        match result {
-            Ok(game_state) => {
-                let result = destinations(kind, player_number, point, &game_state, false);
-                let expected = vec![
-                    (1, 6), (3, 6), (4, 5), (5, 4), (6, 3), (7, 2), (8, 1), (3, 8), (1, 8), (2, 6), (3, 7), (2, 8), (1, 7)
-                ];
-                assert_eq!(result, expected);
-            },
-            Err(e) => assert!(false, "{}", e)
-        }
+        let result = destinations(kind, player_number, point, &game_state, false);
+        let expected = vec![
+            (1, 6), (3, 6), (4, 5), (5, 4), (6, 3), (7, 2), (8, 1), (3, 8), (1, 8), (2, 6), (3, 7), (2, 8), (1, 7)
+        ];
+        assert_eq!(result, expected);
     }
 
     #[test]
@@ -737,18 +691,403 @@ mod tests {
         let player_number = 1;
         let point = (2, 7);
         let encoded = String::from("lnsgkgsnl/9/9/9/9/9/2p6/2+B6/L3KGSNL b -");
-        let result = parse_game_state(&encoded);
+        let game_state = parse_game_state(&encoded).unwrap();
 
-        match result {
-            Ok(game_state) => {
-                let result = destinations(kind, player_number, point, &game_state, true);
-                let expected = vec![
-                    (1, 6), (0, 5), (3, 6), (4, 5), (5, 4), (6, 3), (7, 2), (8, 1), (3, 8), (1, 8), (2, 6), (3, 7), (2, 8), (1, 7)
-                ];
-                assert_eq!(result, expected);
-            },
-            Err(e) => assert!(false, "{}", e)
-        }
+        let result = destinations(kind, player_number, point, &game_state, true);
+        let expected = vec![
+            (1, 6), (0, 5), (3, 6), (4, 5), (5, 4), (6, 3), (7, 2), (8, 1), (3, 8), (1, 8), (2, 6), (3, 7), (2, 8), (1, 7)
+        ];
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn threats_matches_point_fuhyou_moves_true_test() {
+        let kind = PieceKind::Fuhyou;
+        let player_number = 1;
+        let from = (4, 6);
+        let target_point = (4, 5);
+        let encoded = String::from("lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b -");
+        let game_state = parse_game_state(&encoded).unwrap();
+
+        let result = threats_matches_point(kind, player_number, from, &game_state, target_point);
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    fn threats_matches_point_fuhyou_moves_false_test() {
+        let kind = PieceKind::Fuhyou;
+        let player_number = 1;
+        let from = (4, 6);
+        let target_point = (4, 4);
+        let encoded = String::from("lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b -");
+        let game_state = parse_game_state(&encoded).unwrap();
+
+        let result = threats_matches_point(kind, player_number, from, &game_state, target_point);
+        assert_eq!(result, false);
+    }
+
+    #[test]
+    fn threat_matches_point_kyousha_moves_true_test() {
+        let kind = PieceKind::Kyousha;
+        let player_number = 1;
+        let point = (0, 8);
+        let target_point = (0, 7);
+        let encoded = String::from("lnsgkgsnl/1r5b1/9/9/9/p8/9/1B5R1/LNSGKGSNL b -");
+        let game_state = parse_game_state(&encoded).unwrap();
+
+        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    fn threat_matches_point_kyousha_moves_false_test() {
+        let kind = PieceKind::Kyousha;
+        let player_number = 1;
+        let point = (0, 8);
+        let target_point = (0, 0);
+        let encoded = String::from("lnsgkgsnl/1r5b1/9/9/9/p8/9/1B5R1/LNSGKGSNL b -");
+        let game_state = parse_game_state(&encoded).unwrap();
+
+        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        assert_eq!(result, false);
+    }
+
+    #[test]
+    fn threats_matches_point_keima_moves_true_test() {
+        let kind = PieceKind::Keima;
+        let player_number = 1;
+        let point = (1, 8);
+        let target_point = (0, 6);
+        let encoded = String::from("lnsgkgsnl/1r5b1/9/9/9/p8/9/1B5R1/LNSGKGSNL b -");
+        let game_state = parse_game_state(&encoded).unwrap();
+
+        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    fn threats_matches_point_keima_moves_false_test() {
+        let kind = PieceKind::Keima;
+        let player_number = 1;
+        let point = (1, 8);
+        let target_point = (0, 0);
+        let encoded = String::from("lnsgkgsnl/1r5b1/9/9/9/p8/9/1B5R1/LNSGKGSNL b -");
+        let game_state = parse_game_state(&encoded).unwrap();
+
+        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        assert_eq!(result, false);
+    }
+
+    #[test]
+    fn threats_matches_point_ginshou_moves_true_test() {
+        let kind = PieceKind::Ginshou;
+        let player_number = 1;
+        let point = (2, 7);
+        let target_point = (1, 6);
+        let encoded = String::from("lnsgkgsnl/9/9/9/9/9/2p6/2S6/L3KGSNL b -");
+        let game_state = parse_game_state(&encoded).unwrap();
+
+        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    fn threats_matches_point_ginshou_moves_false_test() {
+        let kind = PieceKind::Ginshou;
+        let player_number = 1;
+        let point = (2, 7);
+        let target_point = (0, 0);
+        let encoded = String::from("lnsgkgsnl/9/9/9/9/9/2p6/2S6/L3KGSNL b -");
+        let game_state = parse_game_state(&encoded).unwrap();
+
+        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        assert_eq!(result, false);
+    }
+
+    #[test]
+    fn threats_matches_point_kinshou_moves_true_test() {
+        let kind = PieceKind::Kinshou;
+        let player_number = 1;
+        let point = (3, 7);
+        let target_point = (3, 6);
+        let encoded = String::from("lnsgkgsnl/9/9/9/9/9/3p5/3G5/8K b -");
+        let game_state = parse_game_state(&encoded).unwrap();
+
+        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    fn threats_matches_point_kinshou_moves_false_test() {
+        let kind = PieceKind::Kinshou;
+        let player_number = 1;
+        let point = (3, 7);
+        let target_point = (0, 0);
+        let encoded = String::from("lnsgkgsnl/9/9/9/9/9/3p5/3G5/8K b -");
+        let game_state = parse_game_state(&encoded).unwrap();
+
+        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        assert_eq!(result, false);
+    }
+
+    #[test]
+    fn threats_matches_point_kakugyou_moves_true_test() {
+        let kind = PieceKind::Kakugyou;
+        let player_number = 1;
+        let point = (1, 7);
+        let target_point = (0, 6);
+        let encoded = String::from("lnsgkgsnl/9/9/9/9/9/2p6/1B7/8K b -");
+        let game_state = parse_game_state(&encoded).unwrap();
+
+        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    fn threats_matches_point_kakugyou_moves_false_test() {
+        let kind = PieceKind::Kakugyou;
+        let player_number = 1;
+        let point = (1, 7);
+        let target_point = (0, 0);
+        let encoded = String::from("lnsgkgsnl/9/9/9/9/9/2p6/1B7/8K b -");
+        let game_state = parse_game_state(&encoded).unwrap();
+
+        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        assert_eq!(result, false);
+    }
+
+    #[test]
+    fn threats_matches_point_hisha_moves_true_test() {
+        let kind = PieceKind::Hisha;
+        let player_number = 1;
+        let point = (7, 7);
+        let target_point = (7, 6);
+        let encoded = String::from("lnsgkgsnl/9/9/9/9/9/7p1/7R1/8K b -");
+        let game_state = parse_game_state(&encoded).unwrap();
+
+        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    fn threats_matches_point_hisha_moves_false_test() {
+        let kind = PieceKind::Hisha;
+        let player_number = 1;
+        let point = (7, 7);
+        let target_point = (0, 0);
+        let encoded = String::from("lnsgkgsnl/9/9/9/9/9/7p1/7R1/8K b -");
+        let game_state = parse_game_state(&encoded).unwrap();
+
+        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        assert_eq!(result, false);
+    }
+
+    #[test]
+    fn threats_matches_point_gyokushou_moves_true_test() {
+        let kind = PieceKind::Gyokushou;
+        let player_number = 2;
+        let point = (4, 1);
+        let target_point = (3, 0);
+        let encoded = String::from("9/4k4/9/9/9/9/4p4/4K4/9 b -");
+        let game_state = parse_game_state(&encoded).unwrap();
+
+        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    fn threats_matches_point_gyokushou_moves_false_test() {
+        let kind = PieceKind::Gyokushou;
+        let player_number = 2;
+        let point = (4, 1);
+        let target_point = (0, 0);
+        let encoded = String::from("9/4k4/9/9/9/9/4p4/4K4/9 b -");
+        let game_state = parse_game_state(&encoded).unwrap();
+
+        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        assert_eq!(result, false);
+    }
+
+    #[test]
+    fn threats_matches_point_oushou_moves_true_test() {
+        let kind = PieceKind::Oushou;
+        let player_number = 1;
+        let point = (4, 7);
+        let target_point = (3, 6);
+        let encoded = String::from("lnsgkgsnl/9/9/9/9/9/4p4/4K4/9 b -");
+        let game_state = parse_game_state(&encoded).unwrap();
+
+        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    fn threats_matches_point_oushou_moves_false_test() {
+        let kind = PieceKind::Oushou;
+        let player_number = 1;
+        let point = (4, 7);
+        let target_point = (0, 0);
+        let encoded = String::from("lnsgkgsnl/9/9/9/9/9/4p4/4K4/9 b -");
+        let game_state = parse_game_state(&encoded).unwrap();
+
+        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        assert_eq!(result, false);
+    }
+
+    #[test]
+    fn threats_matches_point_tokin_moves_true_test() {
+        let kind = PieceKind::Tokin;
+        let player_number = 1;
+        let point = (2, 7);
+        let target_point = (2, 6);
+        let encoded = String::from("lnsgkgsnl/9/9/9/9/9/2p6/2+P6/L3KGSNL b -");
+        let game_state = parse_game_state(&encoded).unwrap();
+
+        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    fn threats_matches_point_tokin_moves_false_test() {
+        let kind = PieceKind::Tokin;
+        let player_number = 1;
+        let point = (2, 7);
+        let target_point = (0, 0);
+        let encoded = String::from("lnsgkgsnl/9/9/9/9/9/2p6/2+P6/L3KGSNL b -");
+        let game_state = parse_game_state(&encoded).unwrap();
+
+        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        assert_eq!(result, false);
+    }
+
+    #[test]
+    fn threats_matches_point_narikyou_moves_true_test() {
+        let kind = PieceKind::Narikyou;
+        let player_number = 1;
+        let point = (2, 7);
+        let target_point = (2, 6);
+        let encoded = String::from("lnsgkgsnl/9/9/9/9/9/2p6/2+L6/L3KGSNL b -");
+        let game_state = parse_game_state(&encoded).unwrap();
+
+        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    fn threats_matches_point_narikyou_moves_false_test() {
+        let kind = PieceKind::Narikyou;
+        let player_number = 1;
+        let point = (2, 7);
+        let target_point = (0, 0);
+        let encoded = String::from("lnsgkgsnl/9/9/9/9/9/2p6/2+L6/L3KGSNL b -");
+        let game_state = parse_game_state(&encoded).unwrap();
+
+        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        assert_eq!(result, false);
+    }
+
+    #[test]
+    fn threats_matches_point_narikei_moves_true_test() {
+        let kind = PieceKind::Narikei;
+        let player_number = 1;
+        let point = (2, 7);
+        let target_point = (2, 6);
+        let encoded = String::from("lnsgkgsnl/9/9/9/9/9/2p6/2+N6/L3KGSNL b -");
+        let game_state = parse_game_state(&encoded).unwrap();
+
+        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    fn threats_matches_point_narikei_moves_false_test() {
+        let kind = PieceKind::Narikei;
+        let player_number = 1;
+        let point = (2, 7);
+        let target_point = (0, 0);
+        let encoded = String::from("lnsgkgsnl/9/9/9/9/9/2p6/2+N6/L3KGSNL b -");
+        let game_state = parse_game_state(&encoded).unwrap();
+
+        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        assert_eq!(result, false);
+    }
+
+    #[test]
+    fn threats_matches_point_narigin_moves_true_test() {
+        let kind = PieceKind::Narigin;
+        let player_number = 1;
+        let point = (2, 7);
+        let target_point = (2, 6);
+        let encoded = String::from("lnsgkgsnl/9/9/9/9/9/2p6/2+S6/L3KGSNL b -");
+        let game_state = parse_game_state(&encoded).unwrap();
+
+        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    fn threats_matches_point_narigin_moves_false_test() {
+        let kind = PieceKind::Narigin;
+        let player_number = 1;
+        let point = (2, 7);
+        let target_point = (0, 0);
+        let encoded = String::from("lnsgkgsnl/9/9/9/9/9/2p6/2+S6/L3KGSNL b -");
+        let game_state = parse_game_state(&encoded).unwrap();
+
+        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        assert_eq!(result, false);
+    }
+
+    #[test]
+    fn threats_matches_point_ryuuou_moves_true_test() {
+        let kind = PieceKind::Ryuuou;
+        let player_number = 1;
+        let point = (2, 7);
+        let target_point = (2, 6);
+        let encoded = String::from("lnsgkgsnl/9/9/9/9/9/2p6/2+R6/L3KGSNL b -");
+        let game_state = parse_game_state(&encoded).unwrap();
+
+        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    fn threats_matches_point_ryuuou_moves_false_test() {
+        let kind = PieceKind::Ryuuou;
+        let player_number = 1;
+        let point = (2, 7);
+        let target_point = (0, 0);
+        let encoded = String::from("lnsgkgsnl/9/9/9/9/9/2p6/2+R6/L3KGSNL b -");
+        let game_state = parse_game_state(&encoded).unwrap();
+
+        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        assert_eq!(result, false);
+    }
+
+    #[test]
+    fn threats_matches_point_ryuuma_moves_true_test() {
+        let kind = PieceKind::Ryuuma;
+        let player_number = 1;
+        let point = (2, 7);
+        let target_point = (1, 6);
+        let encoded = String::from("lnsgkgsnl/9/9/9/9/9/1p7/2+B6/L3KGSNL b -");
+        let game_state = parse_game_state(&encoded).unwrap();
+
+        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    fn threats_matches_point_ryuuma_moves_false_test() {
+        let kind = PieceKind::Ryuuma;
+        let player_number = 1;
+        let point = (2, 7);
+        let target_point = (0, 0);
+        let encoded = String::from("lnsgkgsnl/9/9/9/9/9/1p7/2+B6/L3KGSNL b -");
+        let game_state = parse_game_state(&encoded).unwrap();
+
+        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        assert_eq!(result, false);
     }
 
     #[test]
