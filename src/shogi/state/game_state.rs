@@ -39,11 +39,11 @@ impl GameState {
         }
     }
 
-    pub fn in_checkmate(&mut self, player_number: i8) -> bool {
+    pub fn in_checkmate(&self, player_number: i8) -> bool {
         self.in_check(player_number) && (self.ou_cannot_move(player_number) && !self.threats_to_ou_can_be_captured(player_number) && !self.threats_to_ou_can_be_blocked(player_number))
     }
 
-    pub fn ou_cannot_move(&mut self, player_number: i8) -> bool {
+    pub fn ou_cannot_move(&self, player_number: i8) -> bool {
         let mut can_move = false;
 
         match find_ou_point_for_player(&self.squares, player_number) {
@@ -212,46 +212,72 @@ impl GameState {
         // exclude squares with compulsory promotion
         // if pawn, excludes squares that put opponents king in checkmate
         // if pawn, excludes squares that place two fuhyou of the same player in the same file
-        let hand = &self.hands[subject_player_number as usize];
         let opposing_player_number = opposing_player(self.current_player_number);
 
-        for piece_kind in hand.iter() {
-            for (y, row) in self.squares.iter().enumerate() {
-                let compulsory_promote = compulsory_promotion_ranks(*piece_kind, subject_player_number).contains(&(y as i8));
-                for (x, square) in row.iter().enumerate() {
+        // get unique piece kinds in hand
+        let mut piece_kinds_in_hand = self.hands[subject_player_number as usize].clone();
+        piece_kinds_in_hand.sort();
+        piece_kinds_in_hand.dedup();
 
+        for piece_kind in piece_kinds_in_hand.iter() {
+            // get a list of all files that don't have a fuhyou.
+            if *piece_kind == PieceKind::Fuhyou {
+                let mut files_without_fuhyou = vec![];
+                for x in 0..=8 {
                     let mut fuhyou_exists_in_file = false;
-                    if *piece_kind == PieceKind::Fuhyou {
-                        for rank in 0..=8 {
-                            let square = self.squares[rank][x];
-                            if square.kind == PieceKind::Fuhyou && square.player_number == self.current_player_number {
-                                fuhyou_exists_in_file = true;
-                                break;
+                    for y in 0..=8 {
+                        let file_square = self.squares[y][x];
+                        if file_square.kind == PieceKind::Fuhyou && file_square.player_number == self.current_player_number {
+                            fuhyou_exists_in_file = true;
+                            break;
+                        }
+                    }
+                    if !fuhyou_exists_in_file {
+                        files_without_fuhyou.push(x);
+                    }
+                }
+
+                for y in 0..=8 {
+                    if !compulsory_promotion_ranks(*piece_kind, subject_player_number).contains(&(y as i8)) {
+                        for x in files_without_fuhyou.iter() {
+                            let square = self.squares[y][*x];
+                            if square.unoccupied() {
+                                let mov = Move {
+                                    from: None,
+                                    to: (*x as i8, y as i8),
+                                    moving_piece_kind: *piece_kind,
+                                    capture_piece_kind: None,
+                                    promote: false
+                                };
+
+                                let perform_result = self.perform_move(&mov);
+                                let in_checkmate = self.in_checkmate(opposing_player_number);
+                                let undo_result = self.undo_move(&mov);
+
+                                // exclude if put in checkmate
+                                if perform_result.is_ok() && undo_result.is_ok() && !in_checkmate {
+                                    moves.push(mov);
+                                }
                             }
                         }
                     }
-
-                    if square.unoccupied() && !compulsory_promote && !fuhyou_exists_in_file {
-                        let mov = Move {
-                            from: None,
-                            to: (x as i8, y as i8),
-                            moving_piece_kind: *piece_kind,
-                            capture_piece_kind: None,
-                            promote: false
-                        };
-
-                        let mut perform_result: Result<(), &str> = Ok(());
-                        let mut in_checkmate = false;
-
-                        if *piece_kind == PieceKind::Fuhyou {
-                            let mut new_game_state = self.clone();
-                            perform_result = new_game_state.perform_move(&mov);
-                            in_checkmate = new_game_state.in_checkmate(opposing_player_number);
-                        }
-
-                        // exclude if fuhyou and move put it in checkmate
-                        if perform_result.is_ok() && !in_checkmate {
-                            moves.push(mov);
+                }
+            } else {
+                // not fuhyou
+                for y in 0..=8 {
+                    if !compulsory_promotion_ranks(*piece_kind, subject_player_number).contains(&(y as i8)) {
+                        for x in 0..=8 {
+                            let square = self.squares[y][x];
+                            if square.unoccupied() {
+                                let mov = Move {
+                                    from: None,
+                                    to: (x as i8, y as i8),
+                                    moving_piece_kind: *piece_kind,
+                                    capture_piece_kind: None,
+                                    promote: false
+                                };
+                                moves.push(mov);
+                            }
                         }
                     }
                 }
@@ -353,8 +379,7 @@ impl GameState {
             }
         } else {
             // undo drop
-            let hand = &mut self.hands[moving_piece_player_number as usize];
-            hand.push(moving_piece_kind);
+            self.hands[moving_piece_player_number as usize].push(moving_piece_kind);
         }
 
         let other_player_number = opposing_player(moving_piece_player_number);
@@ -725,7 +750,7 @@ mod tests {
     #[test]
     fn in_checkmate_test() {
         let encoded = String::from("k8/PG6/G8/9/9/9/9/9/8K b -");
-        let mut game_state = parse(&encoded).unwrap();
+        let game_state = parse(&encoded).unwrap();
         let result = game_state.in_checkmate(2);
         assert_eq!(result, true);
     }
@@ -733,7 +758,7 @@ mod tests {
     #[test]
     fn in_checkmate_threat_can_be_captured_test() {
         let encoded = String::from("k8/9/9/9/9/9/7Bg/6g1p/8K b -");
-        let mut game_state = parse(&encoded).unwrap();
+        let game_state = parse(&encoded).unwrap();
         let result = game_state.in_checkmate(1);
         assert_eq!(result, false);
     }
@@ -741,7 +766,7 @@ mod tests {
     #[test]
     fn in_checkmate_threat_can_be_blocked_test() {
         let encoded = String::from("k8/9/9/8r/R8/9/9/6g2/8K b -");
-        let mut game_state = parse(&encoded).unwrap();
+        let game_state = parse(&encoded).unwrap();
         let result = game_state.in_checkmate(1);
         assert_eq!(result, false);
     }
@@ -749,7 +774,7 @@ mod tests {
     #[test]
     fn ou_cannot_move_true_test() {
         let encoded = String::from("k8/9/9/9/9/9/7Bg/6g1p/8K w -");
-        let mut game_state = parse(&encoded).unwrap();
+        let game_state = parse(&encoded).unwrap();
         let result = game_state.ou_cannot_move(1);
         assert_eq!(result, true);
     }
@@ -757,7 +782,7 @@ mod tests {
     #[test]
     fn ou_cannot_move_false_test() {
         let encoded = String::from("k8/9/9/9/9/9/7B1/6g1p/8K w -");
-        let mut game_state = parse(&encoded).unwrap();
+        let game_state = parse(&encoded).unwrap();
         let result = game_state.ou_cannot_move(1);
         assert_eq!(result, false);
     }

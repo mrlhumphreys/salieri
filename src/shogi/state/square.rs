@@ -12,7 +12,7 @@ use crate::shogi::state::square_set::find_by_x_and_y;
 use crate::shogi::state::square_set::between_unoccupied;
 use crate::shogi::state::game_state::GameState;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum PieceKind {
    Oushou,
    Gyokushou,
