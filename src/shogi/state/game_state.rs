@@ -29,6 +29,13 @@ pub struct GameState {
 }
 
 impl GameState {
+    pub fn unique_piece_kinds_in_hand(&self, subject_player_number: i8) -> Vec<PieceKind> {
+        let mut piece_kinds_in_hand = self.hands[subject_player_number as usize].clone();
+        piece_kinds_in_hand.sort();
+        piece_kinds_in_hand.dedup();
+        piece_kinds_in_hand
+    }
+
     pub fn winner(&mut self) -> Option<i8> {
         if self.in_checkmate(1) {
             Some(2)
@@ -46,26 +53,18 @@ impl GameState {
     pub fn ou_cannot_move(&self, player_number: i8) -> bool {
         let mut can_move = false;
 
-        match find_ou_point_for_player(&self.squares, player_number) {
-            Some(from) => {
-                for to in one_step_destination_points(from) {
-                    match find_by_x_and_y(&self.squares, to) {
-                        Some(to_square) => {
-                            // square is free or owned by other player
-                            if to_square.player_number != player_number {
-                                let any_threats = any_threats_to_point(&self.squares, to, player_number, &self);
-                                let any_pin_threats = any_threats_to_point_through_pin(&self.squares, to, player_number, from);
-                                can_move = !any_threats && !any_pin_threats;
-                            }
-                        },
-                        None => ()
-                    }
-                    if can_move {
-                        break;
+        if let Some(from) = find_ou_point_for_player(&self.squares, player_number) {
+            for to in one_step_destination_points(from) {
+                if let Some(to_square) = find_by_x_and_y(&self.squares, to) {
+                    // square is free or owned by other player
+                    if to_square.player_number != player_number {
+                        can_move = !any_threats_to_point(&self.squares, to, player_number, &self) && !any_threats_to_point_through_pin(&self.squares, to, player_number, from);
                     }
                 }
-            },
-            None => ()
+                if can_move {
+                    break;
+                }
+            }
         }
 
         !can_move
@@ -75,18 +74,17 @@ impl GameState {
         // player number - owner of ou
         let opposing_player_number = opposing_player(player_number);
 
-        match find_ou_point_for_player(&self.squares, player_number) {
-            Some(point) => {
-                let threats_to_ou = threats_to_point(&self.squares, point, player_number, self);
-                let pinned_to_ou = pinned_to_point(&self.squares, point, player_number, self);
-                // can all threats be captured?
-                threats_to_ou.iter().all(|threat| {
-                    let threats_to_threats = threats_to_point(&self.squares, *threat, opposing_player_number, &self);
-                    // is there  a non pinned threat to the threatening piece?
-                    return !diff(&threats_to_threats, &pinned_to_ou).is_empty();
-                })
-            },
-            None => true
+        if let Some(point) = find_ou_point_for_player(&self.squares, player_number) {
+            let threats_to_ou = threats_to_point(&self.squares, point, player_number, self);
+            let pinned_to_ou = pinned_to_point(&self.squares, point, player_number, self);
+            // can all threats be captured?
+            threats_to_ou.iter().all(|threat| {
+                let threats_to_threats = threats_to_point(&self.squares, *threat, opposing_player_number, &self);
+                // is there  a non pinned threat to the threatening piece?
+                return !diff(&threats_to_threats, &pinned_to_ou).is_empty();
+            })
+        } else {
+            true
         }
     }
 
@@ -94,65 +92,35 @@ impl GameState {
         // player number - owner of ou
         let opposing_player_number = opposing_player(player_number);
 
-        let ou_point = find_ou_point_for_player(&self.squares, player_number);
-        let player_hand = &self.hands[player_number as usize];
-        match ou_point {
-            Some(point) => {
-                let threats_to_ou = threats_to_point(&self.squares, point, player_number, self);
-                let pinned_to_ou = pinned_to_point(&self.squares, point, player_number, self);
-                // can every threat (normally 1) can be blocked?
-                threats_to_ou.iter().all(|threat| {
-                    let between_points = between(*threat, point);
-                    // any square between threat and ou can be blocked by move or drop?
-                    between_points.iter().any(|b| {
-                        let threats_to_between = threats_to_point(&self.squares, *b, opposing_player_number, self);
-                        let has_threats = !diff(&threats_to_between, &pinned_to_ou).is_empty();
-                        let can_drop = player_hand.iter().any(|p| {
-                            has_legal_moves_from_y(*p, player_number, b.1)
-                        });
-                        has_threats || can_drop
-                    })
+        let piece_kinds_in_hand = &self.unique_piece_kinds_in_hand(player_number);
+        if let Some(point) = find_ou_point_for_player(&self.squares, player_number) {
+            let threats_to_ou = threats_to_point(&self.squares, point, player_number, self);
+            let pinned_to_ou = pinned_to_point(&self.squares, point, player_number, self);
+            // can every threat (normally 1) can be blocked?
+            threats_to_ou.iter().all(|threat| {
+                let between_points = between(*threat, point);
+                // any square between threat and ou can be blocked by move or drop?
+                between_points.iter().any(|b| {
+                    let threats_to_between = threats_to_point(&self.squares, *b, opposing_player_number, self);
+                    let has_threats = !diff(&threats_to_between, &pinned_to_ou).is_empty();
+                    let can_drop = piece_kinds_in_hand.iter().any(|p| {
+                        // TODO: consider fuhyou drop rules, i.e. in checkmate, 1 fuhyou in file
+                        has_legal_moves_from_y(*p, player_number, b.1)
+                    });
+                    has_threats || can_drop
                 })
-            },
-            None => true
+            })
+        } else {
+            true
         }
     }
 
     pub fn in_check(&self, player_number: i8) -> bool {
-        let other_player_number = opposing_player(player_number);
-
-        let mut check = false;
-        let mut king_point: (i8, i8) = (0, 0);
-
-        for (y, row) in self.squares.iter().enumerate() {
-            for (x, s) in row.iter().enumerate() {
-                if (s.kind == PieceKind::Oushou || s.kind == PieceKind::Gyokushou) && s.player_number == player_number {
-                   king_point = (x as i8, y as i8);
-                   break;
-                }
-            }
-            if king_point != (0, 0) {
-                break;
-            }
+        if let Some(ou_point) = find_ou_point_for_player(&self.squares, player_number) {
+            any_threats_to_point(&self.squares, ou_point, player_number, &self)
+        } else {
+            false
         }
-
-        for (y, row) in self.squares.iter().enumerate() {
-            for (x, square) in row.iter().enumerate() {
-                if check {
-                    break;
-                } else {
-                    if square.player_number != 0 {
-                        // if any capture square match king square
-                        check = square.player_number == other_player_number && destinations(square.kind, square.player_number, (x as i8, y as i8), self, false).iter().any(|s| *s == king_point );
-                    }
-                }
-            }
-            if check {
-                break;
-            }
-        }
-
-        check
     }
 
     pub fn possible_moves(&mut self) -> Vec<Move> {
@@ -168,11 +136,12 @@ impl GameState {
                     let from_point = (x as i8, y as i8);
                     for to_point in destinations(from.kind, from.player_number, from_point, &self, false) {
 
-                        let mut capture_piece_kind: Option<PieceKind> = None;
                         if let Some(to) = find_by_x_and_y(&self.squares, to_point) {
-                            if to.player_number != 0 && subject_player_number != to.player_number {
-                               capture_piece_kind = Some(to.kind);
-                            }
+                            let capture_piece_kind = if to.player_number != 0 && subject_player_number != to.player_number {
+                                Some(to.kind)
+                            } else {
+                                None
+                            };
 
                             let promote = promotion_ranks(from.kind, from.player_number).contains(&to_point.1);
                             let compulsory_promote = compulsory_promotion_ranks(from.kind, from.player_number).contains(&to_point.1);
@@ -215,13 +184,11 @@ impl GameState {
         let opposing_player_number = opposing_player(self.current_player_number);
 
         // get unique piece kinds in hand
-        let mut piece_kinds_in_hand = self.hands[subject_player_number as usize].clone();
-        piece_kinds_in_hand.sort();
-        piece_kinds_in_hand.dedup();
+        let piece_kinds_in_hand = self.unique_piece_kinds_in_hand(subject_player_number);
 
         for piece_kind in piece_kinds_in_hand.iter() {
-            // get a list of all files that don't have a fuhyou.
             if *piece_kind == PieceKind::Fuhyou {
+                // get a list of all files that don't have a fuhyou.
                 let mut files_without_fuhyou = vec![];
                 for x in 0..=8 {
                     let mut fuhyou_exists_in_file = false;
@@ -250,11 +217,10 @@ impl GameState {
                                     promote: false
                                 };
 
+                                // exclude if drop puts opponent in checkmate
                                 let perform_result = self.perform_move(&mov);
                                 let in_checkmate = self.in_checkmate(opposing_player_number);
                                 let undo_result = self.undo_move(&mov);
-
-                                // exclude if put in checkmate
                                 if perform_result.is_ok() && undo_result.is_ok() && !in_checkmate {
                                     moves.push(mov);
                                 }
@@ -284,6 +250,7 @@ impl GameState {
             }
         }
 
+        // keep moves that don't result in check for the current player.
         moves.retain(|m| {
             let perform_result = self.perform_move(&m);
             let in_check = self.in_check(subject_player_number);
@@ -339,8 +306,7 @@ impl GameState {
         if mov.promote {
            if let Some(s) = find_by_x_and_y_mut(&mut self.squares, mov.to) {
                if let Some(promote_piece_kind) = promotes_to(s.kind) {
-                   let promote_piece_player_number = self.current_player_number;
-                   s.player_number = promote_piece_player_number;
+                   s.player_number = self.current_player_number;
                    s.kind = promote_piece_kind;
                } else {
                    return Err("game_state::perform_move - Invalid promote")
@@ -382,16 +348,12 @@ impl GameState {
             self.hands[moving_piece_player_number as usize].push(moving_piece_kind);
         }
 
-        let other_player_number = opposing_player(moving_piece_player_number);
 
         // capture
-        if let Some(pk) = mov.capture_piece_kind {
-            let capture_piece_kind = pk;
-            let capture_piece_player_number = other_player_number;
-
+        if let Some(capture_piece_kind) = mov.capture_piece_kind {
             if let Some(s) = find_by_x_and_y_mut(&mut self.squares, mov.to) {
                 s.kind = capture_piece_kind;
-                s.player_number = capture_piece_player_number;
+                s.player_number = opposing_player(moving_piece_player_number);
 
                 // remove piece from hand
                 let hand = &mut self.hands[moving_piece_player_number as usize];
@@ -409,9 +371,8 @@ impl GameState {
             if let Some(from) = mov.from {
                 if let Some(s) = find_by_x_and_y_mut(&mut self.squares, from) {
                     if let Some(unpromote_piece_kind) = demotes_to(s.kind) {
-                        let unpromote_player_number = moving_piece_player_number;
                         s.kind = unpromote_piece_kind;
-                        s.player_number = unpromote_player_number;
+                        s.player_number = moving_piece_player_number;
                     } else {
                         return Err("game_state::undo_move - Invalid demote");
                     }
@@ -556,33 +517,27 @@ pub fn parse(encoded: &String) -> Result<GameState, &'static str> {
         match c {
             'p' | 'P' | 'l' | 'L' | 'n' | 'N' | 's' | 'S' | 'g' | 'G' | 'B' | 'r' | 'R' | 'k' | 'K' => {
                 if read_board {
-                    match parse_piece(c, promoted_piece) {
-                        Ok(square) => {
-                            if valid((x, y)) {
-                                squares[y as usize][x as usize] = square;
-                            } else {
-                                parse_error = true;
-                            }
-                        },
-                        Err(_) => {
+                    if let Ok(square) = parse_piece(c, promoted_piece) {
+                        if valid((x, y)) {
+                            squares[y as usize][x as usize] = square;
+                        } else {
                             parse_error = true;
                         }
+                    } else {
+                        parse_error = true;
                     }
                     x += 1;
                     promoted_piece = false;
                 } else if read_hand {
-                    match parse_piece(c, false) {
-                        Ok(p) => {
-                            let mut counter = 0;
-                            while counter < hand_piece_count {
-                                hands[p.player_number as usize].push(p.kind);
-                                counter += 1;
-                            }
-                            hand_piece_count = 1;
-                        },
-                        Err(_) => {
-                            parse_error = true;
+                   if let Ok(p) = parse_piece(c, false) {
+                        let mut counter = 0;
+                        while counter < hand_piece_count {
+                            hands[p.player_number as usize].push(p.kind);
+                            counter += 1;
                         }
+                        hand_piece_count = 1;
+                   } else {
+                        parse_error = true;
                     }
                 } else {
                     parse_error = true;
@@ -652,28 +607,22 @@ pub fn parse(encoded: &String) -> Result<GameState, &'static str> {
             },
             'b' => {
                 if read_board {
-                    match parse_piece(c, promoted_piece) {
-                        Ok(square) => {
-                            if valid((x, y)) {
-                                squares[y as usize][x as usize] = square;
-                            } else {
-                                parse_error = true;
-                            }
-                        },
-                        Err(_) => {
+                    if let Ok(square) = parse_piece(c, promoted_piece) {
+                        if valid((x, y)) {
+                            squares[y as usize][x as usize] = square;
+                        } else {
                             parse_error = true;
                         }
+                    } else {
+                        parse_error = true;
                     }
                     x += 1;
                     promoted_piece = false;
                 } else if read_hand {
-                    match parse_piece(c, false) {
-                        Ok(p) => {
-                           hands[p.player_number as usize].push(p.kind);
-                        },
-                        Err(_) => {
-                            parse_error = true;
-                        }
+                    if let Ok(p) = parse_piece(c, false) {
+                        hands[p.player_number as usize].push(p.kind);
+                    } else {
+                        parse_error = true;
                     }
                 } else if read_player_number {
                     current_player_number = 1;
@@ -686,12 +635,8 @@ pub fn parse(encoded: &String) -> Result<GameState, &'static str> {
                     parse_error = true;
                 }
             },
-            '0' => {
-                () // ignore for now
-            },
-            _ => {
-                parse_error = true;
-            }
+            '0' => (), // ignore for now 
+            _ => parse_error = true
         }
     }
 

@@ -173,7 +173,6 @@ pub fn threats_matches_point(piece_kind: PieceKind, player_number: i8, from: (i8
         },
         PieceKind::Kyousha => {
             let points = forward_destination_points(from, player_number);
-
             result = points.contains(&target_point) && between_unoccupied(&game_state.squares, from, target_point);
         },
         PieceKind::Keima => {
