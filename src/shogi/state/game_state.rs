@@ -47,7 +47,7 @@ impl GameState {
     }
 
     pub fn in_checkmate(&self, player_number: i8) -> bool {
-        self.in_check(player_number) && (self.ou_cannot_move(player_number) && !self.threats_to_ou_can_be_captured(player_number) && !self.threats_to_ou_can_be_blocked(player_number))
+        self.in_check(player_number) && self.ou_cannot_move(player_number) && !self.threats_to_ou_can_be_captured_or_blocked(player_number)
     }
 
     pub fn ou_cannot_move(&self, player_number: i8) -> bool {
@@ -58,7 +58,7 @@ impl GameState {
                 if let Some(to_square) = find_by_x_and_y(&self.squares, to) {
                     // square is free or owned by other player
                     if to_square.player_number != player_number {
-                        can_move = !any_threats_to_point(&self.squares, to, player_number, &self) && !any_threats_to_point_through_pin(&self.squares, to, player_number, from);
+                        can_move = !any_threats_to_point(&self.squares, to, player_number) && !any_threats_to_point_through_pin(&self.squares, to, player_number, from);
                     }
                 }
                 if can_move {
@@ -70,45 +70,34 @@ impl GameState {
         !can_move
     }
 
-    pub fn threats_to_ou_can_be_captured(&self, player_number: i8) -> bool {
+    pub fn threats_to_ou_can_be_captured_or_blocked(&self, player_number: i8) -> bool {
         // player number - owner of ou
         let opposing_player_number = opposing_player(player_number);
+        let piece_kinds_in_hand = &self.unique_piece_kinds_in_hand(player_number);
 
         if let Some(point) = find_ou_point_for_player(&self.squares, player_number) {
-            let threats_to_ou = threats_to_point(&self.squares, point, player_number, self);
+            let threats_to_ou = threats_to_point(&self.squares, point, player_number);
             let pinned_to_ou = pinned_to_point(&self.squares, point, player_number, self);
+
             // can all threats be captured?
             threats_to_ou.iter().all(|threat| {
-                let threats_to_threats = threats_to_point(&self.squares, *threat, opposing_player_number, &self);
+                let threats_to_threats = threats_to_point(&self.squares, *threat, opposing_player_number);
                 // is there  a non pinned threat to the threatening piece?
-                return !diff(&threats_to_threats, &pinned_to_ou).is_empty();
-            })
-        } else {
-            true
-        }
-    }
-
-    pub fn threats_to_ou_can_be_blocked(&self, player_number: i8) -> bool {
-        // player number - owner of ou
-        let opposing_player_number = opposing_player(player_number);
-
-        let piece_kinds_in_hand = &self.unique_piece_kinds_in_hand(player_number);
-        if let Some(point) = find_ou_point_for_player(&self.squares, player_number) {
-            let threats_to_ou = threats_to_point(&self.squares, point, player_number, self);
-            let pinned_to_ou = pinned_to_point(&self.squares, point, player_number, self);
-            // can every threat (normally 1) can be blocked?
-            threats_to_ou.iter().all(|threat| {
-                let between_points = between(*threat, point);
-                // any square between threat and ou can be blocked by move or drop?
-                between_points.iter().any(|b| {
-                    let threats_to_between = threats_to_point(&self.squares, *b, opposing_player_number, self);
-                    let has_threats = !diff(&threats_to_between, &pinned_to_ou).is_empty();
-                    let can_drop = piece_kinds_in_hand.iter().any(|p| {
-                        // TODO: consider fuhyou drop rules, i.e. in checkmate, 1 fuhyou in file
-                        has_legal_moves_from_y(*p, player_number, b.1)
-                    });
-                    has_threats || can_drop
-                })
+                if !diff(&threats_to_threats, &pinned_to_ou).is_empty() {
+                    true
+                } else {
+                    let between_points = between(*threat, point);
+                    // any square between threat and ou can be blocked by move or drop?
+                    between_points.iter().any(|b| {
+                        let threats_to_between = threats_to_point(&self.squares, *b, opposing_player_number);
+                        let has_threats = !diff(&threats_to_between, &pinned_to_ou).is_empty();
+                        let can_drop = piece_kinds_in_hand.iter().any(|p| {
+                            // TODO: consider fuhyou drop rules, i.e. in checkmate, 1 fuhyou in file
+                            has_legal_moves_from_y(*p, player_number, b.1)
+                        });
+                        has_threats || can_drop
+                    })
+                }
             })
         } else {
             true
@@ -117,7 +106,7 @@ impl GameState {
 
     pub fn in_check(&self, player_number: i8) -> bool {
         if let Some(ou_point) = find_ou_point_for_player(&self.squares, player_number) {
-            any_threats_to_point(&self.squares, ou_point, player_number, &self)
+            any_threats_to_point(&self.squares, ou_point, player_number)
         } else {
             false
         }
@@ -176,7 +165,7 @@ impl GameState {
         }
 
         // drops
-        // all piece in players hands
+        // all piece types in players hands
         // all unoccupied squares
         // exclude squares with compulsory promotion
         // if pawn, excludes squares that put opponents king in checkmate
@@ -347,7 +336,6 @@ impl GameState {
             // undo drop
             self.hands[moving_piece_player_number as usize].push(moving_piece_kind);
         }
-
 
         // capture
         if let Some(capture_piece_kind) = mov.capture_piece_kind {
@@ -635,7 +623,7 @@ pub fn parse(encoded: &String) -> Result<GameState, &'static str> {
                     parse_error = true;
                 }
             },
-            '0' => (), // ignore for now 
+            '0' => (), // ignore for now
             _ => parse_error = true
         }
     }
@@ -736,7 +724,7 @@ mod tests {
     fn threats_to_ou_can_be_captured_true_test() {
         let encoded = String::from("k8/9/9/9/9/9/7Bg/6g1p/8K w -");
         let game_state = parse(&encoded).unwrap();
-        let result = game_state.threats_to_ou_can_be_captured(1);
+        let result = game_state.threats_to_ou_can_be_captured_or_blocked(1);
         assert_eq!(result, true);
     }
 
@@ -744,7 +732,7 @@ mod tests {
     fn threats_to_ou_can_be_captured_pinned_false_test() {
         let encoded = String::from("6Rbk/8P/9/9/9/9/9/8R/8K w -");
         let game_state = parse(&encoded).unwrap();
-        let result = game_state.threats_to_ou_can_be_captured(2);
+        let result = game_state.threats_to_ou_can_be_captured_or_blocked(2);
         assert_eq!(result, false);
     }
 
@@ -752,7 +740,7 @@ mod tests {
     fn threats_to_ou_can_be_captured_false_test() {
         let encoded = String::from("k8/9/9/9/9/9/8g/6g1p/8K w -");
         let game_state = parse(&encoded).unwrap();
-        let result = game_state.threats_to_ou_can_be_captured(1);
+        let result = game_state.threats_to_ou_can_be_captured_or_blocked(1);
         assert_eq!(result, false);
     }
 
@@ -760,7 +748,7 @@ mod tests {
     fn threats_to_ou_can_be_blocked_by_move_true_test() {
         let encoded = String::from("k8/9/9/8r/R8/9/9/6g2/8K b -");
         let game_state = parse(&encoded).unwrap();
-        let result = game_state.threats_to_ou_can_be_blocked(1);
+        let result = game_state.threats_to_ou_can_be_captured_or_blocked(1);
         assert_eq!(result, true);
     }
 
@@ -768,7 +756,7 @@ mod tests {
     fn threats_to_ou_can_be_blocked_by_move_pinned_test() {
         let encoded = String::from("6Rbk/9/9/9/9/9/9/8R/8K w -");
         let game_state = parse(&encoded).unwrap();
-        let result = game_state.threats_to_ou_can_be_blocked(2);
+        let result = game_state.threats_to_ou_can_be_captured_or_blocked(2);
         assert_eq!(result, false);
     }
 
@@ -776,7 +764,7 @@ mod tests {
     fn threats_to_ou_can_be_blocked_false_test() {
         let encoded = String::from("k8/9/9/8r/P8/9/9/6g2/8K b -");
         let game_state = parse(&encoded).unwrap();
-        let result = game_state.threats_to_ou_can_be_blocked(1);
+        let result = game_state.threats_to_ou_can_be_captured_or_blocked(1);
         assert_eq!(result, false);
     }
 
@@ -784,7 +772,7 @@ mod tests {
     fn threats_to_ou_can_be_blocked_by_drop_true_test() {
         let encoded = String::from("k8/9/9/8r/P8/9/9/6g2/8K b P");
         let game_state = parse(&encoded).unwrap();
-        let result = game_state.threats_to_ou_can_be_blocked(1);
+        let result = game_state.threats_to_ou_can_be_captured_or_blocked(1);
         assert_eq!(result, true);
     }
 

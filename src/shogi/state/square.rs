@@ -163,7 +163,7 @@ pub fn destinations(piece_kind: PieceKind, player_number: i8, point: (i8, i8), g
     acc
 }
 
-pub fn threats_matches_point(piece_kind: PieceKind, player_number: i8, from: (i8, i8), game_state: &GameState, target_point: (i8, i8)) -> bool {
+pub fn threats_matches_point(piece_kind: PieceKind, player_number: i8, from: (i8, i8), squares: &Vec<Vec<Square>>, target_point: (i8, i8)) -> bool {
     let mut result = false;
     match piece_kind {
         PieceKind::Empty => (),
@@ -173,7 +173,7 @@ pub fn threats_matches_point(piece_kind: PieceKind, player_number: i8, from: (i8
         },
         PieceKind::Kyousha => {
             let points = forward_destination_points(from, player_number);
-            result = points.contains(&target_point) && between_unoccupied(&game_state.squares, from, target_point);
+            result = points.contains(&target_point) && between_unoccupied(squares, from, target_point);
         },
         PieceKind::Keima => {
             let points = l_shape_forwards_destination_points(from, player_number);
@@ -189,11 +189,11 @@ pub fn threats_matches_point(piece_kind: PieceKind, player_number: i8, from: (i8
         },
         PieceKind::Kakugyou => {
             let points = diagonal_destination_points(from);
-            result = points.contains(&target_point) && between_unoccupied(&game_state.squares, from, target_point);
+            result = points.contains(&target_point) && between_unoccupied(squares, from, target_point);
         },
         PieceKind::Hisha => {
             let points = orthogonal_destination_points(from);
-            result = points.contains(&target_point) && between_unoccupied(&game_state.squares, from, target_point);
+            result = points.contains(&target_point) && between_unoccupied(squares, from, target_point);
         },
         PieceKind::Gyokushou | PieceKind::Oushou => {
             let points = one_step_destination_points(from);
@@ -201,18 +201,18 @@ pub fn threats_matches_point(piece_kind: PieceKind, player_number: i8, from: (i8
         },
         PieceKind::Ryuuma => {
             let points = ryuuma_destination_points(from);
-            result = points.contains(&target_point) && between_unoccupied(&game_state.squares, from, target_point);
+            result = points.contains(&target_point) && between_unoccupied(squares, from, target_point);
         },
         PieceKind::Ryuuou => {
             let points = ryuuou_destination_points(from);
-            result = points.contains(&target_point) && between_unoccupied(&game_state.squares, from, target_point);
+            result = points.contains(&target_point) && between_unoccupied(squares, from, target_point);
         }
     }
     result
 }
 
 pub fn promotion_ranks(kind: PieceKind, player_number: i8) -> Vec<i8> {
-    if PROMOTABLE_PIECE_KINDS.iter().any(|pk| *pk == kind) {
+    if PROMOTABLE_PIECE_KINDS.contains(&kind) {
         if player_number == 1 {
             vec![0, 1, 2]
         } else {
@@ -708,7 +708,7 @@ mod tests {
         let encoded = String::from("lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b -");
         let game_state = parse_game_state(&encoded).unwrap();
 
-        let result = threats_matches_point(kind, player_number, from, &game_state, target_point);
+        let result = threats_matches_point(kind, player_number, from, &game_state.squares, target_point);
         assert_eq!(result, true);
     }
 
@@ -721,7 +721,7 @@ mod tests {
         let encoded = String::from("lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b -");
         let game_state = parse_game_state(&encoded).unwrap();
 
-        let result = threats_matches_point(kind, player_number, from, &game_state, target_point);
+        let result = threats_matches_point(kind, player_number, from, &game_state.squares, target_point);
         assert_eq!(result, false);
     }
 
@@ -734,7 +734,7 @@ mod tests {
         let encoded = String::from("lnsgkgsnl/1r5b1/9/9/9/p8/9/1B5R1/LNSGKGSNL b -");
         let game_state = parse_game_state(&encoded).unwrap();
 
-        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        let result = threats_matches_point(kind, player_number, point, &game_state.squares, target_point);
         assert_eq!(result, true);
     }
 
@@ -747,7 +747,7 @@ mod tests {
         let encoded = String::from("lnsgkgsnl/1r5b1/9/9/9/p8/9/1B5R1/LNSGKGSNL b -");
         let game_state = parse_game_state(&encoded).unwrap();
 
-        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        let result = threats_matches_point(kind, player_number, point, &game_state.squares, target_point);
         assert_eq!(result, false);
     }
 
@@ -760,7 +760,7 @@ mod tests {
         let encoded = String::from("lnsgkgsnl/1r5b1/9/9/9/p8/9/1B5R1/LNSGKGSNL b -");
         let game_state = parse_game_state(&encoded).unwrap();
 
-        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        let result = threats_matches_point(kind, player_number, point, &game_state.squares, target_point);
         assert_eq!(result, true);
     }
 
@@ -773,7 +773,7 @@ mod tests {
         let encoded = String::from("lnsgkgsnl/1r5b1/9/9/9/p8/9/1B5R1/LNSGKGSNL b -");
         let game_state = parse_game_state(&encoded).unwrap();
 
-        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        let result = threats_matches_point(kind, player_number, point, &game_state.squares, target_point);
         assert_eq!(result, false);
     }
 
@@ -786,7 +786,7 @@ mod tests {
         let encoded = String::from("lnsgkgsnl/9/9/9/9/9/2p6/2S6/L3KGSNL b -");
         let game_state = parse_game_state(&encoded).unwrap();
 
-        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        let result = threats_matches_point(kind, player_number, point, &game_state.squares, target_point);
         assert_eq!(result, true);
     }
 
@@ -799,7 +799,7 @@ mod tests {
         let encoded = String::from("lnsgkgsnl/9/9/9/9/9/2p6/2S6/L3KGSNL b -");
         let game_state = parse_game_state(&encoded).unwrap();
 
-        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        let result = threats_matches_point(kind, player_number, point, &game_state.squares, target_point);
         assert_eq!(result, false);
     }
 
@@ -812,7 +812,7 @@ mod tests {
         let encoded = String::from("lnsgkgsnl/9/9/9/9/9/3p5/3G5/8K b -");
         let game_state = parse_game_state(&encoded).unwrap();
 
-        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        let result = threats_matches_point(kind, player_number, point, &game_state.squares, target_point);
         assert_eq!(result, true);
     }
 
@@ -825,7 +825,7 @@ mod tests {
         let encoded = String::from("lnsgkgsnl/9/9/9/9/9/3p5/3G5/8K b -");
         let game_state = parse_game_state(&encoded).unwrap();
 
-        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        let result = threats_matches_point(kind, player_number, point, &game_state.squares, target_point);
         assert_eq!(result, false);
     }
 
@@ -838,7 +838,7 @@ mod tests {
         let encoded = String::from("lnsgkgsnl/9/9/9/9/9/2p6/1B7/8K b -");
         let game_state = parse_game_state(&encoded).unwrap();
 
-        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        let result = threats_matches_point(kind, player_number, point, &game_state.squares, target_point);
         assert_eq!(result, true);
     }
 
@@ -851,7 +851,7 @@ mod tests {
         let encoded = String::from("lnsgkgsnl/9/9/9/9/9/2p6/1B7/8K b -");
         let game_state = parse_game_state(&encoded).unwrap();
 
-        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        let result = threats_matches_point(kind, player_number, point, &game_state.squares, target_point);
         assert_eq!(result, false);
     }
 
@@ -864,7 +864,7 @@ mod tests {
         let encoded = String::from("lnsgkgsnl/9/9/9/9/9/7p1/7R1/8K b -");
         let game_state = parse_game_state(&encoded).unwrap();
 
-        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        let result = threats_matches_point(kind, player_number, point, &game_state.squares, target_point);
         assert_eq!(result, true);
     }
 
@@ -877,7 +877,7 @@ mod tests {
         let encoded = String::from("lnsgkgsnl/9/9/9/9/9/7p1/7R1/8K b -");
         let game_state = parse_game_state(&encoded).unwrap();
 
-        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        let result = threats_matches_point(kind, player_number, point, &game_state.squares, target_point);
         assert_eq!(result, false);
     }
 
@@ -890,7 +890,7 @@ mod tests {
         let encoded = String::from("9/4k4/9/9/9/9/4p4/4K4/9 b -");
         let game_state = parse_game_state(&encoded).unwrap();
 
-        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        let result = threats_matches_point(kind, player_number, point, &game_state.squares, target_point);
         assert_eq!(result, true);
     }
 
@@ -903,7 +903,7 @@ mod tests {
         let encoded = String::from("9/4k4/9/9/9/9/4p4/4K4/9 b -");
         let game_state = parse_game_state(&encoded).unwrap();
 
-        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        let result = threats_matches_point(kind, player_number, point, &game_state.squares, target_point);
         assert_eq!(result, false);
     }
 
@@ -916,7 +916,7 @@ mod tests {
         let encoded = String::from("lnsgkgsnl/9/9/9/9/9/4p4/4K4/9 b -");
         let game_state = parse_game_state(&encoded).unwrap();
 
-        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        let result = threats_matches_point(kind, player_number, point, &game_state.squares, target_point);
         assert_eq!(result, true);
     }
 
@@ -929,7 +929,7 @@ mod tests {
         let encoded = String::from("lnsgkgsnl/9/9/9/9/9/4p4/4K4/9 b -");
         let game_state = parse_game_state(&encoded).unwrap();
 
-        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        let result = threats_matches_point(kind, player_number, point, &game_state.squares, target_point);
         assert_eq!(result, false);
     }
 
@@ -942,7 +942,7 @@ mod tests {
         let encoded = String::from("lnsgkgsnl/9/9/9/9/9/2p6/2+P6/L3KGSNL b -");
         let game_state = parse_game_state(&encoded).unwrap();
 
-        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        let result = threats_matches_point(kind, player_number, point, &game_state.squares, target_point);
         assert_eq!(result, true);
     }
 
@@ -955,7 +955,7 @@ mod tests {
         let encoded = String::from("lnsgkgsnl/9/9/9/9/9/2p6/2+P6/L3KGSNL b -");
         let game_state = parse_game_state(&encoded).unwrap();
 
-        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        let result = threats_matches_point(kind, player_number, point, &game_state.squares, target_point);
         assert_eq!(result, false);
     }
 
@@ -968,7 +968,7 @@ mod tests {
         let encoded = String::from("lnsgkgsnl/9/9/9/9/9/2p6/2+L6/L3KGSNL b -");
         let game_state = parse_game_state(&encoded).unwrap();
 
-        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        let result = threats_matches_point(kind, player_number, point, &game_state.squares, target_point);
         assert_eq!(result, true);
     }
 
@@ -981,7 +981,7 @@ mod tests {
         let encoded = String::from("lnsgkgsnl/9/9/9/9/9/2p6/2+L6/L3KGSNL b -");
         let game_state = parse_game_state(&encoded).unwrap();
 
-        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        let result = threats_matches_point(kind, player_number, point, &game_state.squares, target_point);
         assert_eq!(result, false);
     }
 
@@ -994,7 +994,7 @@ mod tests {
         let encoded = String::from("lnsgkgsnl/9/9/9/9/9/2p6/2+N6/L3KGSNL b -");
         let game_state = parse_game_state(&encoded).unwrap();
 
-        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        let result = threats_matches_point(kind, player_number, point, &game_state.squares, target_point);
         assert_eq!(result, true);
     }
 
@@ -1007,7 +1007,7 @@ mod tests {
         let encoded = String::from("lnsgkgsnl/9/9/9/9/9/2p6/2+N6/L3KGSNL b -");
         let game_state = parse_game_state(&encoded).unwrap();
 
-        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        let result = threats_matches_point(kind, player_number, point, &game_state.squares, target_point);
         assert_eq!(result, false);
     }
 
@@ -1020,7 +1020,7 @@ mod tests {
         let encoded = String::from("lnsgkgsnl/9/9/9/9/9/2p6/2+S6/L3KGSNL b -");
         let game_state = parse_game_state(&encoded).unwrap();
 
-        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        let result = threats_matches_point(kind, player_number, point, &game_state.squares, target_point);
         assert_eq!(result, true);
     }
 
@@ -1033,7 +1033,7 @@ mod tests {
         let encoded = String::from("lnsgkgsnl/9/9/9/9/9/2p6/2+S6/L3KGSNL b -");
         let game_state = parse_game_state(&encoded).unwrap();
 
-        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        let result = threats_matches_point(kind, player_number, point, &game_state.squares, target_point);
         assert_eq!(result, false);
     }
 
@@ -1046,7 +1046,7 @@ mod tests {
         let encoded = String::from("lnsgkgsnl/9/9/9/9/9/2p6/2+R6/L3KGSNL b -");
         let game_state = parse_game_state(&encoded).unwrap();
 
-        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        let result = threats_matches_point(kind, player_number, point, &game_state.squares, target_point);
         assert_eq!(result, true);
     }
 
@@ -1059,7 +1059,7 @@ mod tests {
         let encoded = String::from("lnsgkgsnl/9/9/9/9/9/2p6/2+R6/L3KGSNL b -");
         let game_state = parse_game_state(&encoded).unwrap();
 
-        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        let result = threats_matches_point(kind, player_number, point, &game_state.squares, target_point);
         assert_eq!(result, false);
     }
 
@@ -1072,7 +1072,7 @@ mod tests {
         let encoded = String::from("lnsgkgsnl/9/9/9/9/9/1p7/2+B6/L3KGSNL b -");
         let game_state = parse_game_state(&encoded).unwrap();
 
-        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        let result = threats_matches_point(kind, player_number, point, &game_state.squares, target_point);
         assert_eq!(result, true);
     }
 
@@ -1085,7 +1085,7 @@ mod tests {
         let encoded = String::from("lnsgkgsnl/9/9/9/9/9/1p7/2+B6/L3KGSNL b -");
         let game_state = parse_game_state(&encoded).unwrap();
 
-        let result = threats_matches_point(kind, player_number, point, &game_state, target_point);
+        let result = threats_matches_point(kind, player_number, point, &game_state.squares, target_point);
         assert_eq!(result, false);
     }
 

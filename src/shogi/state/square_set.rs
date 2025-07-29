@@ -72,7 +72,7 @@ pub fn find_ou_point_for_player(squares: &Vec<Vec<Square>>, player_number: i8) -
 }
 
 // Returns all opposing points that threaten the subject point.
-pub fn threats_to_point(squares: &Vec<Vec<Square>>, point: (i8, i8), player_number: i8, game_state: &GameState) -> Vec<(i8, i8)> {
+pub fn threats_to_point(squares: &Vec<Vec<Square>>, point: (i8, i8), player_number: i8) -> Vec<(i8, i8)> {
     let mut acc = vec![];
 
     let opposing_player_number = opposing_player(player_number);
@@ -82,7 +82,7 @@ pub fn threats_to_point(squares: &Vec<Vec<Square>>, point: (i8, i8), player_numb
             // get opposing squares
             if s.player_number == opposing_player_number && s.kind != PieceKind::Oushou && s.kind != PieceKind::Gyokushou {
                 // get opposing squares threatened points
-                let threatened_matches_point = threats_matches_point(s.kind, s.player_number, (x as i8, y as i8), game_state, point);
+                let threatened_matches_point = threats_matches_point(s.kind, s.player_number, (x as i8, y as i8), squares, point);
                 // return the opposing square's point if a threatened point matches the specified point
                 // i.e. the opposing square is threatening the target
                 if threatened_matches_point {
@@ -96,7 +96,7 @@ pub fn threats_to_point(squares: &Vec<Vec<Square>>, point: (i8, i8), player_numb
 }
 
 // Returns true if any oppsoing points threatens the subject point.
-pub fn any_threats_to_point(squares: &Vec<Vec<Square>>, point: (i8, i8), player_number: i8, game_state: &GameState) -> bool {
+pub fn any_threats_to_point(squares: &Vec<Vec<Square>>, point: (i8, i8), player_number: i8) -> bool {
     let mut result = false;
 
     let opposing_player_number = opposing_player(player_number);
@@ -106,7 +106,7 @@ pub fn any_threats_to_point(squares: &Vec<Vec<Square>>, point: (i8, i8), player_
             // get opposing squares
             if s.player_number == opposing_player_number && s.kind != PieceKind::Oushou && s.kind != PieceKind::Gyokushou {
                 // get opposing squares threatened points
-                let threatened_matches_point = threats_matches_point(s.kind, s.player_number, (x as i8, y as i8), game_state, point);
+                let threatened_matches_point = threats_matches_point(s.kind, s.player_number, (x as i8, y as i8), squares, point);
                 // return the opposing square's point if a threatened point matches the specified point
                 // i.e. the opposing square is threatening the target
                 if threatened_matches_point {
@@ -345,7 +345,7 @@ mod tests {
         let expected = vec![
             (8, 7)
         ];
-        let result = threats_to_point(squares, point, player_number, &game_state);
+        let result = threats_to_point(squares, point, player_number);
         assert_eq!(result, expected);
     }
 
@@ -359,7 +359,7 @@ mod tests {
         let expected = vec![
             (8, 6)
         ];
-        let result = threats_to_point(squares, point, player_number, &game_state);
+        let result = threats_to_point(squares, point, player_number);
         assert_eq!(result, expected);
     }
 
@@ -370,7 +370,7 @@ mod tests {
         let point = (8, 8);
         let player_number = 1;
         let squares = &game_state.squares.clone();
-        let result = any_threats_to_point(squares, point, player_number, &game_state);
+        let result = any_threats_to_point(squares, point, player_number);
         assert_eq!(result, true);
     }
 
@@ -381,7 +381,7 @@ mod tests {
         let point = (8, 8);
         let player_number = 1;
         let squares = &game_state.squares.clone();
-        let result = any_threats_to_point(squares, point, player_number, &game_state);
+        let result = any_threats_to_point(squares, point, player_number);
         assert_eq!(result, false);
     }
 
@@ -392,7 +392,7 @@ mod tests {
         let point = (8, 7);
         let player_number = 1;
         let squares = &game_state.squares.clone();
-        let result = any_threats_to_point(squares, point, player_number, &game_state);
+        let result = any_threats_to_point(squares, point, player_number);
         assert_eq!(result, true);
     }
 
@@ -403,7 +403,7 @@ mod tests {
         let point = (8, 7);
         let player_number = 1;
         let squares = &game_state.squares.clone();
-        let result = any_threats_to_point(squares, point, player_number, &game_state);
+        let result = any_threats_to_point(squares, point, player_number);
         assert_eq!(result, false);
     }
 
