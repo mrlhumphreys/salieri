@@ -12,6 +12,7 @@ use crate::shogi::state::square::Square;
 use crate::shogi::state::point::diff;
 use crate::shogi::state::point::between;
 use crate::shogi::state::point::one_step_destination_points;
+use crate::shogi::state::point::forwards_direction;
 use crate::shogi::state::square_set::find_by_x_and_y_mut;
 use crate::shogi::state::square_set::find_by_x_and_y;
 use crate::shogi::state::square_set::find_ou_point_for_player;
@@ -48,6 +49,14 @@ impl GameState {
 
     pub fn in_checkmate(&self, player_number: i8) -> bool {
         self.in_check(player_number) && self.ou_cannot_move(player_number) && !self.threats_to_ou_can_be_captured_or_blocked(player_number)
+    }
+
+    pub fn in_check(&self, player_number: i8) -> bool {
+        if let Some(ou_point) = find_ou_point_for_player(&self.squares, player_number) {
+            any_threats_to_point(&self.squares, ou_point, player_number)
+        } else {
+            false
+        }
     }
 
     pub fn ou_cannot_move(&self, player_number: i8) -> bool {
@@ -104,9 +113,10 @@ impl GameState {
         }
     }
 
-    pub fn in_check(&self, player_number: i8) -> bool {
-        if let Some(ou_point) = find_ou_point_for_player(&self.squares, player_number) {
-            any_threats_to_point(&self.squares, ou_point, player_number)
+    pub fn fuhyou_attacks_ou(&self, from: (i8, i8), player_number: i8) -> bool {
+        if let Some(p) = find_ou_point_for_player(&self.squares, player_number) {
+            let fuhyou_destination = (from.0, from.1 + forwards_direction(self.current_player_number));
+            fuhyou_destination == p
         } else {
             false
         }
@@ -197,7 +207,8 @@ impl GameState {
                     if !compulsory_promotion_ranks(*piece_kind, subject_player_number).contains(&(y as i8)) {
                         for x in files_without_fuhyou.iter() {
                             let square = self.squares[y][*x];
-                            if square.unoccupied() {
+                            // exclude if drop puts opponent in checkmate
+                            if square.unoccupied() && !(self.ou_cannot_move(opposing_player_number) && self.fuhyou_attacks_ou((*x as i8, y as i8), opposing_player_number)) {
                                 let mov = Move {
                                     from: None,
                                     to: (*x as i8, y as i8),
@@ -205,14 +216,7 @@ impl GameState {
                                     capture_piece_kind: None,
                                     promote: false
                                 };
-
-                                // exclude if drop puts opponent in checkmate
-                                let perform_result = self.perform_move(&mov);
-                                let in_checkmate = self.in_checkmate(opposing_player_number);
-                                let undo_result = self.undo_move(&mov);
-                                if perform_result.is_ok() && undo_result.is_ok() && !in_checkmate {
-                                    moves.push(mov);
-                                }
+                                moves.push(mov);
                             }
                         }
                     }
