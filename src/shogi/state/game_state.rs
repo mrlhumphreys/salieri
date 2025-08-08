@@ -79,32 +79,43 @@ impl GameState {
 
     pub fn threats_to_ou_can_be_captured_or_blocked(&self, player_number: i8, ou_point: (i8, i8)) -> bool {
         // player number - owner of ou
-        let opposing_player_number = opposing_player(player_number);
-        let piece_kinds_in_hand = &self.unique_piece_kinds_in_hand(player_number);
 
         let threats_to_ou = threats_to_point(&self.squares, ou_point, player_number);
-        let pinned_to_ou = pinned_to_point(&self.squares, ou_point, player_number, self);
 
-        // can all threats be captured?
-        threats_to_ou.iter().all(|threat| {
-            let threats_to_threats = threats_to_point(&self.squares, *threat, opposing_player_number);
-            // is there  a non pinned threat to the threatening piece?
-            if !diff(&threats_to_threats, &pinned_to_ou).is_empty() {
+        match threats_to_ou.len() {
+            0 => {
+                // return true since there are no threats
                 true
-            } else {
-                let between_points = between(*threat, ou_point);
-                // any square between threat and ou can be blocked by move or drop?
-                between_points.iter().any(|b| {
-                    let threats_to_between = threats_to_point(&self.squares, *b, opposing_player_number);
-                    let has_threats = !diff(&threats_to_between, &pinned_to_ou).is_empty();
-                    let can_drop = piece_kinds_in_hand.iter().any(|p| {
-                        // TODO: consider fuhyou drop rules, i.e. in checkmate, 1 fuhyou in file
-                        has_legal_moves_from_y(*p, player_number, b.1)
-                    });
-                    has_threats || can_drop
-                })
+            },
+            1 => {
+                // can threat be captured?
+                let opposing_player_number = opposing_player(player_number);
+                let piece_kinds_in_hand = &self.unique_piece_kinds_in_hand(player_number);
+                let pinned_to_ou = pinned_to_point(&self.squares, ou_point, player_number, self);
+                let threat = threats_to_ou[0];
+                let threats_to_threats = threats_to_point(&self.squares, threat, opposing_player_number);
+                // is there  a non pinned threat to the threatening piece?
+                if !diff(&threats_to_threats, &pinned_to_ou).is_empty() {
+                    true
+                } else {
+                    let between_points = between(threat, ou_point);
+                    // any square between threat and ou can be blocked by move or drop?
+                    between_points.iter().any(|b| {
+                        let threats_to_between = threats_to_point(&self.squares, *b, opposing_player_number);
+                        let has_threats = !diff(&threats_to_between, &pinned_to_ou).is_empty();
+                        let can_drop = piece_kinds_in_hand.iter().any(|p| {
+                            // TODO: consider fuhyou drop rules, i.e. in checkmate, 1 fuhyou in file
+                            has_legal_moves_from_y(*p, player_number, b.1)
+                        });
+                        has_threats || can_drop
+                    })
+                }
+            },
+            _ => {
+                // return false since any move will still leave at least 1 threat
+                false
             }
-        })
+        }
     }
 
     pub fn fuhyou_attacks_ou(&self, from: (i8, i8), ou_point: (i8, i8)) -> bool {
