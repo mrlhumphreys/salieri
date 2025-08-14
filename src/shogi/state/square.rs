@@ -211,35 +211,35 @@ pub fn threats_matches_point(piece_kind: PieceKind, player_number: i8, from: (i8
     result
 }
 
-pub fn promotion_ranks(kind: PieceKind, player_number: i8) -> Vec<i8> {
+pub fn can_promote_on_y(kind: PieceKind, player_number: i8, y: i8) -> bool {
     if PROMOTABLE_PIECE_KINDS.contains(&kind) {
         if player_number == 1 {
-            vec![0, 1, 2]
+            y == 0 || y == 1 || y == 2
         } else {
-            vec![6, 7, 8]
+            y == 6 || y == 7 || y == 8
         }
     } else {
-        vec![]
+        false
     }
 }
 
-pub fn compulsory_promotion_ranks(kind: PieceKind, player_number: i8) -> Vec<i8> {
+pub fn must_promote_on_y(kind: PieceKind, player_number: i8, y: i8) -> bool {
     match kind {
         PieceKind::Fuhyou | PieceKind::Kyousha => {
             if player_number == 1 {
-                vec![0]
+                y == 0
             } else {
-                vec![8]
+                y == 8
             }
         },
         PieceKind::Keima => {
             if player_number == 1 {
-                vec![0, 1]
+                y == 0 || y == 1
             } else {
-                vec![7, 8]
+                y == 7 || y == 8
             }
         }
-        _ => vec![]
+        _ => false
     }
 }
 
@@ -264,33 +264,6 @@ pub fn demotes_to(kind: PieceKind) -> Option<PieceKind> {
         PieceKind::Ryuuou => Some(PieceKind::Hisha),
         PieceKind::Ryuuma => Some(PieceKind::Kakugyou),
         _ => None
-    }
-}
-
-pub fn has_legal_moves_from_y(kind: PieceKind, player_number: i8, y: i8) -> bool {
-    match kind {
-        PieceKind::Fuhyou => {
-            if player_number == 1 {
-              y != 0
-            } else {
-              y != 8
-            }
-        },
-        PieceKind::Kyousha  => {
-            if player_number == 1 {
-              y != 0
-            } else {
-              y != 8
-            }
-        },
-        PieceKind::Keima => {
-            if player_number == 1 {
-              y != 0 && y != 1
-            } else {
-              y != 8 && y != 7
-            }
-        },
-        _ => true
     }
 }
 
@@ -1090,65 +1063,101 @@ mod tests {
     }
 
     #[test]
-    fn promotion_ranks_promotable_one_test() {
+    fn can_promote_on_y_promotable_one_true_test() {
         let kind = PieceKind::Fuhyou;
         let player_number = 1;
-        let result = promotion_ranks(kind, player_number);
-        let expected = vec![0, 1, 2];
+        let result = can_promote_on_y(kind, player_number, 1);
+        let expected = true;
         assert_eq!(result, expected);
     }
 
     #[test]
-    fn promotion_ranks_promotable_two_test() {
+    fn can_promote_on_y_promotable_one_false_test() {
+        let kind = PieceKind::Fuhyou;
+        let player_number = 1;
+        let result = can_promote_on_y(kind, player_number, 3);
+        let expected = false;
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn can_promote_on_y_promotable_two_true_test() {
         let kind = PieceKind::Fuhyou;
         let player_number = 2;
-        let result = promotion_ranks(kind, player_number);
-        let expected = vec![6, 7, 8];
+        let result = can_promote_on_y(kind, player_number, 7);
+        let expected = true;
         assert_eq!(result, expected);
     }
 
     #[test]
-    fn promotion_ranks_unpromotable_test() {
-        let kind = PieceKind::Tokin;
-        let player_number = 1;
-        let result = promotion_ranks(kind, player_number);
-        let expected: Vec<i8> = vec![];
+    fn can_promote_on_y_promotable_two_false_test() {
+        let kind = PieceKind::Fuhyou;
+        let player_number = 2;
+        let result = can_promote_on_y(kind, player_number, 5);
+        let expected = false;
         assert_eq!(result, expected);
     }
 
     #[test]
-    fn compulsory_promotion_fuhyou_test() {
+    fn must_promote_on_y_fuhyou_true_test() {
         let kind = PieceKind::Fuhyou;
         let player_number = 1;
-        let result = compulsory_promotion_ranks(kind, player_number);
-        let expected: Vec<i8> = vec![0];
+        let result = must_promote_on_y(kind, player_number, 0);
+        let expected= true;
         assert_eq!(result, expected);
     }
 
     #[test]
-    fn compulsory_promotion_kyousha_test() {
+    fn must_promote_on_y_fuhyou_false_test() {
+        let kind = PieceKind::Fuhyou;
+        let player_number = 1;
+        let result = must_promote_on_y(kind, player_number, 1);
+        let expected= false;
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn must_promote_on_y_kyousha_true_test() {
         let kind = PieceKind::Kyousha;
         let player_number = 1;
-        let result = compulsory_promotion_ranks(kind, player_number);
-        let expected: Vec<i8> = vec![0];
+        let result = must_promote_on_y(kind, player_number, 0);
+        let expected = true;
         assert_eq!(result, expected);
     }
 
     #[test]
-    fn compulsory_promotion_keima_test() {
+    fn must_promote_on_y_kyousha_false_test() {
+        let kind = PieceKind::Kyousha;
+        let player_number = 1;
+        let result = must_promote_on_y(kind, player_number, 1);
+        let expected = false;
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn must_promote_on_y_keima_true_test() {
         let kind = PieceKind::Keima;
         let player_number = 1;
-        let result = compulsory_promotion_ranks(kind, player_number);
-        let expected: Vec<i8> = vec![0, 1];
+        let result = must_promote_on_y(kind, player_number, 0);
+        let expected = true;
         assert_eq!(result, expected);
     }
 
     #[test]
-    fn compulsory_promotion_ginshou_test() {
+    fn must_promote_on_y_keima_false_test() {
+        let kind = PieceKind::Keima;
+        let player_number = 1;
+        let result = must_promote_on_y(kind, player_number, 2);
+        let expected = false;
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn must_promote_on_y_ginshou_false_test() {
         let kind = PieceKind::Ginshou;
         let player_number = 1;
-        let result = compulsory_promotion_ranks(kind, player_number);
-        let expected: Vec<i8> = vec![];
+        let result = must_promote_on_y(kind, player_number, 0);
+        let expected = false;
         assert_eq!(result, expected);
     }
 
@@ -1262,123 +1271,6 @@ mod tests {
         let result = demotes_to(kind);
         let expected = None;
         assert_eq!(result, expected);
-    }
-
-    #[test]
-    fn has_legal_moves_from_y_fuhyou_player_one_true_test() {
-        let kind = PieceKind::Fuhyou;
-        let player_number = 1;
-        let y = 1;
-        let result = has_legal_moves_from_y(kind, player_number, y);
-        assert_eq!(result, true);
-    }
-
-    #[test]
-    fn has_legal_moves_from_y_fuhyou_player_one_false_test() {
-        let kind = PieceKind::Fuhyou;
-        let player_number = 1;
-        let y = 0;
-        let result = has_legal_moves_from_y(kind, player_number, y);
-        assert_eq!(result, false);
-    }
-
-    #[test]
-    fn has_legal_moves_from_y_fuhyou_player_two_true_test() {
-        let kind = PieceKind::Fuhyou;
-        let player_number = 2;
-        let y = 7;
-        let result = has_legal_moves_from_y(kind, player_number, y);
-        assert_eq!(result, true);
-    }
-
-    #[test]
-    fn has_legal_moves_from_y_fuhyou_player_two_false_test() {
-        let kind = PieceKind::Fuhyou;
-        let player_number = 2;
-        let y = 8;
-        let result = has_legal_moves_from_y(kind, player_number, y);
-        assert_eq!(result, false);
-    }
-
-    #[test]
-    fn has_legal_moves_from_y_keima_player_one_true_test() {
-        let kind = PieceKind::Keima;
-        let player_number = 1;
-        let y = 2;
-        let result = has_legal_moves_from_y(kind, player_number, y);
-        assert_eq!(result, true);
-    }
-
-    #[test]
-    fn has_legal_moves_from_y_keima_player_one_false_test() {
-        let kind = PieceKind::Keima;
-        let player_number = 1;
-        let y = 1;
-        let result = has_legal_moves_from_y(kind, player_number, y);
-        assert_eq!(result, false);
-    }
-
-    #[test]
-    fn has_legal_moves_from_y_keima_player_two_true_test() {
-        let kind = PieceKind::Keima;
-        let player_number = 2;
-        let y = 6;
-        let result = has_legal_moves_from_y(kind, player_number, y);
-        assert_eq!(result, true);
-    }
-
-    #[test]
-    fn has_legal_moves_from_y_keima_player_two_false_test() {
-        let kind = PieceKind::Keima;
-        let player_number = 2;
-        let y = 7;
-        let result = has_legal_moves_from_y(kind, player_number, y);
-        assert_eq!(result, false);
-    }
-
-    #[test]
-    fn has_legal_moves_from_y_kyousha_player_one_true_test() {
-        let kind = PieceKind::Kyousha;
-        let player_number = 1;
-        let y = 1;
-        let result = has_legal_moves_from_y(kind, player_number, y);
-        assert_eq!(result, true);
-    }
-
-    #[test]
-    fn has_legal_moves_from_y_kyousha_player_one_false_test() {
-        let kind = PieceKind::Kyousha;
-        let player_number = 1;
-        let y = 0;
-        let result = has_legal_moves_from_y(kind, player_number, y);
-        assert_eq!(result, false);
-    }
-
-    #[test]
-    fn has_legal_moves_from_y_kyousha_player_two_true_test() {
-        let kind = PieceKind::Kyousha;
-        let player_number = 2;
-        let y = 7;
-        let result = has_legal_moves_from_y(kind, player_number, y);
-        assert_eq!(result, true);
-    }
-
-    #[test]
-    fn has_legal_moves_from_y_kyousha_player_two_false_test() {
-        let kind = PieceKind::Kyousha;
-        let player_number = 2;
-        let y = 8;
-        let result = has_legal_moves_from_y(kind, player_number, y);
-        assert_eq!(result, false);
-    }
-
-    #[test]
-    fn has_legal_moves_from_y_default_test() {
-        let kind = PieceKind::Ginshou;
-        let player_number = 1;
-        let y = 0;
-        let result = has_legal_moves_from_y(kind, player_number, y);
-        assert_eq!(result, true);
     }
 
     #[test]

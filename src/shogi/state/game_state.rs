@@ -1,11 +1,10 @@
 use crate::shogi::state::point::valid;
 use crate::shogi::state::piece_factory::parse as parse_piece;
-use crate::shogi::state::square::promotion_ranks;
-use crate::shogi::state::square::compulsory_promotion_ranks;
+use crate::shogi::state::square::can_promote_on_y;
+use crate::shogi::state::square::must_promote_on_y;
 use crate::shogi::state::square::promotes_to;
 use crate::shogi::state::square::demotes_to;
 use crate::shogi::state::square::destinations;
-use crate::shogi::state::square::has_legal_moves_from_y;
 use crate::shogi::state::square::opposing_player;
 use crate::shogi::state::square::PieceKind;
 use crate::shogi::state::square::Square;
@@ -105,7 +104,7 @@ impl GameState {
                         let has_threats = !diff(&threats_to_between, &pinned_to_ou).is_empty();
                         let can_drop = piece_kinds_in_hand.iter().any(|p| {
                             // TODO: consider fuhyou drop rules, i.e. in checkmate, 1 fuhyou in file
-                            has_legal_moves_from_y(*p, player_number, b.1)
+                            !must_promote_on_y(*p, player_number, b.1)
                         });
                         has_threats || can_drop
                     })
@@ -143,8 +142,8 @@ impl GameState {
                                 None
                             };
 
-                            let promote = promotion_ranks(from.kind, from.player_number).contains(&to_point.1);
-                            let compulsory_promote = compulsory_promotion_ranks(from.kind, from.player_number).contains(&to_point.1);
+                            let promote = can_promote_on_y(from.kind, from.player_number, to_point.1);
+                            let compulsory_promote = must_promote_on_y(from.kind, from.player_number, to_point.1);
 
                             // if promote possible add a move that promotes
                             if promote {
@@ -206,7 +205,7 @@ impl GameState {
 
                 if let Some(opposing_ou_point) = find_ou_point_for_player(&self.squares, opposing_player_number) {
                     for y in 0..=8 {
-                        if !compulsory_promotion_ranks(*piece_kind, subject_player_number).contains(&(y as i8)) {
+                        if !must_promote_on_y(*piece_kind, subject_player_number, y as i8) {
                             for x in files_without_fuhyou.iter() {
                                 let square = self.squares[y][*x];
                                 // exclude if drop puts opponent in checkmate
@@ -227,7 +226,7 @@ impl GameState {
             } else {
                 // not fuhyou
                 for y in 0..=8 {
-                    if !compulsory_promotion_ranks(*piece_kind, subject_player_number).contains(&(y as i8)) {
+                    if !must_promote_on_y(*piece_kind, subject_player_number, y as i8) {
                         for x in 0..=8 {
                             let square = self.squares[y][x];
                             if square.unoccupied() {
