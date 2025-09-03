@@ -142,7 +142,7 @@ fn simulate(nodes: &Vec<Node>, id: i32, max_simulation_depth: i16) -> Result<boo
                     }
                 },
                 _ => {
-                    let mut rng = rand::thread_rng();
+                    let mut rng = rand::rng();
                     moves.shuffle(&mut rng);
                     let selected_move = &moves[0];
                     match current_game_state.perform_move(&selected_move) {

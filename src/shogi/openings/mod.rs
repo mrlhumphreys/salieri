@@ -6,7 +6,7 @@ pub fn recommended_move(game_state: &String) -> Option<&'static str> {
     match game_state_string {
         "lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b -" => {
             // starting state
-            let mut rng = rand::thread_rng();
+            let mut rng = rand::rng();
             let mut possible_values = ["P-76", "P-26"];
             possible_values.shuffle(&mut rng);
             Some(possible_values[0])
@@ -33,21 +33,21 @@ pub fn recommended_move(game_state: &String) -> Option<&'static str> {
         },
         "lnsgkgsnl/1r5b1/ppppppppp/9/9/2P6/PP1PPPPPP/1B5R1/LNSGKGSNL w -" => {
             // b: P-7f/P-76
-            let mut rng = rand::thread_rng();
+            let mut rng = rand::rng();
             let mut possible_values = ["P-34", "P-84"];
             possible_values.shuffle(&mut rng);
             Some(possible_values[0])
         },
         "lnsgkgsnl/1r5b1/pppppp1pp/6p2/9/2P6/PP1PPPPPP/1B5R1/LNSGKGSNL b -" => {
             // b: P-7f/P-76 w: P-3d/P-34
-            let mut rng = rand::thread_rng();
+            let mut rng = rand::rng();
             let mut possible_values = ["P-26", "P-66", "P-75"];
             possible_values.shuffle(&mut rng);
             Some(possible_values[0])
         },
         "lnsgkgsnl/1r5b1/pppppp1pp/6p2/2P6/9/PP1PPPPPP/1B5R1/LNSGKGSNL w -" => {
             // b: P-7f/P-76 w: P-3d/P-34 b: P-7e/P-75
-            let mut rng = rand::thread_rng();
+            let mut rng = rand::rng();
             let mut possible_values = ["K-42", "P-84"];
             possible_values.shuffle(&mut rng);
             Some(possible_values[0])
@@ -297,7 +297,7 @@ pub fn recommended_move(game_state: &String) -> Option<&'static str> {
         },
         "lnsgkgsnl/1r5b1/pppppp1pp/6p2/9/2P4P1/PP1PPPP1P/1B5R1/LNSGKGSNL w -" => {
             // b: P-7f/P-76 w: P-3d/P-34 b: P-2f/P-26
-            let mut rng = rand::thread_rng();
+            let mut rng = rand::rng();
             let mut possible_values = ["P-84", "P-54"];
             possible_values.shuffle(&mut rng);
             Some(possible_values[0])
@@ -494,7 +494,7 @@ pub fn recommended_move(game_state: &String) -> Option<&'static str> {
         },
         "lnsgkgsnl/1r5b1/pppppp1pp/6p2/9/2PP5/PP2PPPPP/1B5R1/LNSGKGSNL w -" => {
             // b: P-7f/P-76 w: P-3d/P-34 b: P-6f/P-66
-            let mut rng = rand::thread_rng();
+            let mut rng = rand::rng();
             let mut possible_values = ["P-84", "R-32"];
             possible_values.shuffle(&mut rng);
             Some(possible_values[0])
@@ -533,7 +533,7 @@ pub fn recommended_move(game_state: &String) -> Option<&'static str> {
         },
         "lnsgkgsnl/1r5b1/p1pppp1pp/1p4p2/9/2PP5/PP2PPPPP/1B5R1/LNSGKGSNL b -" => {
             // b: P-7f/P-76 w: P-3d/P-34 b: P-6f/P-66 w: P-8d/P-84
-            let mut rng = rand::thread_rng();
+            let mut rng = rand::rng();
             let mut possible_values = ["R-78", "R-58", "S-78", "R-68"];
             possible_values.shuffle(&mut rng);
             Some(possible_values[0])
@@ -920,7 +920,7 @@ pub fn recommended_move(game_state: &String) -> Option<&'static str> {
         },
         "lnsgkgsnl/1r5b1/p1ppppppp/1p7/9/2P6/PP1PPPPPP/1B5R1/LNSGKGSNL b -" => {
             // b: P-7f/P-76 w: P-8d/P-84
-            let mut rng = rand::thread_rng();
+            let mut rng = rand::rng();
             let mut possible_values = ["P-26", "S-68"];
             possible_values.shuffle(&mut rng);
             Some(possible_values[0])

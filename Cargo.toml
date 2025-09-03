@@ -11,10 +11,10 @@ name = "salieri"
 path = "src/main.rs"
 
 [dependencies]
-actix-web = "4.9.0"
-actix-rt = "2.10.0"
-actix-cors = "0.7.0"
-rand = "0.8.5"
-bytes = "1.9.0"
-regex = "1.11.1"
+actix-web = "4.11.0"
+actix-rt = "2.11.0"
+actix-cors = "0.7.1"
+rand = "0.9.2"
+bytes = "1.10.1"
+regex = "1.11.2"
 

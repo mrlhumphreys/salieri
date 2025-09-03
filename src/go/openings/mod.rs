@@ -5,108 +5,108 @@ pub fn recommended_move(game_state: &String) -> Option<&'static str> {
     match game_state_string {
         "PL[B]ABAWXB[0]XW[0]XS" => {
             // initial
-            let mut rng = rand::thread_rng();
+            let mut rng = rand::rng();
             let mut possible_values = ["dd", "pd", "dp", "pp"];
             possible_values.shuffle(&mut rng);
             Some(possible_values[0])
         },
 
         "PL[W]AB[dd]AWXB[0]XW[0]XS" => {
-            let mut rng = rand::thread_rng();
+            let mut rng = rand::rng();
             let mut possible_values = ["pd", "dp", "pp"];
             possible_values.shuffle(&mut rng);
             Some(possible_values[0])
         },
         "PL[W]AB[pd]AWXB[0]XW[0]XS" => {
-            let mut rng = rand::thread_rng();
+            let mut rng = rand::rng();
             let mut possible_values = ["dd", "dp", "pp"];
             possible_values.shuffle(&mut rng);
             Some(possible_values[0])
         },
         "PL[W]AB[dp]AWXB[0]XW[0]XS" => {
-            let mut rng = rand::thread_rng();
+            let mut rng = rand::rng();
             let mut possible_values = ["dd", "pd", "pp"];
             possible_values.shuffle(&mut rng);
             Some(possible_values[0])
         },
         "PL[W]AB[pp]AWXB[0]XW[0]XS" => {
-            let mut rng = rand::thread_rng();
+            let mut rng = rand::rng();
             let mut possible_values = ["dd", "pd", "dp"];
             possible_values.shuffle(&mut rng);
             Some(possible_values[0])
         },
 
         "PL[B]AB[dd]AW[pd]XB[0]XW[0]XS" => {
-            let mut rng = rand::thread_rng();
+            let mut rng = rand::rng();
             let mut possible_values = ["dp", "pp"];
             possible_values.shuffle(&mut rng);
             Some(possible_values[0])
         },
         "PL[B]AB[dd]AW[dp]XB[0]XW[0]XS" => {
-            let mut rng = rand::thread_rng();
+            let mut rng = rand::rng();
             let mut possible_values = ["pd", "pp"];
             possible_values.shuffle(&mut rng);
             Some(possible_values[0])
         },
         "PL[B]AB[dd]AW[pp]XB[0]XW[0]XS" => {
-            let mut rng = rand::thread_rng();
+            let mut rng = rand::rng();
             let mut possible_values = ["pd", "dp"];
             possible_values.shuffle(&mut rng);
             Some(possible_values[0])
         },
 
         "PL[B]AB[pd]AW[dd]XB[0]XW[0]XS" => {
-            let mut rng = rand::thread_rng();
+            let mut rng = rand::rng();
             let mut possible_values = ["dp", "pp"];
             possible_values.shuffle(&mut rng);
             Some(possible_values[0])
         },
         "PL[B]AB[pd]AW[dp]XB[0]XW[0]XS" => {
-            let mut rng = rand::thread_rng();
+            let mut rng = rand::rng();
             let mut possible_values = ["dd", "pp"];
             possible_values.shuffle(&mut rng);
             Some(possible_values[0])
         },
         "PL[B]AB[pd]AW[pp]XB[0]XW[0]XS" => {
-            let mut rng = rand::thread_rng();
+            let mut rng = rand::rng();
             let mut possible_values = ["dd", "dp"];
             possible_values.shuffle(&mut rng);
             Some(possible_values[0])
         },
 
         "PL[B]AB[dp]AW[dd]XB[0]XW[0]XS" => {
-            let mut rng = rand::thread_rng();
+            let mut rng = rand::rng();
             let mut possible_values = ["pd", "pp"];
             possible_values.shuffle(&mut rng);
             Some(possible_values[0])
         },
         "PL[B]AB[dp]AW[pd]XB[0]XW[0]XS" => {
-            let mut rng = rand::thread_rng();
+            let mut rng = rand::rng();
             let mut possible_values = ["dd", "pp"];
             possible_values.shuffle(&mut rng);
             Some(possible_values[0])
         },
         "PL[B]AB[dp]AW[pp]XB[0]XW[0]XS" => {
-            let mut rng = rand::thread_rng();
+            let mut rng = rand::rng();
             let mut possible_values = ["dd", "dp"];
             possible_values.shuffle(&mut rng);
             Some(possible_values[0])
         },
 
         "PL[B]AB[pp]AW[dd]XB[0]XW[0]XS" => {
-            let mut rng = rand::thread_rng();
+            let mut rng = rand::rng();
             let mut possible_values = ["pd", "dp"];
             possible_values.shuffle(&mut rng);
             Some(possible_values[0])
         },
         "PL[B]AB[pp]AW[dp]XB[0]XW[0]XS" => {
-            let mut rng = rand::thread_rng();
+            let mut rng = rand::rng();
             let mut possible_values = ["dd", "pd"];
             possible_values.shuffle(&mut rng);
             Some(possible_values[0])
         },
         "PL[B]AB[pp]AW[pd]XB[0]XW[0]XS" => {
-            let mut rng = rand::thread_rng();
+            let mut rng = rand::rng();
             let mut possible_values = ["dd", "dp"];
             possible_values.shuffle(&mut rng);
             Some(possible_values[0])

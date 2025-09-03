@@ -35,10 +35,6 @@ impl Vector {
         let abs_dx = (self.to.0 as i8 - self.from.0 as i8).abs();
         abs_dx != 0 && abs_dx == (self.to.1 as i8 - self.from.1 as i8).abs()
     }
-
-    pub fn orthogonal(&self) -> bool {
-        (self.to.0 == self.from.0) ^ (self.to.1 == self.from.1)
-    }
 }
 
 #[cfg(test)]
@@ -61,7 +57,6 @@ mod tests {
         let to = (2, 6);
         let vector = Vector { from, to };
         assert_eq!(vector.diagonal(), true);
-        assert_eq!(vector.orthogonal(), false);
     }
 
     #[test]
@@ -70,7 +65,6 @@ mod tests {
         let to = (4, 6);
         let vector = Vector { from, to };
         assert_eq!(vector.diagonal(), false);
-        assert_eq!(vector.orthogonal(), true);
     }
 
     #[test]
@@ -79,7 +73,6 @@ mod tests {
         let to = (4, 6);
         let vector = Vector { from, to };
         assert_eq!(vector.diagonal(), false);
-        assert_eq!(vector.orthogonal(), false);
     }
 
     #[test]
@@ -88,6 +81,5 @@ mod tests {
         let to = (5, 4);
         let vector = Vector { from, to };
         assert_eq!(vector.diagonal(), false);
-        assert_eq!(vector.orthogonal(), false);
     }
 }

@@ -56,10 +56,6 @@ impl Square {
         self.player_number == 0
     }
 
-    pub fn occupied_by_opponent(&self, player_number: i8) -> bool {
-        self.player_number != 0 && self.player_number != player_number
-    }
-
     pub fn unoccupied_or_occupied_by_opponent(&self, player_number: i8) -> bool {
         self.player_number == 0 || self.player_number != player_number
     }
@@ -321,30 +317,6 @@ mod tests {
         let square = Square { player_number: 1, kind: PieceKind::Fuhyou };
         let expected = false;
         let result = square.unoccupied();
-        assert_eq!(result, expected);
-    }
-
-    #[test]
-    fn occupied_by_opponent_one_test() {
-        let square = Square { player_number: 1, kind: PieceKind::Fuhyou };
-        let expected = false;
-        let result = square.occupied_by_opponent(1);
-        assert_eq!(result, expected);
-    }
-
-    #[test]
-    fn occupied_by_opponent_two_test() {
-        let square = Square { player_number: 2, kind: PieceKind::Fuhyou };
-        let expected = true;
-        let result = square.occupied_by_opponent(1);
-        assert_eq!(result, expected);
-    }
-
-    #[test]
-    fn occupied_by_opponent_zero_test() {
-        let square = Square { player_number: 0, kind: PieceKind::Empty };
-        let expected = false;
-        let result = square.occupied_by_opponent(1);
         assert_eq!(result, expected);
     }
 
