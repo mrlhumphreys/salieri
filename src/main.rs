@@ -18,6 +18,9 @@ mod go_controller;
 mod shogi;
 mod shogi_controller;
 
+mod xiangqi;
+mod xiangqi_controller;
+
 async fn index() -> impl Responder {
     HttpResponse::Ok().body("200 OK\n")
 }
@@ -55,6 +58,9 @@ async fn post_game_move(info: web::Path<String>, req_body: String) -> impl Respo
                 Some(m) => HttpResponse::Ok().body(format!("{}\n", m)),
                 None => shogi_controller::minimax(&req_body)
             }
+        },
+        "xiangqi" => {
+            xiangqi_controller::minimax(&req_body)
         },
         _ => return HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n")
     }
@@ -101,6 +107,12 @@ async fn post_game_algorithm_move(info: web::Path<(String, String)>, req_body: S
                 "openings_db" => shogi_controller::opening(&req_body),
                 "minimax" => shogi_controller::minimax(&req_body),
                 "mcts" => shogi_controller::mcts(&req_body),
+                _ => return HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n")
+            }
+        },
+        "xiangqi" => {
+            match algorithm.as_str() {
+                "minimax" => xiangqi_controller::minimax(&req_body),
                 _ => return HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n")
             }
         },
@@ -432,6 +444,60 @@ mod tests {
         let req = test::TestRequest::post()
             .insert_header(ContentType::plaintext())
             .uri("/api/v0/shogi")
+            .set_payload(game_state)
+            .to_request();
+        let res = test::call_and_read_body(&app, req).await;
+        assert_eq!(res, Bytes::from_static(b"422 Unprocessable Entity\n"));
+    }
+
+    // xiangqi with valid params
+    #[actix_rt::test]
+    async fn test_xiangqi_status_with_valid_params() {
+        let game_state = String::from("rheakaehr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RHEAKAEHR w - - 0 0");
+        let app = test::init_service(App::new().route("/api/v0/{game_type}", web::post().to(post_game_move))).await;
+        let req = test::TestRequest::post()
+            .insert_header(ContentType::plaintext())
+            .uri("/api/v0/xiangqi")
+            .set_payload(game_state)
+            .to_request();
+        let res = test::call_service(&app, req).await;
+        assert!(res.status().is_success());
+    }
+
+    #[actix_rt::test]
+    async fn test_xiangqi_body_with_valid_params() {
+        let game_state = String::from("rheakaehr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RHEAKAEHR w - - 0 0");
+        let app = test::init_service(App::new().route("/api/v0/{game_type}", web::post().to(post_game_move))).await;
+        let req = test::TestRequest::post()
+            .insert_header(ContentType::plaintext())
+            .uri("/api/v0/xiangqi")
+            .set_payload(game_state)
+            .to_request();
+        let res = test::call_and_read_body(&app, req).await;
+        assert_eq!(res, Bytes::from_static(b"C2+7\n"));
+    }
+
+    // xiangqi with invalid params
+    #[actix_rt::test]
+    async fn test_xiangqi_status_with_invalid_params() {
+        let game_state = String::from("asdf");
+        let app = test::init_service(App::new().route("/api/v0/{game_type}", web::post().to(post_game_move))).await;
+        let req = test::TestRequest::post()
+            .insert_header(ContentType::plaintext())
+            .uri("/api/v0/xiangqi")
+            .set_payload(game_state)
+            .to_request();
+        let res = test::call_service(&app, req).await;
+        assert!(res.status().is_client_error());
+    }
+
+    #[actix_rt::test]
+    async fn test_xiangqi_body_with_invalid_params() {
+        let game_state = String::from("asdf");
+        let app = test::init_service(App::new().route("/api/v0/{game_type}", web::post().to(post_game_move))).await;
+        let req = test::TestRequest::post()
+            .insert_header(ContentType::plaintext())
+            .uri("/api/v0/xiangqi")
             .set_payload(game_state)
             .to_request();
         let res = test::call_and_read_body(&app, req).await;
