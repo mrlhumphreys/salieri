@@ -220,7 +220,7 @@ pub fn advisor_destination_points(from: (i8, i8), player_number: i8) -> Vec<(i8,
             (5, 0) => vec![(4, 1)],
             (4, 1) => vec![(3, 0), (5, 0), (3, 2), (5, 2)],
             (3, 2) => vec![(4, 1)],
-            (5, 29) => vec![(4, 1)],
+            (5, 2) => vec![(4, 1)],
             _ => vec![]
         }
     }
@@ -229,7 +229,7 @@ pub fn advisor_destination_points(from: (i8, i8), player_number: i8) -> Vec<(i8,
 pub fn king_destination_points(from: (i8, i8), player_number: i8) -> Vec<(i8, i8)> {
     if player_number == 1 {
         match from {
-            (3, 7) => vec![(4, 7), (3, 6)],
+            (3, 7) => vec![(4, 7), (3, 8)],
             (4, 7) => vec![(3, 7), (5, 7), (4, 8)],
             (5, 7) => vec![(4, 7), (5, 8)],
 
