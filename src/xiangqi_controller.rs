@@ -18,7 +18,7 @@ pub fn minimax(game_data: &String) -> HttpResponse {
     };
 
     let minimax_depth: i8 = env::var("XIANGQI_MINIMAX_DEPTH")
-        .unwrap_or_else(|_| "0".to_string())
+        .unwrap_or_else(|_| "1".to_string())
         .parse()
         .expect("XIANGQI_MINIMAX_DEPTH must be a number");
 
