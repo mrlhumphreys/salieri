@@ -169,8 +169,8 @@ pub fn elephant_destination_points(from: (i8, i8), player_number: i8) -> Vec<(i8
     let two_step_down = from.1 + 2;
 
     if player_number == 1 {
-        // 9, 8, 7, 6, 5 : y >= 5
-        if two_step_up >= 5 {
+        // 9 -> 7, 7 -> 5 or 9, 5 -> 7
+        if from.1 > 5 {
             vec![
                 (two_step_left, two_step_up),
                 (two_step_right, two_step_up),
@@ -184,8 +184,8 @@ pub fn elephant_destination_points(from: (i8, i8), player_number: i8) -> Vec<(i8
             ]
         }
     } else {
-        // 0, 1, 2, 3, 4 : y <= 4
-        if two_step_up <= 4 {
+        // 0 -> 2, 2 -> 0 or 4, 4 -> 2
+        if from.1 < 4 {
             vec![
                 (two_step_left, two_step_up),
                 (two_step_right, two_step_up),
@@ -424,10 +424,10 @@ mod tests {
 
     #[test]
     fn elephant_destination_points_test() {
-        let from = (2, 7);
-        let player_number = 1;
+        let from = (2, 4);
+        let player_number = 2;
         let expected = vec![
-            (0, 5), (4, 5), (0, 9), (4, 9)
+            (0, 2), (4, 2)
         ];
         let result = elephant_destination_points(from, player_number);
         assert_eq!(result, expected);
