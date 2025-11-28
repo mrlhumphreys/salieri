@@ -62,7 +62,7 @@ pub fn between_l_unoccupied(squares: &Vec<Vec<Square>>, from: (i8, i8), to: (i8,
             true
         }
     } else if (to.0 - from.0).abs() == 2 {
-        let direction = direction_unit_n(from.1, to.1);
+        let direction = direction_unit_n(from.0, to.0);
         let between = (from.0 + direction, from.1);
         if let Some(square) = find_by_x_and_y(squares, between) {
             square.unoccupied()
@@ -387,28 +387,23 @@ mod tests {
         let squares = vec![
             vec![
                 Square { player_number: 0, kind: PieceKind::Empty },
-                Square { player_number: 0, kind: PieceKind::Empty }
-            ],
-            vec![
-                Square { player_number: 0, kind: PieceKind::Empty },
-                Square { player_number: 2, kind: PieceKind::Soldier }
-            ],
-            vec![
-                Square { player_number: 0, kind: PieceKind::Empty },
-                Square { player_number: 1, kind: PieceKind::Horse }
-            ],
-            vec![
                 Square { player_number: 0, kind: PieceKind::Empty },
                 Square { player_number: 0, kind: PieceKind::Empty }
             ],
             vec![
+                Square { player_number: 1, kind: PieceKind::Horse },
+                Square { player_number: 2, kind: PieceKind::Soldier },
+                Square { player_number: 0, kind: PieceKind::Empty }
+            ],
+            vec![
+                Square { player_number: 0, kind: PieceKind::Empty },
                 Square { player_number: 0, kind: PieceKind::Empty },
                 Square { player_number: 0, kind: PieceKind::Empty }
             ]
         ];
 
-        let origin_point: (i8, i8) = (1, 2);
-        let destination_point: (i8, i8) = (0, 0);
+        let origin_point: (i8, i8) = (0, 1);
+        let destination_point: (i8, i8) = (2, 0);
 
         let result = between_l_unoccupied(&squares, origin_point, destination_point);
         assert_eq!(result, false);
