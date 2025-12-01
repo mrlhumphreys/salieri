@@ -226,6 +226,40 @@ pub fn advisor_destination_points(from: (i8, i8), player_number: i8) -> Vec<(i8,
     }
 }
 
+pub fn flying_king_destination_points(from: (i8, i8), player_number: i8) -> Vec<(i8, i8)> {
+    if player_number == 1 {
+        match from {
+            (3, 7) => vec![(3, 0), (3, 1), (3, 2)],
+            (4, 7) => vec![(4, 0), (4, 1), (4, 2)],
+            (5, 7) => vec![(5, 0), (5, 1), (5, 2)],
+
+            (3, 8) => vec![(3, 0), (3, 1), (3, 2)],
+            (4, 8) => vec![(4, 0), (4, 1), (4, 2)],
+            (5, 8) => vec![(5, 0), (5, 1), (5, 2)],
+
+            (3, 9) => vec![(3, 0), (3, 1), (3, 2)],
+            (4, 9) => vec![(4, 0), (4, 1), (4, 2)],
+            (5, 9) => vec![(5, 0), (5, 1), (5, 2)],
+            _ => vec![]
+        }
+    } else {
+        match from {
+            (3, 0) => vec![(3, 7), (3, 8), (3, 9)],
+            (4, 0) => vec![(4, 7), (4, 8), (4, 9)],
+            (5, 0) => vec![(5, 7), (5, 8), (5, 9)],
+
+            (3, 1) => vec![(3, 7), (3, 8), (3, 9)],
+            (4, 1) => vec![(4, 7), (4, 8), (4, 9)],
+            (5, 1) => vec![(5, 7), (5, 8), (5, 9)],
+
+            (3, 2) => vec![(3, 7), (3, 8), (3, 9)],
+            (4, 2) => vec![(4, 7), (4, 8), (4, 9)],
+            (5, 2) => vec![(5, 7), (5, 8), (5, 9)],
+            _ => vec![]
+        }
+    }
+}
+
 pub fn king_destination_points(from: (i8, i8), player_number: i8) -> Vec<(i8, i8)> {
     if player_number == 1 {
         match from {
@@ -454,6 +488,19 @@ mod tests {
         let result = king_destination_points(from, player_number);
         assert_eq!(result, expected);
     }
+
+    #[test]
+    fn flying_king_destination_points_test() {
+        let from = (4, 9);
+        let player_number = 1;
+        let expected = vec![
+            (4, 0), (4, 1), (4, 2)
+        ];
+        let result = flying_king_destination_points(from, player_number);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
     fn orthogonal_or_diagonal_true_test() {
        let from = (0, 1);
        let to = (0, 4);

@@ -4,8 +4,8 @@ use crate::xiangqi::state::point::horse_destination_points;
 use crate::xiangqi::state::point::elephant_destination_points;
 use crate::xiangqi::state::point::advisor_destination_points;
 use crate::xiangqi::state::point::king_destination_points;
+use crate::xiangqi::state::point::flying_king_destination_points;
 use crate::xiangqi::state::square_set::find_by_x_and_y;
-use crate::xiangqi::state::square_set::find_king_point_for_player;
 use crate::xiangqi::state::square_set::between_unoccupied;
 use crate::xiangqi::state::square_set::between_l_unoccupied;
 use crate::xiangqi::state::square_set::between_occupied_by_one;
@@ -104,10 +104,13 @@ pub fn destinations(piece_kind: PieceKind, player_number: i8, point: (i8, i8), g
                     }
                 }
             }
+
             // flying king rule
-            if let Some(opposing_king_point ) = find_king_point_for_player(&game_state.squares, opposing_player(player_number)) {
-                if point.0 == opposing_king_point.0 && between_unoccupied(&game_state.squares, point, opposing_king_point) {
-                    acc.push(opposing_king_point);
+            for to_point in flying_king_destination_points(point, player_number) {
+                if let Some(to) = find_by_x_and_y(&game_state.squares, to_point) {
+                    if to.player_number == opposing_player(player_number) && to.kind == PieceKind::King && between_unoccupied(&game_state.squares, point, to_point) {
+                        acc.push(to_point);
+                    }
                 }
             }
         },
@@ -153,7 +156,8 @@ pub fn threats_matches_point(piece_kind: PieceKind, player_number: i8, from: (i8
         },
         PieceKind::King => {
             let points = king_destination_points(from, player_number);
-            result = points.contains(&target_point) && between_unoccupied(squares, from, target_point);
+            let flying_points = flying_king_destination_points(from, player_number);
+            result = points.contains(&target_point) || (flying_points.contains(&target_point) && between_unoccupied(squares, from, target_point));
         },
         PieceKind::Cannon => {
             let points = orthogonal_destination_points(from);
