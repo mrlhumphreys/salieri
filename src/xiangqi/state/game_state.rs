@@ -24,14 +24,22 @@ pub struct GameState {
 
 impl GameState {
     // pub fn winner(&mut self) -> Option<i8> {
-    //     if self.in_checkmate(1) {
+    //     if self.in_checkmate(1) || self.in_stalemate(1) {
     //         Some(2)
-    //     } else if self.in_checkmate(2) {
+    //     } else if self.in_checkmate(2) || self.in_stalemate(2) {
     //         Some(1)
     //     } else {
     //         None
     //     }
     // }
+    //
+    // pub fn in_stalemate(&self, player_number: i8) -> bool {
+    //     if let Some(ou_point) = find_king_point_for_player(&self.squares, player_number) {
+    //         self.king_cannot_move(player_number, ou_point) && !self.threats_to_king_can_be_captured_or_blocked(player_number, ou_point)
+    //     } else {
+    //         false
+    //     }
+    //}
 
     // pub fn in_checkmate(&self, player_number: i8) -> bool {
     //     if let Some(ou_point) = find_king_point_for_player(&self.squares, player_number) {
