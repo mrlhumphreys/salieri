@@ -144,7 +144,7 @@ pub fn any_threats_to_point(squares: &Vec<Vec<Square>>, point: (i8, i8), player_
     for (y, row) in squares.iter().enumerate() {
         for (x, s) in row.iter().enumerate() {
             // get opposing squares
-            if s.player_number == opposing_player_number && s.kind != PieceKind::King {
+            if s.player_number == opposing_player_number {
                 // get opposing squares threatened points
                 let threatened_matches_point = threats_matches_point(s.kind, s.player_number, (x as i8, y as i8), squares, point);
                 // return the opposing square's point if a threatened point matches the specified point
