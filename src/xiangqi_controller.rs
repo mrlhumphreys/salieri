@@ -4,12 +4,12 @@ use actix_web::HttpResponse;
 
 use super::xiangqi;
 
-// pub fn opening(game_data: &String) -> HttpResponse {
-//     match xiangqi::openings::recommended_move(game_data) {
-//         Some(m) => HttpResponse::Ok().body(format!("{}\n", m)),
-//         None => HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n")
-//     }
-// }
+pub fn opening(game_data: &String) -> HttpResponse {
+    match xiangqi::openings::recommended_move(game_data) {
+        Some(m) => HttpResponse::Ok().body(format!("{}\n", m)),
+        None => HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n")
+    }
+}
 
 pub fn minimax(game_data: &String) -> HttpResponse {
     let mut game_state = match xiangqi::state::game_state::parse(game_data) {
@@ -143,29 +143,29 @@ mod tests {
     use super::*;
     use actix_web::body::MessageBody;
 
-    // #[test]
-    // fn opening_valid_test() {
-    //     let encoded = String::from("rheakaehr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RHEAKAEHR w - - 0 0");
-    //     let result = opening(&game_state);
+    #[test]
+    fn opening_valid_test() {
+        let game_state = String::from("rheakaehr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C1C5/9/RHEAKAEHR b - - 1 0");
+        let result = opening(&game_state);
 
-    //     assert_eq!(result.status(), 200);
-    //     match result.into_body().try_into_bytes() {
-    //        Ok(bytes) => assert_eq!(bytes, "P-84\n"),
-    //        Err(_) => assert!(false, "unexpected body")
-    //     };
-    // }
+        assert_eq!(result.status(), 200);
+        match result.into_body().try_into_bytes() {
+           Ok(bytes) => assert_eq!(bytes, "C8=5\n"),
+           Err(_) => assert!(false, "unexpected body")
+        };
+    }
 
-    // #[test]
-    // fn opening_no_moves_test() {
-    //     let encoded = String::from("rheakaehr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RHEAKAEHR w - - 0 0");
-    //     let result = opening(&game_state);
+    #[test]
+    fn opening_no_moves_test() {
+        let game_state = String::from("rheakaehr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/8R/RHEAKAEH1 b - - 1 0");
+        let result = opening(&game_state);
 
-    //     assert_eq!(result.status(), 422);
-    //     match result.into_body().try_into_bytes() {
-    //        Ok(bytes) => assert_eq!(bytes, "422 Unprocessable Entity\n"),
-    //        Err(_) => assert!(false, "unexpected body")
-    //     };
-    // }
+        assert_eq!(result.status(), 422);
+        match result.into_body().try_into_bytes() {
+           Ok(bytes) => assert_eq!(bytes, "422 Unprocessable Entity\n"),
+           Err(_) => assert!(false, "unexpected body")
+        };
+    }
 
     #[test]
     fn minimax_valid_test() {

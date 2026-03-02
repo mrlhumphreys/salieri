@@ -60,7 +60,10 @@ async fn post_game_move(info: web::Path<String>, req_body: String) -> impl Respo
             }
         },
         "xiangqi" => {
-            xiangqi_controller::minimax(&req_body)
+            match xiangqi::openings::recommended_move(&req_body) {
+                Some(m) => HttpResponse::Ok().body(format!("{}\n", m)),
+                None => xiangqi_controller::minimax(&req_body)
+            }
         },
         _ => return HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n")
     }
@@ -112,6 +115,7 @@ async fn post_game_algorithm_move(info: web::Path<(String, String)>, req_body: S
         },
         "xiangqi" => {
             match algorithm.as_str() {
+                "openings_db" => xiangqi_controller::opening(&req_body),
                 "minimax" => xiangqi_controller::minimax(&req_body),
                 _ => return HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n")
             }
@@ -466,7 +470,7 @@ mod tests {
 
     #[actix_rt::test]
     async fn test_xiangqi_body_with_valid_params() {
-        let game_state = String::from("rheakaehr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RHEAKAEHR w - - 0 0");
+        let game_state = String::from("rheakaehr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C1C5/9/RHEAKAEHR b - - 1 0");
         let app = test::init_service(App::new().route("/api/v0/{game_type}", web::post().to(post_game_move))).await;
         let req = test::TestRequest::post()
             .insert_header(ContentType::plaintext())
@@ -474,7 +478,7 @@ mod tests {
             .set_payload(game_state)
             .to_request();
         let res = test::call_and_read_body(&app, req).await;
-        assert_eq!(res, Bytes::from_static(b"C2+7\n"));
+        assert_eq!(res, Bytes::from_static(b"C8=5\n"));
     }
 
     // xiangqi with invalid params
