@@ -4,16 +4,16 @@ use crate::xiangqi::state::square::destinations;
 use crate::xiangqi::state::square::opposing_player;
 use crate::xiangqi::state::square::PieceKind;
 use crate::xiangqi::state::square::Square;
-// use crate::xiangqi::state::point::diff;
-// use crate::xiangqi::state::point::between;
-// use crate::xiangqi::state::point::king_destination_points;
+use crate::xiangqi::state::point::diff;
+use crate::xiangqi::state::point::between;
+use crate::xiangqi::state::point::king_destination_points;
 use crate::xiangqi::state::square_set::find_by_x_and_y_mut;
 use crate::xiangqi::state::square_set::find_by_x_and_y;
 use crate::xiangqi::state::square_set::find_king_point_for_player;
-// use crate::xiangqi::state::square_set::threats_to_point;
+use crate::xiangqi::state::square_set::threats_to_point;
 use crate::xiangqi::state::square_set::any_threats_to_point;
-// use crate::xiangqi::state::square_set::any_threats_to_point_through_pin;
-// use crate::xiangqi::state::square_set::pinned_to_point;
+use crate::xiangqi::state::square_set::any_threats_to_point_through_pin;
+use crate::xiangqi::state::square_set::pinned_to_point;
 use crate::xiangqi::state::mov::Move;
 
 #[derive(Clone)]
@@ -23,87 +23,87 @@ pub struct GameState {
 }
 
 impl GameState {
-    // pub fn winner(&mut self) -> Option<i8> {
-    //     if self.in_checkmate(1) || self.in_stalemate(1) {
-    //         Some(2)
-    //     } else if self.in_checkmate(2) || self.in_stalemate(2) {
-    //         Some(1)
-    //     } else {
-    //         None
-    //     }
-    // }
-    //
-    // pub fn in_stalemate(&self, player_number: i8) -> bool {
-    //     if let Some(ou_point) = find_king_point_for_player(&self.squares, player_number) {
-    //         self.king_cannot_move(player_number, ou_point) && !self.threats_to_king_can_be_captured_or_blocked(player_number, ou_point)
-    //     } else {
-    //         false
-    //     }
-    //}
+    pub fn winner(&mut self) -> Option<i8> {
+        if self.in_checkmate(1) || self.in_stalemate(1) {
+            Some(2)
+        } else if self.in_checkmate(2) || self.in_stalemate(2) {
+            Some(1)
+        } else {
+            None
+        }
+    }
 
-    // pub fn in_checkmate(&self, player_number: i8) -> bool {
-    //     if let Some(ou_point) = find_king_point_for_player(&self.squares, player_number) {
-    //         self.in_check(player_number, ou_point) && self.king_cannot_move(player_number, ou_point) && !self.threats_to_king_can_be_captured_or_blocked(player_number, ou_point)
-    //     } else {
-    //         false
-    //     }
-    // }
+     pub fn in_stalemate(&self, player_number: i8) -> bool {
+         if let Some(king_point) = find_king_point_for_player(&self.squares, player_number) {
+             self.king_cannot_move(player_number, king_point) && !self.threats_to_king_can_be_captured_or_blocked(player_number, king_point)
+         } else {
+             false
+         }
+    }
+
+    pub fn in_checkmate(&self, player_number: i8) -> bool {
+        if let Some(king_point) = find_king_point_for_player(&self.squares, player_number) {
+            self.in_check(player_number, king_point) && self.king_cannot_move(player_number, king_point) && !self.threats_to_king_can_be_captured_or_blocked(player_number, king_point)
+        } else {
+            false
+        }
+    }
 
     pub fn in_check(&self, player_number: i8, king_point: (i8, i8)) -> bool {
         any_threats_to_point(&self.squares, king_point, player_number)
     }
 
-    // pub fn king_cannot_move(&self, player_number: i8, king_point: (i8, i8)) -> bool {
-    //     let mut can_move = false;
+    pub fn king_cannot_move(&self, player_number: i8, king_point: (i8, i8)) -> bool {
+        let mut can_move = false;
 
-    //     for to in king_destination_points(king_point, player_number) {
-    //         if let Some(to_square) = find_by_x_and_y(&self.squares, to) {
-    //             // square is free or owned by other player
-    //             if to_square.player_number != player_number {
-    //                 can_move = !any_threats_to_point(&self.squares, to, player_number) && !any_threats_to_point_through_pin(&self.squares, to, player_number, king_point);
-    //             }
-    //         }
-    //         if can_move {
-    //             break;
-    //         }
-    //     }
+        for to in king_destination_points(king_point, player_number) {
+            if let Some(to_square) = find_by_x_and_y(&self.squares, to) {
+                // square is free or owned by other player
+                if to_square.player_number != player_number {
+                    can_move = !any_threats_to_point(&self.squares, to, player_number) && !any_threats_to_point_through_pin(&self.squares, to, player_number, king_point);
+                }
+            }
+            if can_move {
+                break;
+            }
+        }
 
-    //     !can_move
-    // }
+        !can_move
+    }
 
-    // pub fn threats_to_king_can_be_captured_or_blocked(&self, player_number: i8, king_point: (i8, i8)) -> bool {
-    //     let threats_to_king = threats_to_point(&self.squares, king_point, player_number);
+    pub fn threats_to_king_can_be_captured_or_blocked(&self, player_number: i8, king_point: (i8, i8)) -> bool {
+        let threats_to_king = threats_to_point(&self.squares, king_point, player_number);
 
-    //     match threats_to_king.len() {
-    //         0 => {
-    //             // return true since there are no threats
-    //             true
-    //         },
-    //         1 => {
-    //             // can threat be captured?
-    //             let opposing_player_number = opposing_player(player_number);
-    //             let pinned_to_king = pinned_to_point(&self.squares, king_point, player_number, self);
-    //             let threat = threats_to_king[0];
-    //             let threats_to_threats = threats_to_point(&self.squares, threat, opposing_player_number);
-    //             // is there  a non pinned threat to the threatening piece?
-    //             if !diff(&threats_to_threats, &pinned_to_king).is_empty() {
-    //                 true
-    //             } else {
-    //                 let between_points = between(threat, king_point);
-    //                 // any square between threat and ou can be blocked by move
-    //                 between_points.iter().any(|b| {
-    //                     let threats_to_between = threats_to_point(&self.squares, *b, opposing_player_number);
-    //                     let has_threats = !diff(&threats_to_between, &pinned_to_king).is_empty();
-    //                     has_threats
-    //                 })
-    //             }
-    //         },
-    //         _ => {
-    //             // return false since any move will still leave at least 1 threat
-    //             false
-    //         }
-    //     }
-    // }
+        match threats_to_king.len() {
+            0 => {
+                // return true since there are no threats
+                true
+            },
+            1 => {
+                // can threat be captured?
+                let opposing_player_number = opposing_player(player_number);
+                let pinned_to_king = pinned_to_point(&self.squares, king_point, player_number, self);
+                let threat = threats_to_king[0];
+                let threats_to_threats = threats_to_point(&self.squares, threat, opposing_player_number);
+                // is there  a non pinned threat to the threatening piece?
+                if !diff(&threats_to_threats, &pinned_to_king).is_empty() {
+                    true
+                } else {
+                    let between_points = between(threat, king_point);
+                    // any square between threat and ou can be blocked by move
+                    between_points.iter().any(|b| {
+                        let threats_to_between = threats_to_point(&self.squares, *b, opposing_player_number);
+                        let has_threats = !diff(&threats_to_between, &pinned_to_king).is_empty();
+                        has_threats
+                    })
+                }
+            },
+            _ => {
+                // return false since any move will still leave at least 1 threat
+                false
+            }
+        }
+    }
 
     pub fn possible_moves(&mut self) -> Vec<Move> {
         self.possible_moves_for_player(self.current_player_number)
@@ -476,110 +476,110 @@ mod tests {
         assert_eq!(result.squares[9][8].player_number, 2);
     }
 
-    // #[test]
-    // fn winner_test() {
-    //     let encoded = String::from("1R1k1a3/2R1a4/9/9/9/9/9/9/9/4K4 w - - 0 1");
-    //     let mut game_state = parse(&encoded).unwrap();
-    //     let result = game_state.winner();
-    //     assert_eq!(result, Some(1));
-    // }
+    #[test]
+    fn winner_test() {
+        let encoded = String::from("1R1k1a3/2R1a4/9/9/9/9/9/9/9/4K4 w - - 0 1");
+        let mut game_state = parse(&encoded).unwrap();
+        let result = game_state.winner();
+        assert_eq!(result, Some(1));
+    }
 
-    // #[test]
-    // fn in_checkmate_test() {
-    //     let encoded = String::from("1R1k1a3/2R1a4/9/9/9/9/9/9/9/4K4 w - - 0 1");
-    //     let game_state = parse(&encoded).unwrap();
-    //     let result = game_state.in_checkmate(2);
-    //     assert_eq!(result, true);
-    // }
+    #[test]
+    fn in_checkmate_test() {
+        let encoded = String::from("1R1k1a3/2R1a4/9/9/9/9/9/9/9/4K4 w - - 0 1");
+        let game_state = parse(&encoded).unwrap();
+        let result = game_state.in_checkmate(2);
+        assert_eq!(result, true);
+    }
 
-    // #[test]
-    // fn in_checkmate_threat_can_be_captured_test() {
-    //     let encoded = String::from("1R1k1a3/1rR1a4/9/9/9/9/9/9/9/4K4 b - - 0 1");
-    //     let game_state = parse(&encoded).unwrap();
-    //     let result = game_state.in_checkmate(2);
-    //     assert_eq!(result, false);
-    // }
+    #[test]
+    fn in_checkmate_threat_can_be_captured_test() {
+        let encoded = String::from("1R1k1a3/1rR1a4/9/9/9/9/9/9/9/4K4 b - - 0 1");
+        let game_state = parse(&encoded).unwrap();
+        let result = game_state.in_checkmate(2);
+        assert_eq!(result, false);
+    }
 
-    // #[test]
-    // fn in_checkmate_threat_can_be_blocked_test() {
-    //     let encoded = String::from("1R1k1a3/R3a4/2r6/9/9/9/9/9/9/4K4 b - - 0 1");
-    //     let game_state = parse(&encoded).unwrap();
-    //     let result = game_state.in_checkmate(2);
-    //     assert_eq!(result, false);
-    // }
+    #[test]
+    fn in_checkmate_threat_can_be_blocked_test() {
+        let encoded = String::from("1R1k1a3/R3a4/2r6/9/9/9/9/9/9/4K4 b - - 0 1");
+        let game_state = parse(&encoded).unwrap();
+        let result = game_state.in_checkmate(2);
+        assert_eq!(result, false);
+    }
 
-    // #[test]
-    // fn king_cannot_move_true_test() {
-    //     let encoded = String::from("3k1a3/R3a4/4R4/9/9/9/9/9/9/4K4 b - - 0 1");
-    //     let game_state = parse(&encoded).unwrap();
-    //     let king_point = (3, 0);
-    //     let result = game_state.king_cannot_move(2, king_point);
-    //     assert_eq!(result, true);
-    // }
+    #[test]
+    fn king_cannot_move_true_test() {
+        let encoded = String::from("3k1a3/R8/4R4/9/9/9/9/9/9/5K3 b - - 0 1");
+        let game_state = parse(&encoded).unwrap();
+        let king_point = (3, 0);
+        let result = game_state.king_cannot_move(2, king_point);
+        assert_eq!(result, true);
+    }
 
-    // #[test]
-    // fn king_cannot_move_false_test() {
-    //     let encoded = String::from("3k1a3/R3a4/9/9/9/9/9/9/9/4K4 b - - 0 1");
-    //     let game_state = parse(&encoded).unwrap();
-    //     let king_point = (3, 0);
-    //     let result = game_state.king_cannot_move(1, king_point);
-    //     assert_eq!(result, false);
-    // }
+    #[test]
+    fn king_cannot_move_false_test() {
+        let encoded = String::from("3k1a3/R3a4/9/9/9/9/9/9/9/4K4 b - - 0 1");
+        let game_state = parse(&encoded).unwrap();
+        let king_point = (4, 9);
+        let result = game_state.king_cannot_move(1, king_point);
+        assert_eq!(result, false);
+    }
 
-    // #[test]
-    // fn threats_to_king_can_be_captured_true_test() {
-    //     let encoded = String::from("1R1k1a3/Rr2a4/9/9/9/9/9/9/9/4K4 b - - 0 1");
-    //     let game_state = parse(&encoded).unwrap();
-    //     let king_point = (3, 0);
-    //     let result = game_state.threats_to_king_can_be_captured_or_blocked(1, kingu_point);
-    //     assert_eq!(result, true);
-    // }
+    #[test]
+    fn threats_to_king_can_be_captured_true_test() {
+        let encoded = String::from("1R1k1a3/Rr2a4/9/9/9/9/9/9/9/4K4 b - - 0 1");
+        let game_state = parse(&encoded).unwrap();
+        let king_point = (3, 0);
+        let result = game_state.threats_to_king_can_be_captured_or_blocked(2, king_point);
+        assert_eq!(result, true);
+    }
 
-    // #[test]
-    // fn threats_to_king_can_be_captured_pinned_false_test() {
-    //     // horse can block rook, but reveals check through other rook
-    //     let encoded = String::from("1Rhk5/9/9/9/3R5/9/9/9/9/4K4 b - - 0 1");
-    //     let game_state = parse(&encoded).unwrap();
-    //     let king_point = (3, 0);
-    //     let result = game_state.threats_to_king_can_be_captured_or_blocked(2, king_point);
-    //     assert_eq!(result, false);
-    // }
+    #[test]
+    fn threats_to_king_can_be_captured_pinned_false_test() {
+        // horse can block rook, but reveals check through other rook
+        let encoded = String::from("1Rhk5/9/9/9/3R5/9/9/9/9/4K4 b - - 0 1");
+        let game_state = parse(&encoded).unwrap();
+        let king_point = (3, 0);
+        let result = game_state.threats_to_king_can_be_captured_or_blocked(2, king_point);
+        assert_eq!(result, false);
+    }
 
-    // #[test]
-    // fn threats_to_king_can_be_captured_false_test() {
-    //     let encoded = String::from("1R1k1a3/R3a4/9/9/9/9/9/9/9/4K4 b - - 0 1");
-    //     let game_state = parse(&encoded).unwrap();
-    //     let king_point = (3, 0);
-    //     let result = game_state.threats_to_king_can_be_captured_or_blocked(2, king_point);
-    //     assert_eq!(result, false);
-    // }
+    #[test]
+    fn threats_to_king_can_be_captured_false_test() {
+        let encoded = String::from("1R1k1a3/R3a4/9/9/9/9/9/9/9/4K4 b - - 0 1");
+        let game_state = parse(&encoded).unwrap();
+        let king_point = (3, 0);
+        let result = game_state.threats_to_king_can_be_captured_or_blocked(2, king_point);
+        assert_eq!(result, false);
+    }
 
-    // #[test]
-    // fn threats_to_king_can_be_blocked_by_move_true_test() {
-    //     let encoded = String::from("1R1k1a3/R1r1a4/9/9/9/9/9/9/9/4K4 b - - 0 1");
-    //     let game_state = parse(&encoded).unwrap();
-    //     let king_point = (3, 0);
-    //     let result = game_state.threats_to_king_can_be_captured_or_blocked(2, king_point);
-    //     assert_eq!(result, true);
-    // }
+    #[test]
+    fn threats_to_king_can_be_blocked_by_move_true_test() {
+        let encoded = String::from("1R1k1a3/R1r1a4/9/9/9/9/9/9/9/4K4 b - - 0 1");
+        let game_state = parse(&encoded).unwrap();
+        let king_point = (3, 0);
+        let result = game_state.threats_to_king_can_be_captured_or_blocked(2, king_point);
+        assert_eq!(result, true);
+    }
 
-    // #[test]
-    // fn threats_to_king_can_be_blocked_by_move_pinned_test() {
-    //     let encoded = String::from("1R1ak4/9/4R4/9/9/9/9/9/9/5K3 b - - 0 1");
-    //     let game_state = parse(&encoded).unwrap();
-    //     let king_point = (4, 0);
-    //     let result = game_state.threats_to_king_can_be_captured_or_blocked(2, king_point);
-    //     assert_eq!(result, false);
-    // }
+    #[test]
+    fn threats_to_king_can_be_blocked_by_move_pinned_test() {
+        let encoded = String::from("1R1ak4/9/4R4/9/9/9/9/9/9/5K3 b - - 0 1");
+        let game_state = parse(&encoded).unwrap();
+        let king_point = (4, 0);
+        let result = game_state.threats_to_king_can_be_captured_or_blocked(2, king_point);
+        assert_eq!(result, false);
+    }
 
-    // #[test]
-    // fn threats_to_king_can_be_blocked_false_test() {
-    //     let encoded = String::from("1R1k1a3/2R1a4/9/9/9/9/9/9/9/4K4 w - - 0 1");
-    //     let game_state = parse(&encoded).unwrap();
-    //     let king_point = (3, 0);
-    //     let result = game_state.threats_to_king_can_be_captured_or_blocked(2, king_point);
-    //     assert_eq!(result, false);
-    // }
+    #[test]
+    fn threats_to_king_can_be_blocked_false_test() {
+        let encoded = String::from("1R1k1a3/2R1a4/9/9/9/9/9/9/9/4K4 w - - 0 1");
+        let game_state = parse(&encoded).unwrap();
+        let king_point = (3, 0);
+        let result = game_state.threats_to_king_can_be_captured_or_blocked(2, king_point);
+        assert_eq!(result, false);
+    }
 
     #[test]
     fn possible_moves_test() {

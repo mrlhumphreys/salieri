@@ -3,18 +3,18 @@ use crate::xiangqi::state::point::direction_unit;
 use crate::xiangqi::state::point::direction_unit_n;
 use crate::xiangqi::state::point::length;
 use crate::xiangqi::state::point::valid;
-// use crate::xiangqi::state::point::between;
-// use crate::xiangqi::state::point::orthogonal;
-// use crate::xiangqi::state::point::diagonal;
+use crate::xiangqi::state::point::between;
 use crate::xiangqi::state::point::orthogonal_or_diagonal;
-// use crate::xiangqi::state::point::points_in_line;
+use crate::xiangqi::state::point::orthogonal_points_in_line;
+use crate::xiangqi::state::point::horse_points_in_line;
+use crate::xiangqi::state::point::elephant_points_in_line;
 use crate::xiangqi::state::square::opposing_player;
-// use crate::xiangqi::state::square::ranging;
+use crate::xiangqi::state::square::ranging;
 use crate::xiangqi::state::square::PieceKind;
 use crate::xiangqi::state::square::Square;
-// use crate::xiangqi::state::square::destinations;
+use crate::xiangqi::state::square::destinations;
 use crate::xiangqi::state::square::threats_matches_point;
-// use crate::xiangqi::state::game_state::GameState;
+use crate::xiangqi::state::game_state::GameState;
 
 pub fn find_by_x_and_y_mut(squares: &mut Vec<Vec<Square>>, point: (i8, i8)) -> Option<&mut Square> {
     if valid(point) {
@@ -112,28 +112,28 @@ pub fn find_king_point_for_player(squares: &Vec<Vec<Square>>, player_number: i8)
 }
 
 // Returns all opposing points that threaten the subject point.
-// pub fn threats_to_point(squares: &Vec<Vec<Square>>, point: (i8, i8), player_number: i8) -> Vec<(i8, i8)> {
-//     let mut acc = vec![];
-//
-//     let opposing_player_number = opposing_player(player_number);
-//
-//     for (y, row) in squares.iter().enumerate() {
-//         for (x, s) in row.iter().enumerate() {
-//             // get opposing squares
-//             if s.player_number == opposing_player_number && s.kind != PieceKind::King {
-//                 // get opposing squares threatened points
-//                 let threatened_matches_point = threats_matches_point(s.kind, s.player_number, (x as i8, y as i8), squares, point);
-//                 // return the opposing square's point if a threatened point matches the specified point
-//                 // i.e. the opposing square is threatening the target
-//                 if threatened_matches_point {
-//                     acc.push((x as i8, y as i8));
-//                 }
-//             }
-//         }
-//     }
-//
-//     acc
-// }
+pub fn threats_to_point(squares: &Vec<Vec<Square>>, point: (i8, i8), player_number: i8) -> Vec<(i8, i8)> {
+    let mut acc = vec![];
+
+    let opposing_player_number = opposing_player(player_number);
+
+    for (y, row) in squares.iter().enumerate() {
+        for (x, s) in row.iter().enumerate() {
+            // get opposing squares
+            if s.player_number == opposing_player_number && s.kind != PieceKind::King {
+                // get opposing squares threatened points
+                let threatened_matches_point = threats_matches_point(s.kind, s.player_number, (x as i8, y as i8), squares, point);
+                // return the opposing square's point if a threatened point matches the specified point
+                // i.e. the opposing square is threatening the target
+                if threatened_matches_point {
+                    acc.push((x as i8, y as i8));
+                }
+            }
+        }
+    }
+
+    acc
+}
 
 // Returns true if any oppsoing points threatens the subject point.
 pub fn any_threats_to_point(squares: &Vec<Vec<Square>>, point: (i8, i8), player_number: i8) -> bool {
@@ -165,71 +165,120 @@ pub fn any_threats_to_point(squares: &Vec<Vec<Square>>, point: (i8, i8), player_
 
 // Is the point actually threatened if the pin was not there?
 // i.e. if the piece on pin moved to point, would it still be threatened?
-// pub fn any_threats_to_point_through_pin(squares: &Vec<Vec<Square>>, point: (i8, i8), player_number: i8, pin: (i8, i8)) -> bool {
-//     let mut result = false;
-//
-//     let opposing_player_number = opposing_player(player_number);
-//
-//     // identify ranging piece kinds by direction of pin
-//     let ranging_piece_kinds = if orthogonal(point, pin) {
-//         vec![PieceKind::Chariot, PieceKind::Cannon]
-//     } else if diagonal(point, pin) {
-//         vec![PieceKind::Elephant]
-//     } else {
-//         // TODO: add logic for horse
-//         vec![]
-//     };
-//
-//     if !ranging_piece_kinds.is_empty() {
-//         // TODO: modify points_in_line logic to handle horse
-//         let points = points_in_line(point, pin);
-//         for p in points.iter() {
-//             if let Some(s) = find_by_x_and_y(&squares, *p) {
-//                 if ranging_piece_kinds.iter().any(|pk| *pk == s.kind) && s.player_number == opposing_player_number {
-//                     // point is occupied by opposing hisha or ryuuou
-//                     result = true; // is threat through pin
-//                     break;
-//                 } else if s.player_number != 0 {
-//                     // point is occupied
-//                     break; // is not threat through pin
-//                 }
-//                 // do nothing - continue loop until piece is found or until board edge
-//             }
-//         }
-//     }
-//
-//     result
-// }
+pub fn any_threats_to_point_through_pin(squares: &Vec<Vec<Square>>, point: (i8, i8), player_number: i8, pin: (i8, i8)) -> bool {
+    let mut result = false;
+
+    let opposing_player_number = opposing_player(player_number);
+
+    for p in horse_points_in_line(point, pin).iter() {
+        if let Some(s) = find_by_x_and_y(&squares, *p) {
+            if s.kind == PieceKind::Horse && s.player_number == opposing_player_number {
+                result = true;
+            }
+        }
+    }
+
+    for p in elephant_points_in_line(point, pin).iter() {
+        if let Some(s) = find_by_x_and_y(&squares, *p) {
+            if s.kind == PieceKind::Elephant && s.player_number == opposing_player_number {
+                result = true;
+            }
+        }
+    }
+
+    for p in orthogonal_points_in_line(point, pin).iter() {
+        if let Some(s) = find_by_x_and_y(&squares, *p) {
+            if s.kind == PieceKind::Chariot && s.player_number == opposing_player_number {
+                // point is occupied by opposing chariot or cannon
+                result = true; // is threat through pin
+                break;
+            } else if s.player_number != 0 {
+                // point is occupied
+                break; // is not threat through pin
+            }
+            // do nothing - continue loop until piece is found or until board edge
+        }
+    }
+
+    // oPxC -> direct threat, pinned
+    let mut screen_piece = false;
+    for p in orthogonal_points_in_line(point, pin).iter() {
+        if let Some(s) = find_by_x_and_y(&squares, *p) {
+            if screen_piece {
+                // when screen piece is found, find the cannon
+                if s.kind == PieceKind::Cannon && s.player_number == opposing_player_number {
+                    result = true;
+                    break;
+                } else if s.player_number != 0 {
+                    // non cannon found, stop search
+                    break;
+                }
+            } else {
+                // search for a piece to set as the screen piece
+                if s.player_number != 0 {
+                    // screen piece found
+                    screen_piece = true;
+                }
+            }
+        }
+    }
+
+    // oxPC -> direct threat, pinned
+    let mut screen_piece_between = false;
+    for p in between(point, pin).iter() {
+        if let Some(s) = find_by_x_and_y(&squares, *p) {
+            if s.player_number != 0 {
+                screen_piece_between = true;
+                break;
+            }
+        }
+    }
+
+    if screen_piece_between {
+        for p in orthogonal_points_in_line(point, pin).iter() {
+            if let Some(s) = find_by_x_and_y(&squares, *p) {
+                if s.kind == PieceKind::Cannon && s.player_number == opposing_player_number {
+                    result = true;
+                    break;
+                } else if s.player_number != 0 {
+                    break;
+                }
+            }
+        }
+    }
+
+    result
+}
 
 
 // Returns all points owned by player number and between an ooposing ranging piece and the subject point
 // Used to find pieces that can't move due to being in between a ranging piece and their king
-// pub fn pinned_to_point(squares: &Vec<Vec<Square>>, point: (i8, i8), player_number: i8, game_state: &GameState) -> Vec<(i8, i8)> {
-//     let opposing_player_number = opposing_player(player_number);
-//
-//     let mut acc = vec![];
-//
-//     for (y, row) in squares.iter().enumerate() {
-//         for (x, s) in row.iter().enumerate() {
-//             // square is occupied by an opposing piece with range movement
-//             if s.player_number == opposing_player_number && ranging(s.kind) {
-//                 let opposing_point = (x as i8, y as i8);
-//                 let threatened_points = destinations(s.kind, s.player_number, opposing_point, game_state, true);
-//
-//                 // if any threatened point matches the subject point
-//                 if threatened_points.iter().any(|t| { return *t == point; }) {
-//                     let between_points = between(opposing_point, point);
-//                     between_points.iter().for_each(|b| {
-//                         if squares[b.1 as usize][b.0 as usize].player_number == player_number {
-//                             acc.push(*b);
-//                         }
-//                     });
-//                 }
-//             }
-//         }
-//     }
-//     acc
-// }
+pub fn pinned_to_point(squares: &Vec<Vec<Square>>, point: (i8, i8), player_number: i8, game_state: &GameState) -> Vec<(i8, i8)> {
+    let opposing_player_number = opposing_player(player_number);
+
+    let mut acc = vec![];
+
+    for (y, row) in squares.iter().enumerate() {
+        for (x, s) in row.iter().enumerate() {
+            // square is occupied by an opposing piece with range movement
+            if s.player_number == opposing_player_number && ranging(s.kind) {
+                let opposing_point = (x as i8, y as i8);
+                let threatened_points = destinations(s.kind, s.player_number, opposing_point, game_state, true);
+
+                // if any threatened point matches the subject point
+                if threatened_points.iter().any(|t| { return *t == point; }) {
+                    let between_points = between(opposing_point, point);
+                    between_points.iter().for_each(|b| {
+                        if squares[b.1 as usize][b.0 as usize].player_number == player_number {
+                            acc.push(*b);
+                        }
+                    });
+                }
+            }
+        }
+    }
+    acc
+}
 
 #[cfg(test)]
 mod tests {
@@ -500,33 +549,33 @@ mod tests {
         assert_eq!(result, expected);
     }
 
-    // #[test]
-    // fn threats_to_point_direct_test() {
-    //     let encoded = String::from("4k4/9/9/9/9/9/9/9/4R4/4K4 w - - 0 0");
-    //     let game_state = parse(&encoded).unwrap();
-    //     let point = (4, 0);
-    //     let player_number = 2;
-    //     let squares = &game_state.squares.clone();
-    //     let expected = vec![
-    //         (4, 8)
-    //     ];
-    //     let result = threats_to_point(squares, point, player_number);
-    //     assert_eq!(result, expected);
-    // }
+    #[test]
+    fn threats_to_point_direct_test() {
+        let encoded = String::from("4k4/9/9/9/9/9/9/9/4R4/4K4 w - - 0 0");
+        let game_state = parse(&encoded).unwrap();
+        let point = (4, 0);
+        let player_number = 2;
+        let squares = &game_state.squares.clone();
+        let expected = vec![
+            (4, 8)
+        ];
+        let result = threats_to_point(squares, point, player_number);
+        assert_eq!(result, expected);
+    }
 
-    // #[test]
-    // fn threats_to_point_potential_test() {
-    //     let encoded = String::from("4k4/4C4/9/9/9/9/9/9/4R4/4K4 w - - 0 0");
-    //     let game_state = parse(&encoded).unwrap();
-    //     let point = (4, 1);
-    //     let player_number = 2;
-    //     let squares = &game_state.squares.clone();
-    //     let expected = vec![
-    //         (4, 8)
-    //     ];
-    //     let result = threats_to_point(squares, point, player_number);
-    //     assert_eq!(result, expected);
-    // }
+    #[test]
+    fn threats_to_point_potential_test() {
+        let encoded = String::from("4k4/4C4/9/9/9/9/9/9/4R4/4K4 w - - 0 0");
+        let game_state = parse(&encoded).unwrap();
+        let point = (4, 1);
+        let player_number = 2;
+        let squares = &game_state.squares.clone();
+        let expected = vec![
+            (4, 8)
+        ];
+        let result = threats_to_point(squares, point, player_number);
+        assert_eq!(result, expected);
+    }
 
     #[test]
     fn any_threats_to_point_direct_true_test() {
@@ -572,41 +621,125 @@ mod tests {
         assert_eq!(result, false);
     }
 
-    // #[test]
-    // fn any_threats_to_point_through_pin_true_test() {
-    //     let encoded = String::from("4k4/4a4/9/9/9/9/9/9/4R4/4K4 w - - 0 0");
-    //     let game_state = parse(&encoded).unwrap();
-    //     let point = (4, 0);
-    //     let pin = (4, 1);
-    //     let player_number = 2;
-    //     let squares = game_state.squares;
-    //     let result = any_threats_to_point_through_pin(&squares, point, player_number, pin);
-    //     assert_eq!(result, true);
-    // }
+    #[test]
+    fn any_threats_to_point_through_pin_true_test() {
+        let encoded = String::from("4k4/4a4/9/9/9/9/9/9/4R4/4K4 w - - 0 0");
+        let game_state = parse(&encoded).unwrap();
+        let point = (4, 0);
+        let pin = (4, 1);
+        let player_number = 2;
+        let squares = game_state.squares;
+        let result = any_threats_to_point_through_pin(&squares, point, player_number, pin);
+        assert_eq!(result, true);
+    }
 
-    // #[test]
-    // fn any_threats_to_point_through_pin_false_test() {
-    //     let encoded = String::from("4k4/4a4/9/9/9/9/9/9/4A4/4K4 w - - 0 0");
-    //     let game_state = parse(&encoded).unwrap();
-    //     let point = (4, 0);
-    //     let pin = (4, 1);
-    //     let player_number = 2;
-    //     let squares = game_state.squares;
-    //     let result = any_threats_to_point_through_pin(&squares, point, player_number, pin);
-    //     assert_eq!(result, false);
-    // }
+    #[test]
+    fn any_threats_to_point_through_pin_false_test() {
+        let encoded = String::from("4k4/4a4/9/9/9/9/9/9/4A4/4K4 w - - 0 0");
+        let game_state = parse(&encoded).unwrap();
+        let point = (4, 0);
+        let pin = (4, 1);
+        let player_number = 2;
+        let squares = game_state.squares;
+        let result = any_threats_to_point_through_pin(&squares, point, player_number, pin);
+        assert_eq!(result, false);
+    }
 
-    // #[test]
-    // fn pinned_to_point_test() {
-    //     let encoded = String::from("4k4/4a4/9/9/9/9/9/9/4R4/4K4 w - - 0 0");
-    //     let game_state = parse(&encoded).unwrap();
-    //     let point = (4, 0);
-    //     let player_number = 2;
-    //     let squares = &game_state.squares.clone();
-    //     let result = pinned_to_point(squares, point, player_number, &game_state);
-    //     let expected = vec![
-    //         (4, 1)
-    //     ];
-    //     assert_eq!(result, expected);
-    // }
+    #[test]
+    fn any_threats_to_point_through_pin_horse_true_test() {
+        let encoded = String::from("4k4/4ar3/5H3/9/9/9/9/9/4A4/4K4 w - - 0 0");
+        let game_state = parse(&encoded).unwrap();
+        let point = (4, 0);
+        let pin = (5, 1);
+        let player_number = 2;
+        let squares = game_state.squares;
+        let result = any_threats_to_point_through_pin(&squares, point, player_number, pin);
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    fn any_threats_to_point_through_pin_horse_false_test() {
+        let encoded = String::from("4k1H2/4ar3/9/9/9/9/9/9/4A4/4K4 w - - 0 0");
+        let game_state = parse(&encoded).unwrap();
+        let point = (4, 0);
+        let pin = (5, 1);
+        let player_number = 2;
+        let squares = game_state.squares;
+        let result = any_threats_to_point_through_pin(&squares, point, player_number, pin);
+        assert_eq!(result, false);
+    }
+
+    #[test]
+    fn any_threats_to_point_through_pin_elephant_true_test() {
+        let encoded = String::from("4k4/4a4/9/9/9/9/9/r8/1R2A4/2E1K4 w - - 0 0");
+        let game_state = parse(&encoded).unwrap();
+        let point = (0, 7);
+        let pin = (1, 8);
+        let player_number = 2;
+        let squares = game_state.squares;
+        let result = any_threats_to_point_through_pin(&squares, point, player_number, pin);
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    fn any_threats_to_point_through_pin_elephant_false_test() {
+        let encoded = String::from("4k4/4a4/9/9/9/9/9/r3E4/1R2A4/4K4 w - - 0 0");
+        let game_state = parse(&encoded).unwrap();
+        let point = (0, 7);
+        let pin = (1, 8);
+        let player_number = 2;
+        let squares = game_state.squares;
+        let result = any_threats_to_point_through_pin(&squares, point, player_number, pin);
+        assert_eq!(result, false);
+    }
+
+    #[test]
+    fn any_threats_to_point_through_pin_cannon_true_a_test() {
+        let encoded = String::from("4k4/4a4/4r4/4C4/9/9/9/9/4A4/4K4 w - - 0 0");
+        let game_state = parse(&encoded).unwrap();
+        let point = (4, 0);
+        let pin = (4, 1);
+        let player_number = 2;
+        let squares = game_state.squares;
+        let result = any_threats_to_point_through_pin(&squares, point, player_number, pin);
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    fn any_threats_to_point_through_pin_cannon_true_b_test() {
+        let encoded = String::from("4k4/4a4/4r4/4C4/9/9/9/9/4A4/4K4 w - - 0 0");
+        let game_state = parse(&encoded).unwrap();
+        let point = (4, 0);
+        let pin = (4, 2);
+        let player_number = 2;
+        let squares = game_state.squares;
+        let result = any_threats_to_point_through_pin(&squares, point, player_number, pin);
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    fn any_threats_to_point_through_pin_cannon_false_test() {
+        let encoded = String::from("4k4/9/4r4/4C4/9/9/9/9/4A4/4K4 w - - 0 0");
+        let game_state = parse(&encoded).unwrap();
+        let point = (4, 0);
+        let pin = (4, 2);
+        let player_number = 2;
+        let squares = game_state.squares;
+        let result = any_threats_to_point_through_pin(&squares, point, player_number, pin);
+        assert_eq!(result, false);
+    }
+
+    #[test]
+    fn pinned_to_point_test() {
+        let encoded = String::from("4k4/4a4/9/9/9/9/9/9/4R4/4K4 w - - 0 0");
+        let game_state = parse(&encoded).unwrap();
+        let point = (4, 0);
+        let player_number = 2;
+        let squares = &game_state.squares.clone();
+        let result = pinned_to_point(squares, point, player_number, &game_state);
+        let expected = vec![
+            (4, 1)
+        ];
+        assert_eq!(result, expected);
+    }
 }

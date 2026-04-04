@@ -117,6 +117,7 @@ async fn post_game_algorithm_move(info: web::Path<(String, String)>, req_body: S
             match algorithm.as_str() {
                 "openings_db" => xiangqi_controller::opening(&req_body),
                 "minimax" => xiangqi_controller::minimax(&req_body),
+                "mcts" => xiangqi_controller::mcts(&req_body),
                 _ => return HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n")
             }
         },

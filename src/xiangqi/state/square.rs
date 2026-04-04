@@ -176,9 +176,9 @@ pub fn opposing_player(player_number: i8) -> i8 {
     }
 }
 
-// pub fn ranging(kind: PieceKind) -> bool {
-//     vec![PieceKind::Chariot, PieceKind::Cannon, PieceKind::Elephant, PieceKind::Horse].contains(&kind)
-// }
+pub fn ranging(kind: PieceKind) -> bool {
+    vec![PieceKind::Chariot, PieceKind::Cannon, PieceKind::Elephant, PieceKind::Horse].contains(&kind)
+}
 
 #[cfg(test)]
 mod tests {
@@ -626,15 +626,15 @@ mod tests {
         assert_eq!(result, 1);
     }
 
-    // #[test]
-    // fn ranging_true_test() {
-    //    let result = ranging(PieceKind::Chariot);
-    //    assert_eq!(result, true);
-    // }
+    #[test]
+    fn ranging_true_test() {
+       let result = ranging(PieceKind::Chariot);
+       assert_eq!(result, true);
+    }
 
-    // #[test]
-    // fn ranging_false_test() {
-    //    let result = ranging(PieceKind::Soldier);
-    //    assert_eq!(result, false);
-    // }
+    #[test]
+    fn ranging_false_test() {
+       let result = ranging(PieceKind::Soldier);
+       assert_eq!(result, false);
+    }
 }

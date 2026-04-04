@@ -5,11 +5,11 @@ pub const MAX_X: i8 = 8;
 pub const MIN_Y: i8 = 0;
 pub const MAX_Y: i8 = 9;
 
-// pub fn diff<'a>(a: &'a Vec<(i8, i8)>, b: &'a Vec<(i8, i8)>) -> Vec<&'a (i8, i8)> {
-//     return a.iter().filter(|ae| {
-//         return !b.iter().any(|be| { return be == *ae; });
-//     }).collect();
-// }
+pub fn diff<'a>(a: &'a Vec<(i8, i8)>, b: &'a Vec<(i8, i8)>) -> Vec<&'a (i8, i8)> {
+    return a.iter().filter(|ae| {
+        return !b.iter().any(|be| { return be == *ae; });
+    }).collect();
+}
 
 pub fn valid(point: (i8, i8)) -> bool {
     point.0 >= MIN_X && point.0 <= MAX_X && point.1 >= MIN_Y && point.1 <= MAX_Y
@@ -46,32 +46,71 @@ pub fn direction_unit(from: (i8, i8), to: (i8, i8)) -> (i8, i8) {
     (direction_unit_n(from.0, to.0), direction_unit_n(from.1, to.1))
 }
 
-// pub fn between(from: (i8, i8), to: (i8, i8)) -> Vec<(i8, i8)> {
-//     let mut acc = vec![];
-//
-//     if orthogonal_or_diagonal(from, to) && length(from, to) > 1 {
-//         let direction_unit = direction_unit(from, to);
-//         let end = to;
-//         let mut counter = add(from, direction_unit);
-//         while counter != end {
-//             acc.push(counter);
-//             counter = add(counter, direction_unit);
-//         }
-//     }
-//     acc
-// }
+pub fn between(from: (i8, i8), to: (i8, i8)) -> Vec<(i8, i8)> {
+    let mut acc = vec![];
 
-// the next points in a line following a, b
-// pub fn points_in_line(a: (i8, i8), b: (i8, i8)) -> Vec<(i8, i8)> {
-//     let du = direction_unit(a, b);
-//     let mut counter = add(b, du);
-//     let mut acc = vec![];
-//     while counter.0 <= MAX_X && counter.0 >= MIN_X && counter.1 <= MAX_Y && counter.1 >= MIN_Y {
-//         acc.push(counter);
-//         counter = add(counter, du);
-//     }
-//     acc
-// }
+    if orthogonal_or_diagonal(from, to) && length(from, to) > 1 {
+        let direction_unit = direction_unit(from, to);
+        let end = to;
+        let mut counter = add(from, direction_unit);
+        while counter != end {
+            acc.push(counter);
+            counter = add(counter, direction_unit);
+        }
+    }
+    acc
+}
+
+// the next orthogonal points in a line following a, b
+pub fn orthogonal_points_in_line(a: (i8, i8), b: (i8, i8)) -> Vec<(i8, i8)> {
+    let du = direction_unit(a, b);
+
+    if du.0 == 0 || du.1 == 0 {
+        let mut counter = add(b, du);
+        let mut acc = vec![];
+        while counter.0 <= MAX_X && counter.0 >= MIN_X && counter.1 <= MAX_Y && counter.1 >= MIN_Y {
+            acc.push(counter);
+            counter = add(counter, du);
+        }
+        acc
+    } else {
+        vec![]
+    }
+}
+
+//  H H
+// HP PH
+//   O
+// HP PH
+//  H H
+pub fn horse_points_in_line(a: (i8, i8), b: (i8, i8)) -> Vec<(i8, i8)> {
+    let dx = b.0 - a.0;
+    let dy = b.1 - a.1;
+
+    if dy == -1 && dx.abs() == 1 {
+        vec![(b.0, b.1 + dy), (b.0 + dx, b.1)]
+    } else if dy == 1 && dx.abs() == 1 {
+        vec![(b.0 + dx, b.1), (b.0, b.1 + dy)]
+    } else {
+        vec![]
+    }
+}
+
+// E   E
+//  P P
+//   O
+//  P P
+// E   E
+pub fn elephant_points_in_line(a: (i8, i8), b: (i8, i8)) -> Vec<(i8, i8)> {
+    let dx = b.0 - a.0;
+    let dy = b.1 - a.1;
+
+    if dx.abs() == 1 && dy.abs() == 1 {
+        vec![(b.0 + dx, b.1 + dy)]
+    } else {
+        vec![]
+    }
+}
 
 pub fn soldier_destination_points(from: (i8, i8), player_number: i8) -> Vec<(i8, i8)> {
     let direction = forwards_direction(player_number);
@@ -300,16 +339,6 @@ pub fn orthogonal_or_diagonal(from: (i8, i8), to: (i8, i8)) -> bool {
     (abs_dx == 0 || abs_dy == 0) || (abs_dx != 0 && abs_dx == abs_dy)
 }
 
-// pub fn orthogonal(from: (i8, i8), to: (i8, i8)) -> bool {
-//     (from.0 == to.0) || (from.1 == to.1)
-// }
-
-// pub fn diagonal(from: (i8, i8), to: (i8, i8)) -> bool {
-//     let abs_dx = (to.0 - from.0).abs();
-//     let abs_dy = (to.1 - from.1).abs();
-//     abs_dx == abs_dy
-// }
-
 // pub fn forwards_for_player(from: (i8, i8), to: (i8, i8), player_number: i8) -> bool {
 //     let dy = to.1 - from.1;
 //     let direction = forwards_direction(player_number);
@@ -327,14 +356,14 @@ pub fn forwards_direction(player_number: i8) -> i8 {
 mod tests {
     use super::*;
 
-    // #[test]
-    // fn diff_test_test() {
-    //    let a = vec![(0, 0), (1, 1), (2, 2), (3, 3)];
-    //    let b = vec![(2, 2), (3, 3)];
-    //    let expected: Vec<&(i8, i8)> = vec![&(0, 0), &(1, 1)];
-    //    let result = diff(&a, &b);
-    //    assert_eq!(result, expected);
-    // }
+    #[test]
+    fn diff_test_test() {
+       let a = vec![(0, 0), (1, 1), (2, 2), (3, 3)];
+       let b = vec![(2, 2), (3, 3)];
+       let expected: Vec<&(i8, i8)> = vec![&(0, 0), &(1, 1)];
+       let result = diff(&a, &b);
+       assert_eq!(result, expected);
+    }
 
     #[test]
     fn valid_true_test() {
@@ -382,49 +411,91 @@ mod tests {
         assert_eq!(result, (1, -1));
     }
 
-    // #[test]
-    // fn between_orthogonal_test() {
-    //     let from = (4, 4);
-    //     let to = (8, 4);
-    //     let expected = vec![
-    //         (5, 4), (6, 4), (7, 4)
-    //     ];
-    //     let result = between(from, to);
-    //     assert_eq!(result, expected);
-    // }
+    #[test]
+    fn between_orthogonal_test() {
+        let from = (4, 4);
+        let to = (8, 4);
+        let expected = vec![
+            (5, 4), (6, 4), (7, 4)
+        ];
+        let result = between(from, to);
+        assert_eq!(result, expected);
+    }
 
-    // #[test]
-    // fn between_diagonal_test() {
-    //     let from = (4, 4);
-    //     let to = (8, 8);
-    //     let expected = vec![
-    //         (5, 5), (6, 6), (7, 7)
-    //     ];
-    //     let result = between(from, to);
-    //     assert_eq!(result, expected);
-    // }
+    #[test]
+    fn between_diagonal_test() {
+        let from = (4, 4);
+        let to = (8, 8);
+        let expected = vec![
+            (5, 5), (6, 6), (7, 7)
+        ];
+        let result = between(from, to);
+        assert_eq!(result, expected);
+    }
 
-    // #[test]
-    // fn points_in_line_orthogonal_test() {
-    //     let from = (4, 4);
-    //     let to = (4, 3);
-    //     let expected = vec![
-    //         (4, 2), (4, 1), (4, 0)
-    //     ];
-    //     let result = points_in_line(from, to);
-    //     assert_eq!(result, expected);
-    // }
+    #[test]
+    fn orthogonal_points_in_line_orthogonal_test() {
+        let from = (4, 4);
+        let to = (4, 3);
+        let expected = vec![
+            (4, 2), (4, 1), (4, 0)
+        ];
+        let result = orthogonal_points_in_line(from, to);
+        assert_eq!(result, expected);
+    }
 
-    // #[test]
-    // fn points_in_line_diagonal_test() {
-    //     let from = (4, 4);
-    //     let to = (5, 3);
-    //     let expected = vec![
-    //         (6, 2), (7, 1), (8, 0)
-    //     ];
-    //     let result = points_in_line(from, to);
-    //     assert_eq!(result, expected);
-    // }
+    #[test]
+    fn orthogonal_points_in_line_diagonal_test() {
+        let from = (4, 4);
+        let to = (5, 3);
+        let expected = vec![];
+        let result = orthogonal_points_in_line(from, to);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn horse_points_in_line_bottom_right_test() {
+        let from = (4, 4);
+        let to = (5, 5);
+        let expected = vec![
+            (6, 5), (5, 6)
+        ];
+        let result = horse_points_in_line(from, to);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn horse_points_in_line_top_left_test() {
+        let from = (4, 4);
+        let to = (3, 3);
+        let expected = vec![
+            (3, 2), (2, 3)
+        ];
+        let result = horse_points_in_line(from, to);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn elephant_points_in_line_bottom_right_test() {
+        let from = (4, 4);
+        let to = (5, 5);
+        let expected = vec![
+            (6, 6)
+        ];
+        let result = elephant_points_in_line(from, to);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn elephant_points_in_line_top_left_test() {
+        let from = (4, 4);
+        let to = (3, 3);
+        let expected = vec![
+            (2, 2)
+        ];
+        let result = elephant_points_in_line(from, to);
+        assert_eq!(result, expected);
+    }
 
     #[test]
     fn soldier_destination_points_test() {
@@ -515,38 +586,6 @@ mod tests {
        let result = orthogonal_or_diagonal(from, to);
        assert_eq!(result, false);
     }
-
-    // #[test]
-    // fn orthogonal_true_test() {
-    //     let from = (4, 4);
-    //     let to = (4, 3);
-    //     let result = orthogonal(from, to);
-    //     assert_eq!(result, true);
-    // }
-
-    // #[test]
-    // fn orthogonal_false_test() {
-    //     let from = (4, 4);
-    //     let to = (5, 3);
-    //     let result = orthogonal(from, to);
-    //     assert_eq!(result, false);
-    // }
-
-    // #[test]
-    // fn diagonal_true_test() {
-    //     let from = (4, 4);
-    //     let to = (5, 3);
-    //     let result = diagonal(from, to);
-    //     assert_eq!(result, true);
-    // }
-
-    // #[test]
-    // fn diagonal_false_test() {
-    //     let from = (4, 4);
-    //     let to = (4, 3);
-    //     let result = diagonal(from, to);
-    //     assert_eq!(result, false);
-    // }
 
     // #[test]
     // fn forwards_for_player_true_test() {
