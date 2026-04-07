@@ -19,6 +19,9 @@ Board Game Move Recommender written in Rust.
 * Shogi - Common openings db
 * Shogi - Minimax algorithm with Alpha Beta Pruning
 * Shogi - Monte-Carlo Tree Search
+* Xiangqi - Common openings db
+* Xiangqi - Minimax algorithm with Alpha Beta Pruning
+* Xiangqi - Monte-Carlo Tree Search
 
 ## Config
 
@@ -44,7 +47,21 @@ Game Environment Variables:
 * `SHOGI_MINIMAX_DEPTH` - How many layers the chess minimax algorithm will search, default: `0`
 * `SHOGI_MCTS_SIMULATION_COUNT` - How many simulations the Monte Carlo Tree Search algorithm will search, default: `100`
 * `SHOGI_MCTS_SIMULATION_DEPTH` - How many moves deep in the Monte Carlo Tree Search algorithm will search for each simulation, default: `50`
+* `XIANGQI_MINIMAX_DEPTH` - How many layers the chess minimax algorithm will search, default: `0`
+* `XIANGQI_MCTS_SIMULATION_COUNT` - How many simulations the Monte Carlo Tree Search algorithm will search, default: `100`
+* `XIANGQI_MCTS_SIMULATION_DEPTH` - How many moves deep in the Monte Carlo Tree Search algorithm will search for each simulation, default: `50`
 
 ## TODO
 
-* Add performance tests
+* Other Games: 
+    * Nine Men's Morris
+    * Reversi
+    * Mancala   
+    * Chinese Checkers
+    * International Draughts
+    * Chess 960
+    * 9x9 Go
+    * 15x15 Go
+    * Chu Shogi
+    * Dai Shogi
+    * Janggi
