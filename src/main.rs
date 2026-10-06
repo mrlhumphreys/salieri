@@ -21,6 +21,9 @@ mod shogi_controller;
 mod xiangqi;
 mod xiangqi_controller;
 
+mod international_draughts;
+mod international_draughts_controller;
+
 async fn index() -> impl Responder {
     HttpResponse::Ok().body("200 OK\n")
 }
@@ -64,6 +67,9 @@ async fn post_game_move(info: web::Path<String>, req_body: String) -> impl Respo
                 Some(m) => HttpResponse::Ok().body(format!("{}\n", m)),
                 None => xiangqi_controller::minimax(&req_body)
             }
+        },
+        "international_draughts" => {
+            international_draughts_controller::minimax(&req_body)
         },
         _ => return HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n")
     }
@@ -118,6 +124,12 @@ async fn post_game_algorithm_move(info: web::Path<(String, String)>, req_body: S
                 "openings_db" => xiangqi_controller::opening(&req_body),
                 "minimax" => xiangqi_controller::minimax(&req_body),
                 "mcts" => xiangqi_controller::mcts(&req_body),
+                _ => return HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n")
+            }
+        },
+        "international_draughts" => {
+            match algorithm.as_str() {
+                "minimax" => international_draughts_controller::minimax(&req_body),
                 _ => return HttpResponse::UnprocessableEntity().body("422 Unprocessable Entity\n")
             }
         },
@@ -503,6 +515,60 @@ mod tests {
         let req = test::TestRequest::post()
             .insert_header(ContentType::plaintext())
             .uri("/api/v0/xiangqi")
+            .set_payload(game_state)
+            .to_request();
+        let res = test::call_and_read_body(&app, req).await;
+        assert_eq!(res, Bytes::from_static(b"422 Unprocessable Entity\n"));
+    }
+
+    // international draughts with valid params
+    #[actix_rt::test]
+    async fn test_international_draughts_status_with_valid_params() {
+        let game_state = String::from("W:W1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20:B31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50");
+        let app = test::init_service(App::new().route("/api/v0/{game_type}", web::post().to(post_game_move))).await;
+        let req = test::TestRequest::post()
+            .insert_header(ContentType::plaintext())
+            .uri("/api/v0/international_draughts")
+            .set_payload(game_state)
+            .to_request();
+        let res = test::call_service(&app, req).await;
+        assert!(res.status().is_success());
+    }
+
+    #[actix_rt::test]
+    async fn test_international_draughts_body_with_valid_params() {
+        let game_state = String::from("W:W1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20:B31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50");
+        let app = test::init_service(App::new().route("/api/v0/{game_type}", web::post().to(post_game_move))).await;
+        let req = test::TestRequest::post()
+            .insert_header(ContentType::plaintext())
+            .uri("/api/v0/international_draughts")
+            .set_payload(game_state)
+            .to_request();
+        let res = test::call_and_read_body(&app, req).await;
+        assert_eq!(res, Bytes::from_static(b"20-24\n"));
+    }
+
+    // international draughts with invalid params
+    #[actix_rt::test]
+    async fn test_international_draughts_status_with_invalid_params() {
+        let game_state = String::from("asdf");
+        let app = test::init_service(App::new().route("/api/v0/{game_type}", web::post().to(post_game_move))).await;
+        let req = test::TestRequest::post()
+            .insert_header(ContentType::plaintext())
+            .uri("/api/v0/international_draughts")
+            .set_payload(game_state)
+            .to_request();
+        let res = test::call_service(&app, req).await;
+        assert!(res.status().is_client_error());
+    }
+
+    #[actix_rt::test]
+    async fn test_international_draughts_body_with_invalid_params() {
+        let game_state = String::from("asdf");
+        let app = test::init_service(App::new().route("/api/v0/{game_type}", web::post().to(post_game_move))).await;
+        let req = test::TestRequest::post()
+            .insert_header(ContentType::plaintext())
+            .uri("/api/v0/international_draughts")
             .set_payload(game_state)
             .to_request();
         let res = test::call_and_read_body(&app, req).await;
