@@ -143,6 +143,19 @@ impl Square {
         potential_destinations.iter().for_each(|p| {
             if let Some(to) = find_by_x_and_y(&game_state.squares, p.0, p.1) {
                 if to.unoccupied() {
+                    let occupied_count: i8 = between_points(point, *p).iter().fold(0, |mut acc, between| {
+                        if let Some(found_square) = find_by_x_and_y(&game_state.squares, between.0, between.1) {
+
+                            if found_square.occupied() {
+                                acc += 1;
+                                acc
+                            } else {
+                                acc
+                            }
+                        } else {
+                            acc
+                        }
+                    });
                     let occupied_by_opponent: Vec<(i8, i8)> = between_points(point, *p).iter().fold(vec![], |mut acc, between| {
                         if let Some(found_square) = find_by_x_and_y(&game_state.squares, between.0, between.1) {
 
@@ -156,7 +169,7 @@ impl Square {
                             acc
                         }
                     });
-                    if occupied_by_opponent.len() == 1 {
+                    if occupied_count == 1 && occupied_by_opponent.len() == 1 {
                         destinations.push(vec![occupied_by_opponent[0], *p]);
                     }
                 }
@@ -1794,7 +1807,6 @@ mod tests {
 
         let game_state = GameState { current_player_number: 2, squares };
 
-
         let mut accumulator = vec![];
         let mut current_leg = vec![];
         let point = (2, 3);
@@ -1803,6 +1815,148 @@ mod tests {
         assert_eq!(result.len(), 2);
         assert_eq!(result[0], vec![(2, 3), (3, 4), (4, 5), (3, 6), (2, 7)]);
         assert_eq!(result[1], vec![(2, 3), (3, 4), (4, 5), (5, 6), (6, 7), (7, 6), (8, 5)]);
+    }
+
+    #[test]
+    fn fetch_jump_legs_flying_king_test() {
+        let (player_number, king) = (1, true);
+        let squares = vec![
+            vec![
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false }
+            ],
+            vec![
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false }
+            ],
+            vec![
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false }
+            ],
+            vec![
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 1, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false }
+            ],
+            vec![
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 1, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 2, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false }
+            ],
+            vec![
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 1, king: true },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false }
+            ],
+            vec![
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 2, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false }
+            ],
+            vec![
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 2, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false }
+            ],
+            vec![
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false }
+            ],
+            vec![
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false },
+                Square { player_number: 0, king: false }
+            ]
+        ];
+
+        let game_state = GameState { current_player_number: 1, squares };
+
+        let mut accumulator = vec![];
+        let mut current_leg = vec![];
+        let point = (4, 5);
+        let from_square = game_state.squares[5][4];
+        let result = from_square.jump_legs(point, player_number, king, &game_state, &mut accumulator, &mut current_leg);
+        let expected = vec![
+            vec![(4, 5), (5, 4), (6, 3)],
+            vec![(4, 5), (5, 4), (7, 2)],
+            vec![(4, 5), (5, 4), (8, 1)],
+            vec![(4, 5), (5, 4), (9, 0)]
+        ];
+        assert_eq!(result, &expected);
     }
 
     #[test]
