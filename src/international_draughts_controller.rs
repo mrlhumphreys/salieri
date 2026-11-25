@@ -18,7 +18,7 @@ pub fn minimax(game_data: &String) -> HttpResponse {
     };
 
     let minimax_depth: i8 = env::var("INTERNATIONAL_DRAUGHTS_MINIMAX_DEPTH")
-        .unwrap_or_else(|_| "10".to_string())
+        .unwrap_or_else(|_| "8".to_string())
         .parse()
         .expect("INTERNATIONAL_DRAUGHTS_MINIMAX_DEPTH must be a number");
 

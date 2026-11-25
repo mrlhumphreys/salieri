@@ -62,8 +62,10 @@ Game Environment Variables:
     * Chinese Checkers
     * Chaturaji
     * Arima
+    * Royal Game of Ur
 * Variants:
     * International Draughts
+    * Acey Deucey Backgammon
     * Chess 960
     * 9x9 Go
     * 15x15 Go
@@ -71,4 +73,3 @@ Game Environment Variables:
     * Dai Shogi
     * Janggi
     * Chaturanga
-    * Royal Game of Ur
